@@ -160,9 +160,10 @@ export default defineConfig({
       { text: 'Nghe thử', link: '/demo', activeMatch: '^/demo' },
       {
         text: 'Hướng dẫn',
-        activeMatch: '^/(?!$|demo|tai-ve)',
+        activeMatch: '^/(?!$|demo|tai-ve|skill-ai)',
         items: guide,
       },
+      { text: 'Skill AI', link: '/skill-ai', activeMatch: '^/skill-ai' },
       { text: 'Tải về', link: '/tai-ve', activeMatch: '^/tai-ve' },
     ],
 
@@ -178,6 +179,7 @@ export default defineConfig({
         text: 'Dùng Sano',
         items: [
           { text: 'Ba cách đọc (làm mượt, viết lại)', link: '/lam-muot-tai-lieu' },
+          { text: 'Skill AI làm sách nói', link: '/skill-ai' },
           { text: 'Nghe trên điện thoại', link: '/nghe-tren-dien-thoai' },
           { text: 'Nghe khi lái xe ô tô', link: '/nghe-khi-lai-xe' },
           { text: 'Thư viện & danh mục', link: '/thu-vien' },

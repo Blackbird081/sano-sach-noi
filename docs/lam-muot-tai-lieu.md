@@ -52,7 +52,7 @@ Làm sách thường xuyên thì nạp skill làm sách nói của Sano cho AI m
   <a class="sano-btn outline" href="/sano-sach-noi/skill/sano-huong-dan-ai.txt" download>Tải sano-huong-dan-ai.txt (Dự án ChatGPT)</a>
 </p>
 
-Mã nguồn skill ở thư mục [`skills/`](https://github.com/tanviet12/sano-sach-noi/tree/main/skills) trên GitHub.
+Mã nguồn skill ở thư mục [`skills/`](https://github.com/tanviet12/sano-sach-noi/tree/main/skills) trên GitHub. Giới thiệu đầy đủ về skill, gửi link cho người khác: [Skill AI làm sách nói](./skill-ai).
 
 - **Claude**: tải `sano-sach-noi.zip` (không cần giải nén), mở claude.ai → **Customize** → **Skills** → nút **+** → **Create skill** → **Upload a skill**. Mọi gói Claude, kể cả miễn phí, đều nạp được skill. Skill này cũng dùng được trong Claude Code.
 - **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm. Dùng ChatGPT Business hoặc Enterprise thì mục **Skills** nhận luôn file `sano-sach-noi.zip` của Claude (cùng định dạng SKILL.md): **Skills** → **Tạo** → **Tải lên**.
