@@ -69,3 +69,28 @@ func TestListenLog_FileHong(t *testing.T) {
 		t.Error("phải giữ bản hỏng")
 	}
 }
+
+func TestDetachListenLog(t *testing.T) {
+	dir := t.TempDir()
+	l := New(dir)
+	at := time.Date(2026, 9, 27, 10, 0, 0, 0, time.Local)
+	if p, err := l.DetachListenLog(at); p != "" || err != nil {
+		t.Fatalf("chưa có nhật ký: p=%q err=%v", p, err)
+	}
+	if err := l.RecordListening("sach-a", 30, 30, at); err != nil {
+		t.Fatal(err)
+	}
+	if n := l.ListenDays(); n != 1 {
+		t.Errorf("ListenDays = %d", n)
+	}
+	p, err := l.DetachListenLog(at)
+	if err != nil || filepath.Base(p) != "Sano so lieu nghe 2026-09-27 10.00.00.json" {
+		t.Fatalf("p=%q err=%v", p, err)
+	}
+	if _, err := os.Stat(p); err != nil {
+		t.Fatal("file tách ra phải còn")
+	}
+	if n := l.ListenDays(); n != 0 {
+		t.Errorf("sau khi tách ListenDays = %d, muốn 0", n)
+	}
+}

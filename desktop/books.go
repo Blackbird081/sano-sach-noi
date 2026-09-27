@@ -192,6 +192,38 @@ func (a *App) MarkFinished(slug string) error { return a.lib.MarkFinished(slug, 
 // ListenLog — nhật ký nghe cho trang thống kê.
 func (a *App) ListenLog() (*library.ListenLog, error) { return a.lib.ListenLog() }
 
+// ClearListenLog xoá số liệu Hành trình nghe: hỏi lại, rồi chuyển file nhật ký nghe
+// vào Thùng rác (lấy lại được). Trả nơi đã chuyển tới; "" khi huỷ hoặc chưa có số liệu.
+func (a *App) ClearListenLog() (string, error) {
+	if a.ctx == nil {
+		return "", errors.New("ứng dụng chưa khởi động xong")
+	}
+	days := a.lib.ListenDays()
+	if days == 0 {
+		return "", nil
+	}
+	const yes = "Chuyển vào Thùng rác"
+	res, err := wruntime.MessageDialog(a.ctx, wruntime.MessageDialogOptions{
+		Type:          wruntime.QuestionDialog,
+		Title:         "Xoá số liệu Hành trình nghe?",
+		Message:       fmt.Sprintf("Số liệu của %d ngày nghe (thời gian nghe, chuỗi ngày, sách nghe xong) sẽ được chuyển vào Thùng rác, lấy lại được nếu cần. Sách và vị trí đang nghe không bị đụng.", days),
+		Buttons:       []string{yes, "Huỷ"},
+		DefaultButton: "Huỷ",
+		CancelButton:  "Huỷ",
+	})
+	if err != nil {
+		return "", err
+	}
+	if res != yes && res != "Yes" && res != "Ok" {
+		return "", nil
+	}
+	p, err := a.lib.DetachListenLog(time.Now())
+	if err != nil || p == "" {
+		return "", err
+	}
+	return trashBook(p, a.lib.Root())
+}
+
 // OpenLibraryFolder hiện thư mục ~/Sano/Sach trong trình quản lý file.
 func (a *App) OpenLibraryFolder() error {
 	if err := os.MkdirAll(a.lib.BooksRoot(), 0o755); err != nil {

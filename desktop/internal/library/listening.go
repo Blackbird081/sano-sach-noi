@@ -154,3 +154,29 @@ func (l *Library) MarkFinished(slug string, now time.Time) error {
 	d.Finished[slug] = now.Format("2006-01-02")
 	return l.writeListen(d)
 }
+
+// ListenDays — số ngày đã ghi trong nhật ký nghe (0 khi chưa có).
+func (l *Library) ListenDays() int {
+	d, err := l.ListenLog()
+	if err != nil {
+		return 0
+	}
+	return len(d.Days)
+}
+
+// DetachListenLog đổi tên nhật ký nghe thành file dễ thấy (không bắt đầu bằng dấu
+// chấm, để còn thấy trong Thùng rác) và trả đường dẫn mới cho App chuyển vào Thùng
+// rác. Lần nghe sau bắt đầu nhật ký mới. Chưa có nhật ký → "", nil.
+func (l *Library) DetachListenLog(now time.Time) (string, error) {
+	listenMu.Lock()
+	defer listenMu.Unlock()
+	src := l.listenPath()
+	if _, err := os.Lstat(src); errors.Is(err, os.ErrNotExist) {
+		return "", nil
+	}
+	dst := filepath.Join(l.root, "Sano so lieu nghe "+now.Format("2006-01-02 15.04.05")+".json")
+	if err := os.Rename(src, dst); err != nil {
+		return "", fmt.Errorf("tách nhật ký nghe: %w", err)
+	}
+	return dst, nil
+}

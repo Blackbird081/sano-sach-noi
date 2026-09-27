@@ -312,6 +312,7 @@ interface GoApp {
   RecordListening(slug: string, listenSec: number, audioSec: number): Promise<void>
   MarkFinished(slug: string): Promise<void>
   ListenLog(): Promise<ListenLog>
+  ClearListenLog(): Promise<string>
   SetLibraryOrder(items: string[]): Promise<void>
   RevealBookZip(slug: string): Promise<void>
   OpenLibraryFolder(): Promise<void>
@@ -654,6 +655,10 @@ export async function listenLog(): Promise<ListenLog> {
   const app = goApp()
   if (!app) return { version: 1, days: {}, finished: {} }
   return app.ListenLog()
+}
+/** Xoá số liệu Hành trình nghe (Go hỏi lại, chuyển vào Thùng rác). Trả nơi chuyển tới; "" = huỷ. */
+export async function clearListenLog(): Promise<string> {
+  return need().ClearListenLog()
 }
 export async function setLibraryOrder(items: string[]): Promise<void> {
   const app = goApp()
