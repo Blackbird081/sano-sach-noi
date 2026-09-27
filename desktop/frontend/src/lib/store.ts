@@ -49,12 +49,13 @@ function readLevel(): number {
     return 0
   }
 }
-function readAITool(): AITool {
+// Không chọn sẵn AI (wireframe D8b): chưa chọn lần nào thì '' và màn Nhờ AI bắt chọn.
+function readAITool(): AITool | '' {
   try {
     const v = localStorage.getItem(AI_KEY)
-    return v === 'chatgpt' || v === 'gemini' ? v : 'claude'
+    return v === 'claude' || v === 'chatgpt' || v === 'gemini' ? v : ''
   } catch {
-    return 'claude'
+    return ''
   }
 }
 export function saveLevel(n: number) {

@@ -25,15 +25,15 @@ Cùng một ý, viết theo ba cách, đọc bằng giọng Hải Đăng. Trong 
 
 ## Nhờ AI làm cấp 2 hoặc cấp 3
 
-Dùng Claude, ChatGPT hoặc Gemini trên trình duyệt, bản miễn phí cũng được. Chọn cấp 2 hoặc 3 thì Sano hiện 3 bước:
+Dùng Claude, ChatGPT hoặc Gemini trên trình duyệt, AI bản miễn phí cũng được. Chọn cấp 2 hoặc 3, Sano hỏi **Bạn dùng AI nào?** để đưa đúng prompt, rồi hiện 3 bước. Lần sau Sano nhớ AI bạn đã chọn.
 
-1. Chọn AI bạn dùng, bấm **Sao chép prompt** (câu lệnh gửi cho AI).
+1. Bấm **Sao chép prompt cho …** (prompt là câu lệnh gửi cho AI).
 2. Bấm **Mở Claude / ChatGPT / Gemini**, đính kèm file Word của bạn, dán prompt rồi gửi. Tài liệu dài thì AI làm từng phần, gõ "tiếp" cho tới khi xong.
 3. Lấy kết quả về Sano:
    - **Claude, ChatGPT**: tải file Word AI tạo về, bấm **Tiếp: nạp file AI tạo** rồi nạp file đó. Prompt đã dặn AI đặt sẵn tên sách, chương (Heading 1), mục (Heading 2), bạn không phải chỉnh gì.
    - **Gemini**: bản miễn phí không tạo được file Word, nên prompt cho Gemini dặn trả văn bản trong một khung. Bấm nút sao chép ở góc khung đó, sang bước Nạp file dán vào ô **Dán văn bản AI trả về**. Dòng `%` là tên sách, `#` là chương, `##` là mục.
 
-Cấp 3 có thêm **prompt soát lại** (không bắt buộc): gửi cho AI cả file gốc và bản viết lại, AI đối chiếu, bổ sung chỗ mất ý và sửa chỗ tự thêm.
+Prompt cấp 3 đã dặn AI tự lập danh sách ý rồi tự soát. Muốn chắc hơn nữa, dùng **prompt soát lại** ở cuối trang: gửi cho AI cả file gốc và bản viết lại, AI đối chiếu, bổ sung chỗ mất ý và sửa chỗ tự thêm.
 
 ::: tip AI từ chối hoặc dừng giữa chừng
 Thỉnh thoảng AI trả lời "không giúp được" khi chưa đọc xong file đính kèm, hoặc hứa tạo file rồi dừng. Bấm tạo lại câu trả lời, hoặc mở cuộc trò chuyện mới và đính kèm lại file. Với Gemini, gõ thêm: "Hãy trả toàn bộ nội dung sách trong một khối mã như yêu cầu."
@@ -41,11 +41,11 @@ Thỉnh thoảng AI trả lời "không giúp được" khi chưa đọc xong fi
 
 ## Nạp skill cho AI: làm một lần, dùng mãi
 
-Làm sách thường xuyên thì nạp hướng dẫn của Sano cho AI một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2"), không phải dán prompt. Trong phần mềm, bấm **Nạp skill cho AI** ở màn nhờ AI để tải file.
+Làm sách thường xuyên thì nạp hướng dẫn của Sano cho AI một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2"), không phải dán prompt. Trong phần mềm, ở màn nhờ AI bấm **Nạp skill cho Claude** (hoặc ChatGPT) để tải file.
 
 - **Claude**: tải `sano-sach-noi.zip` (không cần giải nén), mở claude.ai → **Cài đặt** → **Capabilities** → **Skills** → **Tải lên**. Skill tự tạo cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution). Skill này cũng dùng được trong Claude Code.
-- **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm.
-- **Gemini**: tải `sano-huong-dan-ai.txt`, mở **Gem** → **Gem mới** tên "Sano – sách nói", thêm file ở mục **Kiến thức** (Knowledge), dán câu ngắn Sano đưa vào ô **Hướng dẫn** rồi **Lưu**. Gem dùng được với tài khoản Google miễn phí.
+- **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm. Dùng ChatGPT Business hoặc Enterprise thì mục **Skills** nhận luôn file `sano-sach-noi.zip` của Claude (cùng định dạng SKILL.md): **Skills** → **Tạo** → **Tải lên**.
+- **Gemini**: chưa cần nạp gì, mỗi lần làm sách dán prompt là được. Gem của Gemini có tin sắp được thay bằng Skills chỉ dành cho gói trả phí, nên Sano chưa hướng dẫn tạo Gem. Khi Google công bố chính thức, trang này sẽ cập nhật.
 
 Tên các mục trong Claude, ChatGPT, Gemini có thể đổi theo phiên bản.
 

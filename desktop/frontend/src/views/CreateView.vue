@@ -17,7 +17,7 @@ import StepRender from './create/StepRender.vue'
 
 const locked = computed(() => rendering.value || !!state.render?.done)
 const canNext = computed(() => {
-  if (state.step === 1) return state.level > 0
+  if (state.step === 1) return state.level > 0 && (state.levelScreen === 'choose' || !!state.aiTool)
   if (state.step === 2) return !!state.outline && !state.loading && state.title.trim() !== ''
   if (state.step === 3) return selectedStems.value.length > 0
   return true
@@ -29,7 +29,7 @@ const nextLabel = computed(() => {
     if (state.level > 1) return state.level === 3 ? 'Tiếp: nhờ AI viết lại' : 'Tiếp: nhờ AI làm mượt'
     return 'Tiếp'
   }
-  if (state.step === 1) return 'Tiếp: nạp file AI tạo'
+  if (state.step === 1) return state.aiTool === 'gemini' ? 'Tiếp: dán văn bản AI trả về' : 'Tiếp: nạp file AI tạo'
   if (state.step === 2) return 'Tiếp: mục lục'
   return 'Tiếp tục'
 })
@@ -97,6 +97,7 @@ function jump(n: number) {
         Tick xác nhận quyền dùng tài liệu để mở nút render
       </p>
       <p v-else-if="state.step === 1 && !state.level" class="text-xs text-muted-foreground">Chọn một cách để tiếp tục</p>
+      <p v-else-if="state.step === 1 && state.levelScreen === 'ai' && !state.aiTool" class="text-xs text-muted-foreground">Chọn AI để tiếp tục</p>
       <Button v-if="state.step < 6" :disabled="!canNext" @click="next">{{ nextLabel }} <ChevronRight class="w-4 h-4" /></Button>
       <Button v-else :disabled="!canRender || state.previewing" @click="startRender">Nghe ổn, render cả cuốn <ChevronRight class="w-4 h-4" /></Button>
     </div>

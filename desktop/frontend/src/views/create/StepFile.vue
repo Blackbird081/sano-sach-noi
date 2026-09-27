@@ -75,7 +75,7 @@ onMounted(() => {
 onBeforeUnmount(() => offDrop())
 
 async function copyPrompt() {
-  copied.value = await copyText(promptFor(2, state.aiTool))
+  copied.value = await copyText(promptFor(2, state.aiTool || 'claude'))
   setTimeout(() => (copied.value = false), 1500)
 }
 
