@@ -8,12 +8,13 @@ export const REPO = 'https://github.com/tanviet12/sano-sach-noi'
 export const AUTHOR_FB = 'https://www.facebook.com/buitanviet'
 
 export const steps = [
-  { n: 1, label: 'Nạp file' },
-  { n: 2, label: 'Mục lục' },
-  { n: 3, label: 'Giọng đọc' },
-  { n: 4, label: 'Lời mở đầu' },
-  { n: 5, label: 'Nghe thử' },
-  { n: 6, label: 'Render' },
+  { n: 1, label: 'Cách đọc' },
+  { n: 2, label: 'Nạp file' },
+  { n: 3, label: 'Mục lục' },
+  { n: 4, label: 'Giọng đọc' },
+  { n: 5, label: 'Lời mở đầu' },
+  { n: 6, label: 'Nghe thử' },
+  { n: 7, label: 'Render' },
 ]
 
 const sec = (stem: string, title: string, chars: number, toc = false) => ({ stem, title, chars, images: 0, toc, tocReason: toc ? 'tiêu đề' : '' })

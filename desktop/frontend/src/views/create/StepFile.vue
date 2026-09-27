@@ -1,18 +1,50 @@
 <script setup lang="ts">
 // B1 Nạp file: hộp chọn file .docx (Wails) hoặc kéo thả → nạp thật: mục lục,
 // số ký tự, cảnh báo lúc nạp (hình, bảng, tiêu đề gõ tay, viết tắt chưa có).
+// Cấp 2/3 (bước Cách đọc): nạp file AI tạo, hoặc dán văn bản AI trả về (Gemini).
+// Cấp 1 không nhắc tới AI.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { AlertTriangle, Check, CheckCircle2, Copy, Download, FileText, Loader2, ShieldCheck, Sparkles, Upload, X } from 'lucide-vue-next'
+import { AlertTriangle, Check, CheckCircle2, ChevronLeft, ClipboardPaste, Copy, Download, FileText, Loader2, ShieldCheck, Sparkles, Upload, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
-import { chooseCover, chooseDocx, copyText, describeDocx, errText, onFileDrop, sampleDocx, saveSampleDocx } from '../../lib/backend'
+import { chooseCover, chooseDocx, copyText, describeDocx, errText, onFileDrop, pastedText, sampleDocx, saveSampleDocx } from '../../lib/backend'
 import { DOCS } from '../../lib/mock'
-import { SAMPLE_PROMPT } from '../../lib/prompt'
+import { promptFor } from '../../lib/prompt'
 import { categoryCounts, seriesKey } from '../../lib/find'
 import { clearFile, setFile, state } from '../../lib/store'
 import CategoryPicker from '../../components/CategoryPicker.vue'
 
 const copied = ref(false)
+const levelTitles = ['', 'Đọc nguyên văn', 'Làm mượt', 'Viết lại thành văn sách nói']
+const viaAI = computed(() => state.level > 1)
+// Gemini không tạo được file Word → mở sẵn ô dán văn bản.
+if (!state.file && viaAI.value && state.aiTool === 'gemini') state.pasteMode = true
+const pasted = ref('')
+// Đếm nhanh để người dùng thấy Sano nhận ra bao nhiêu chương, mục trước khi nạp.
+const pasteCount = computed(() => {
+  const lines = pasted.value.split('\n').map((l) => l.trim())
+  return { chapters: lines.filter((l) => /^#(?!#)/.test(l)).length, sections: lines.filter((l) => l.startsWith('##')).length }
+})
+async function usePasted() {
+  picking.value = true
+  state.fileError = ''
+  try {
+    await setFile(await pastedText(pasted.value))
+    // AI hay chép tên sách IN HOA theo bản gốc; bộ đọc bỏ qua từ điển với dòng in hoa.
+    if (state.title && state.title === state.title.toUpperCase() && state.title !== state.title.toLowerCase()) {
+      const t = state.title.toLowerCase()
+      state.title = t.charAt(0).toUpperCase() + t.slice(1)
+    }
+  } catch (e) {
+    state.fileError = errText(e)
+  } finally {
+    picking.value = false
+  }
+}
+function changeLevel() {
+  state.step = 1
+  state.levelScreen = 'choose'
+}
 const picking = ref(false)
 const coverError = ref('')
 
@@ -43,7 +75,7 @@ onMounted(() => {
 onBeforeUnmount(() => offDrop())
 
 async function copyPrompt() {
-  copied.value = await copyText(SAMPLE_PROMPT)
+  copied.value = await copyText(promptFor(2, state.aiTool))
   setTimeout(() => (copied.value = false), 1500)
 }
 
@@ -128,27 +160,45 @@ const acronyms = computed(() => {
   return list.length > 8 ? `${shown}…` : shown
 })
 const hasWarnings = computed(() => !!w.value && (w.value.images + (w.value.skippedImages ?? 0) + w.value.tables + w.value.fakeHeadings.length + w.value.unknownAcronyms.length) > 0)
+// Bảng, hình, tiêu đề gõ tay còn sót (khác chữ viết tắt: AI không cần làm lại).
+const layoutLeft = computed(() => !!w.value && (w.value.images + (w.value.skippedImages ?? 0) + w.value.tables + w.value.fakeHeadings.length) > 0)
 const fake = computed(() => (w.value?.fakeHeadings ?? []).slice(0, 2).map((s) => `«${s}»`).join(', '))
 </script>
 
 <template>
   <div class="max-w-2xl">
-    <h1 class="text-xl font-semibold tracking-tight">Nạp file Word</h1>
+    <h1 class="text-xl font-semibold tracking-tight">{{ viaAI ? 'Nạp file AI tạo' : 'Nạp file Word' }}</h1>
     <p class="text-sm text-muted-foreground">
-      Sano đọc mục lục từ kiểu Heading 1 / Heading 2 trong file.
-      <a :href="DOCS + '/tao-sach-dau-tien#chuan-bi-file'" target="_blank" rel="noopener" class="text-primary hover:underline">Cách chuẩn bị file để đọc hay nhất</a>
+      Cấp {{ state.level }} · {{ levelTitles[state.level] }} <button class="text-primary hover:underline ml-1" @click="changeLevel">Đổi</button>
+      <template v-if="!viaAI"> · Sano đọc mục lục từ kiểu Heading 1 / Heading 2 trong file.
+        <a :href="DOCS + '/tao-sach-dau-tien#chuan-bi-file'" target="_blank" rel="noopener" class="text-primary hover:underline">Cách chuẩn bị file để đọc hay nhất</a></template>
     </p>
 
-    <template v-if="!state.file">
+    <template v-if="!state.file && state.pasteMode">
+      <button class="mt-4 text-sm text-muted-foreground hover:text-foreground flex items-center gap-1" @click="state.pasteMode = false"><ChevronLeft class="w-4 h-4" /> Nạp file Word thay vì dán</button>
+      <textarea v-model="pasted" aria-label="Văn bản AI trả về" class="mt-3 w-full h-56 rounded-lg border border-input bg-background p-3 text-sm font-mono leading-relaxed" spellcheck="false"
+        placeholder="% Tên sách&#10;# Chương 1. Tên chương&#10;## Tên mục&#10;Nội dung mục…"></textarea>
+      <p class="mt-2 text-xs text-muted-foreground">Dán nguyên kết quả AI trả về. Dòng <code class="font-mono">#</code> là chương, <code class="font-mono">##</code> là mục, <code class="font-mono">%</code> là tên sách (nếu có).</p>
+      <div class="mt-3 flex items-center justify-between gap-3">
+        <span class="text-sm text-muted-foreground">{{ pasted.trim() ? (pasteCount.chapters ? `Nhận ra ${pasteCount.chapters} chương · ${pasteCount.sections} mục` : 'Chưa thấy dòng chương nào (dòng bắt đầu bằng #)') : '' }}</span>
+        <Button :disabled="picking || !pasteCount.chapters" @click="usePasted"><ClipboardPaste class="w-4 h-4" /> Nạp văn bản này</Button>
+      </div>
+      <p v-if="state.fileError" class="mt-3 text-sm text-destructive">{{ state.fileError }}</p>
+    </template>
+
+    <template v-else-if="!state.file">
       <button class="mt-5 w-full h-56 rounded-xl border-2 border-dashed border-border grid place-items-center hover:border-primary/50 hover:bg-primary/5" :disabled="picking" @click="pick">
         <span class="text-center">
           <Upload class="w-8 h-8 mx-auto text-muted-foreground" />
-          <span class="block mt-3 font-medium">Kéo file .docx vào đây</span>
+          <span class="block mt-3 font-medium">{{ viaAI ? 'Kéo file Word AI tạo vào đây' : 'Kéo file .docx vào đây' }}</span>
           <span class="block text-sm text-muted-foreground">hoặc bấm để chọn file</span>
         </span>
       </button>
       <p v-if="state.fileError" class="mt-3 text-sm text-destructive">{{ state.fileError }}</p>
-      <div class="mt-3 rounded-lg border border-border px-4 py-3 text-sm">
+      <button v-if="viaAI" class="mt-3 text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5" @click="state.pasteMode = true">
+        <ClipboardPaste class="w-4 h-4" /> AI không tạo được file Word? <span class="text-primary">Dán văn bản AI trả về</span>
+      </button>
+      <div v-else class="mt-3 rounded-lg border border-border px-4 py-3 text-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <span class="text-muted-foreground flex-1 min-w-[16rem]">Chưa có file Word? Tải file mẫu có sẵn mục lục và hướng dẫn để làm theo, hoặc thử ngay với file mẫu.</span>
           <div class="flex gap-2">
@@ -180,7 +230,7 @@ const fake = computed(() => (w.value?.fakeHeadings ?? []).slice(0, 2).map((s) =>
             {{ fmtSize(state.file.size) }} · {{ chapterCount }} chương · {{ state.outline.sections }} tiểu mục · {{ state.outline.chars.toLocaleString('vi-VN') }} ký tự
           </p>
         </div>
-        <Button variant="ghost" size="sm" @click="clearFile"><X class="w-4 h-4" /> Chọn file khác</Button>
+        <Button variant="ghost" size="sm" @click="clearFile"><X class="w-4 h-4" /> {{ state.pasteMode ? 'Dán lại' : 'Chọn file khác' }}</Button>
       </div>
 
       <template v-if="state.outline">
@@ -193,12 +243,16 @@ const fake = computed(() => (w.value?.fakeHeadings ?? []).slice(0, 2).map((s) =>
             <li v-if="w!.fakeHeadings.length">{{ w!.fakeHeadings.length }} đoạn chữ to đậm có vẻ là tiêu đề nhưng không dùng kiểu Heading ({{ fake }})</li>
             <li v-if="w!.unknownAcronyms.length">{{ w!.unknownAcronyms.length }} từ viết tắt chưa có cách đọc: {{ acronyms }} — bộ đọc có thể đọc sai</li>
           </ul>
-          <p class="mt-3 text-foreground/80">
-            Muốn đọc đủ: dán file vào ChatGPT, Gemini hoặc Claude cùng lời nhắc mẫu để biến bảng, hình thành lời văn, rồi nạp lại.
-          </p>
-          <Button variant="outline" size="sm" class="mt-3" @click="copyPrompt">
-            <component :is="copied ? Check : Copy" class="w-4 h-4" /> {{ copied ? 'Đã sao chép' : 'Sao chép lời nhắc mẫu' }}
-          </Button>
+          <template v-if="viaAI && layoutLeft">
+            <p class="mt-3 text-foreground/80">AI còn để sót bảng, hình hoặc tiêu đề gõ tay. Gửi lại file cho AI cùng prompt làm mượt rồi nạp lại, hoặc cứ tiếp tục nếu chấp nhận được.</p>
+            <Button variant="outline" size="sm" class="mt-3" @click="copyPrompt">
+              <component :is="copied ? Check : Copy" class="w-4 h-4" /> {{ copied ? 'Đã sao chép' : 'Sao chép prompt làm mượt' }}
+            </Button>
+          </template>
+          <template v-else-if="!viaAI && layoutLeft">
+            <p class="mt-3 text-foreground/80">Muốn đọc đủ: đổi sang cấp 2 Làm mượt ở bước Cách đọc để biến bảng, hình thành lời văn, rồi nạp lại.</p>
+            <Button variant="outline" size="sm" class="mt-3" @click="changeLevel">Đổi cách làm</Button>
+          </template>
         </div>
         <div v-else class="mt-4 rounded-lg border border-rag-green/40 bg-rag-green/10 p-4 text-sm flex items-center gap-2">
           <CheckCircle2 class="w-4 h-4 text-rag-green shrink-0" /> Không thấy bảng, hình hay tiêu đề gõ tay — file sẵn sàng để đọc.

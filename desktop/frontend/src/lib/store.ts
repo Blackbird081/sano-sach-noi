@@ -13,6 +13,7 @@ import {
   type RenderStatus, type SetupInfo, type SetupStatus, type TTSStatus, type UpdateInfo, type UpdateStatus, type Voice,
 } from './backend'
 import { TERMS_VERSION } from './terms'
+import type { AITool } from './prompt'
 
 export type View = 'setup' | 'terms' | 'library' | 'stats' | 'create' | 'player' | 'settings' | 'about'
 export type UpdateState = 'closed' | 'info'
@@ -34,6 +35,43 @@ export interface TocEntry {
   note: string
   stems: string[] // mọi tiểu mục của chương
   sections: TocSection[] // trống khi chương chỉ có 1 tiểu mục trùng tên (ô chương điều khiển luôn)
+}
+
+// Bước 1 Cách đọc: cấp đã chọn và AI đang dùng — nhớ cho lần sau (tiện ích riêng
+// của máy, mất thì hỏi lại).
+const LEVEL_KEY = 'sano.readLevel'
+const AI_KEY = 'sano.aiTool'
+function readLevel(): number {
+  try {
+    const n = Number(localStorage.getItem(LEVEL_KEY))
+    return n >= 1 && n <= 3 ? n : 0
+  } catch {
+    return 0
+  }
+}
+function readAITool(): AITool {
+  try {
+    const v = localStorage.getItem(AI_KEY)
+    return v === 'chatgpt' || v === 'gemini' ? v : 'claude'
+  } catch {
+    return 'claude'
+  }
+}
+export function saveLevel(n: number) {
+  state.level = n
+  try {
+    localStorage.setItem(LEVEL_KEY, String(n))
+  } catch {
+    // không lưu được thì thôi
+  }
+}
+export function saveAITool(t: AITool) {
+  state.aiTool = t
+  try {
+    localStorage.setItem(AI_KEY, t)
+  } catch {
+    // không lưu được thì thôi
+  }
 }
 
 /** Mã lời mở đầu khi nghe thử (khớp bookmaker.IntroStem). */
@@ -66,7 +104,7 @@ const initialView = views.includes(q.get('screen') as View) ? (q.get('screen') a
 
 export const state = reactive({
   view: initialView as View,
-  step: Math.min(6, Math.max(1, Number(q.get('step')) || 1)),
+  step: Math.min(7, Math.max(1, Number(q.get('step')) || 1)),
   update: (q.get('update') ? 'info' : 'closed') as UpdateState,
   // Bản mới trên GitHub Releases (chỉ có khi CheckUpdate báo). ?update=1 lúc dev
   // mở sẵn hộp cập nhật với dữ liệu mẫu để xem giao diện.
@@ -88,7 +126,14 @@ export const state = reactive({
   setupInfo: null as SetupInfo | null,
   setupError: '', // lỗi khi bấm Cài (vd đang render) — khác lỗi trong lúc cài
 
-  // B1 Nạp file
+  // B1 Cách đọc: 1 đọc nguyên văn, 2 làm mượt, 3 viết lại (0 = chưa chọn).
+  // levelScreen 'ai' = màn nhờ AI (cấp 2/3) trước khi sang Nạp file.
+  level: readLevel(),
+  levelScreen: 'choose' as 'choose' | 'ai',
+  aiTool: readAITool(),
+  pasteMode: false, // B2: dán văn bản AI trả về thay vì nạp file
+
+  // B2 Nạp file
   file: null as DocxFile | null,
   fileError: '',
   loading: false,
@@ -101,22 +146,22 @@ export const state = reactive({
   coverPath: '',
   coverDataUrl: '',
 
-  // B2 Mục lục
+  // B3 Mục lục
   toc: [] as TocEntry[],
   keepHeadingNumbers: false,
 
-  // B3 Giọng đọc
+  // B4 Giọng đọc
   voices: [] as Voice[],
   voicesError: '',
   voice: lastVoice() || DEFAULT_VOICE,
   sampleSentence: '',
 
-  // B4 Lời mở đầu
+  // B5 Lời mở đầu
   introEnabled: true,
   introText: '',
   introTouched: false,
 
-  // B5 Nghe thử
+  // B6 Nghe thử
   clips: [] as Clip[],
   clipsKey: '', // lựa chọn lúc render nghe thử; đổi lựa chọn → nghe thử lại
   previewing: false,
@@ -126,7 +171,7 @@ export const state = reactive({
   origText: {} as Record<string, string>, // lời đọc gốc của đoạn nghe thử (trước khi sửa)
   edits: {} as Record<string, ReadingEdit>,
 
-  // B6 Render
+  // B7 Render
   render: null as RenderStatus | null,
   renderError: '',
 
@@ -256,7 +301,7 @@ export function go(v: View) {
   state.view = v
   if (v === 'library') void refreshLibrary()
   if (v !== 'create') return
-  if (rendering.value) state.step = 6 // đang render → mở màn tiến độ
+  if (rendering.value) state.step = 7 // đang render → mở màn tiến độ
   else if (state.render?.done) resetCreate() // cuốn trước xong rồi → bắt đầu cuốn mới
 }
 
@@ -270,6 +315,8 @@ export function resetCreate() {
   state.render = null
   state.renderError = ''
   state.step = 1
+  state.levelScreen = 'choose'
+  state.pasteMode = false
   clearFile()
 }
 
@@ -430,7 +477,7 @@ export async function startRender() {
   try {
     state.render = await goStartRender(settings())
     saveLastVoice(state.voice)
-    state.step = 6
+    state.step = 7
   } catch (e) {
     state.renderError = errText(e)
   }
@@ -451,7 +498,7 @@ function onRenderFinished(st: RenderStatus) {
   state.render = st
   if (st.cancelled) {
     state.render = null
-    state.step = 5
+    state.step = 6
   } else if (st.error) {
     state.renderError = st.error
   }
@@ -546,7 +593,7 @@ export async function init() {
   const dev = import.meta.env.DEV ? q.get('docx') : null
   if (dev) {
     state.view = 'create'
-    state.step = 1
+    state.step = 2
     await loadDocxPath(dev)
   }
 }
