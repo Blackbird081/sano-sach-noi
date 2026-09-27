@@ -43,7 +43,7 @@ const (
 	// Khoảng lặng chèn trước một tiểu mục: sang chương mới nghỉ lâu hơn sang
 	// tiểu mục kế trong cùng chương.
 	chapterGapSamples = 2 * sampleRate
-	sectionGapSamples = sampleRate
+	sectionGapSamples = sampleRate * 3 / 2
 )
 
 // Các giai đoạn báo trong Progress.Phase.
