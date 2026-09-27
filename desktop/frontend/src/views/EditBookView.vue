@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Màn Sửa sách (wireframe D11 đã duyệt): 3 tab Nội dung / Thông tin & bìa / Giọng đọc.
-// - Nội dung: mục lục trái, ô sửa tiêu đề + chữ của tiểu mục phải. "Đọc lại mục này"
-//   chỉ đọc lại đúng mục đó; mục đã sửa chưa đọc lại có chấm vàng (giữ khi rời màn).
+// - Nội dung: mục lục trái, ô sửa tiêu đề + chữ của tiểu mục phải. "Lưu & đọc lại mục
+//   này" lưu chữ mới vào sách và đọc lại đúng mục đó; mục đã sửa chưa lưu có chấm vàng
+//   (bản sửa giữ tạm khi rời màn). Dưới ô chữ luôn báo: chưa lưu / đang lưu / đã lưu xong.
 // - Thông tin & bìa: đổi tên → bìa tự vẽ vẽ lại, lời mở đầu "Cuốn sách: …" đọc lại.
 // - Giọng đọc: đổi giọng cả cuốn, chạy nền, xong hết mới thay.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -50,7 +51,7 @@ const chapters = computed(() => {
   for (const s of secs.value) {
     const last = out[out.length - 1]
     if (last && last.index === s.chapterIndex) last.items.push(s)
-    else out.push({ index: s.chapterIndex, title: s.intro ? 'Lời mở đầu' : s.chapter, items: [s] })
+    else out.push({ index: s.chapterIndex, title: s.intro ? 'Lời giới thiệu đầu sách' : s.chapter, items: [s] })
   }
   return out
 })
@@ -71,7 +72,7 @@ function toggleCh(ci: number) {
 const posLabel = computed(() => {
   const s = sec.value
   if (!s) return ''
-  if (s.intro) return 'Lời mở đầu · đọc trước chương đầu tiên'
+  if (s.intro) return 'Lời giới thiệu đầu sách · Sano tự thêm, đọc trước chương đầu tiên'
   const ch = chapters.value.find((c) => c.index === s.chapterIndex)
   const n = ch?.items.findIndex((x) => x.index === s.index) ?? 0
   const chNo = chapters.value.filter((c) => !c.items[0]?.intro).findIndex((c) => c.index === s.chapterIndex) + 1
@@ -89,6 +90,13 @@ const text = computed({
 const dirty = computed(() => !!sec.value && edit.drafts[sec.value.index] !== undefined)
 const busy = computed(() => !!sec.value && busySection(sec.value.index))
 const readingThis = computed(() => busy.value && st.value?.current === sec.value?.index)
+/** Mục đang chọn vừa lưu + đọc lại xong trong lượt gần nhất. */
+const justSaved = computed(() => !!sec.value && sectionState(sec.value) === 'done')
+/** Ước tính giây đọc lại một mục: nạp bộ đọc ~5 giây + đọc ~0,2 lần thời lượng (≈15 ký tự/giây nói). */
+const estSec = computed(() => {
+  const n = text.value.length + title.value.length
+  return Math.max(5, Math.round((5 + (n / 15) * 0.2) / 5) * 5)
+})
 
 /** Tóm tắt chỗ đã sửa: "A" → "B" khi chỉ đổi một cụm; không thì "Đã sửa". */
 const changeNote = computed(() => {
@@ -152,7 +160,7 @@ function sectionState(s: EditSection): 'reading' | 'queued' | 'edited' | 'done' 
 const readingLabel = computed(() => {
   const x = st.value
   if (!x?.running || x.kind !== 'sections') return ''
-  return `Đang đọc lại ${Math.min(x.finished + 1, x.total)}/${x.total} mục…`
+  return `Đang lưu và đọc lại ${Math.min(x.finished + 1, x.total)}/${x.total} mục…`
 })
 
 // ── Tab Thông tin & bìa ───────────────────────────────────────────────────
@@ -210,7 +218,7 @@ async function saveInfo() {
     if (r.introEdit) {
       await rereadWith(r.introEdit)
       if (!edit.actionError) infoMsg.value += ' Đã gửi đọc lại lời mở đầu, xong trong vài giây.'
-      else infoMsg.value += ' Lời mở đầu mới đang chờ đọc lại ở tab Nội dung.'
+      else infoMsg.value += ' Lời mở đầu mới chưa lưu, vào tab Nội dung bấm Lưu & đọc lại.'
     }
   } catch (e) {
     edit.actionError = errText(e)
@@ -318,8 +326,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             <p class="text-xs text-muted-foreground flex items-center gap-1"><Mic class="w-3 h-3" /> Giọng {{ voiceName }} · {{ secs.length }} mục · {{ totalLabel }}</p>
           </div>
           <div v-if="pendingIdx.length || readingLabel" class="ml-auto flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">{{ readingLabel || `${pendingIdx.length} mục đã sửa chưa đọc lại` }}</span>
-            <Button size="sm" :disabled="!!edit.status?.running || !pendingIdx.length" @click="reread()"><RotateCcw class="w-4 h-4" /> Đọc lại {{ pendingIdx.length || '' }} mục</Button>
+            <span class="text-xs text-muted-foreground">{{ readingLabel || `${pendingIdx.length} mục đã sửa, chưa lưu` }}</span>
+            <Button size="sm" :disabled="!!edit.status?.running || !pendingIdx.length" @click="reread()"><RotateCcw class="w-4 h-4" /> Lưu & đọc lại {{ pendingIdx.length || '' }} mục</Button>
           </div>
         </template>
       </div>
@@ -350,13 +358,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
                 <span class="truncate flex-1">{{ current(s).title }}</span>
                 <Loader2 v-if="sectionState(s) === 'reading'" class="w-3.5 h-3.5 shrink-0 animate-spin" />
                 <span v-else-if="sectionState(s) === 'queued'" class="shrink-0 text-[11px] text-muted-foreground">chờ</span>
-                <span v-else-if="sectionState(s) === 'edited'" class="shrink-0 h-2 w-2 rounded-full bg-rag-amber" title="Đã sửa, chưa đọc lại"></span>
+                <span v-else-if="sectionState(s) === 'edited'" class="shrink-0 h-2 w-2 rounded-full bg-rag-amber" title="Đã sửa, chưa lưu"></span>
                 <Check v-else-if="sectionState(s) === 'done'" class="w-3.5 h-3.5 shrink-0 text-rag-green" />
                 <span v-else class="text-xs tabular-nums text-muted-foreground shrink-0">{{ fmtDur(s.durationSec) }}</span>
               </button>
             </template>
           </template>
-          <p class="px-3 pt-3 text-[11px] text-muted-foreground leading-relaxed flex gap-1.5"><span class="mt-1 h-2 w-2 rounded-full bg-rag-amber shrink-0"></span> Đã sửa, chưa đọc lại. Rời màn này vẫn giữ bản sửa.</p>
+          <p class="px-3 pt-3 text-[11px] text-muted-foreground leading-relaxed flex gap-1.5"><span class="mt-1 h-2 w-2 rounded-full bg-rag-amber shrink-0"></span> Đã sửa, chưa lưu. Rời màn này vẫn giữ tạm bản sửa.</p>
         </div>
 
         <div v-if="sec" class="flex-1 flex flex-col min-w-0 p-5 gap-3">
@@ -374,9 +382,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
               class="mt-1 flex-1 w-full rounded-md border bg-background p-3 text-sm leading-relaxed resize-none focus:outline-none focus:ring-1"
               :class="dirty ? 'border-rag-amber focus:ring-rag-amber' : 'border-input focus:ring-ring'"></textarea>
           </label>
-          <p v-if="readingThis" class="text-xs text-muted-foreground flex items-center gap-1.5"><Loader2 class="w-3.5 h-3.5 animate-spin" /> Đang đọc lại mục này{{ st?.remainSec ? ', ' + fmtRemain(st.remainSec) : '' }}. Anh chọn mục khác sửa tiếp được.</p>
-          <p v-else-if="busy" class="text-xs text-muted-foreground flex items-center gap-1.5"><Loader2 class="w-3.5 h-3.5" /> Mục này đang chờ đọc lại.</p>
-          <p v-else-if="dirty" class="text-xs text-muted-foreground flex items-center gap-1.5"><AlertCircle class="w-3.5 h-3.5 text-rag-amber" /> {{ changeNote }} Chưa đọc lại: khi nghe vẫn là bản cũ.</p>
+          <!-- Trạng thái lưu của mục đang chọn: chưa lưu → đang lưu, đọc lại → đã lưu xong -->
+          <div v-if="readingThis" class="rounded-md bg-muted/60 px-3 py-2 text-xs flex items-center gap-2"><Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" /> <span><b>Đang lưu và đọc lại mục này</b>{{ st?.remainSec ? ', ' + fmtRemain(st.remainSec) : `, khoảng ${estSec} giây` }}. Anh chọn mục khác sửa tiếp được.</span></div>
+          <div v-else-if="busy" class="rounded-md bg-muted/60 px-3 py-2 text-xs flex items-center gap-2"><Loader2 class="w-3.5 h-3.5 shrink-0" /> <span><b>Đã xếp hàng</b>, lưu và đọc lại ngay sau mục đang làm.</span></div>
+          <div v-else-if="dirty" class="rounded-md border border-rag-amber/50 bg-rag-amber/10 px-3 py-2 text-xs flex items-center gap-2"><AlertCircle class="w-3.5 h-3.5 text-rag-amber shrink-0" /> <span><b>Chưa lưu.</b> {{ changeNote }} Bấm <b>Lưu & đọc lại mục này</b> để đưa vào sách (khoảng {{ estSec }} giây). Chưa lưu thì khi nghe vẫn là bản cũ.</span></div>
+          <div v-else-if="justSaved" class="rounded-md border border-rag-green/40 bg-rag-green/10 px-3 py-2 text-xs flex items-center gap-2"><Check class="w-3.5 h-3.5 text-rag-green shrink-0" /> <span><b>Đã lưu xong.</b> Mục này đã đọc lại bằng chữ mới, gói zip đã cập nhật. Bấm <b>Nghe bản đang có</b> để nghe lại.</span></div>
           <p v-if="tryError" class="text-xs text-destructive">{{ tryError }}</p>
           <div class="flex flex-wrap items-center gap-2 pt-1">
             <Button variant="outline" size="sm" @click="listenCurrent">
@@ -387,8 +397,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             </Button>
             <span class="text-[11px] text-muted-foreground">Bôi đen một câu rồi bấm để nghe thử trước khi đọc lại cả mục.</span>
             <div class="ml-auto flex gap-2">
-              <Button v-if="dirty && !busy" variant="ghost" size="sm" @click="dropDraft(sec.index)">Bỏ sửa</Button>
-              <Button size="sm" :disabled="!dirty || busy || !!edit.status?.running" @click="reread([sec.index])"><RotateCcw class="w-4 h-4" /> Đọc lại mục này</Button>
+              <Button v-if="dirty && !busy" variant="ghost" size="sm" title="Trả về chữ đang có trong sách" @click="dropDraft(sec.index)">Huỷ thay đổi</Button>
+              <Button size="sm" :disabled="!dirty || busy || !!edit.status?.running" @click="reread([sec.index])"><Loader2 v-if="readingThis" class="w-4 h-4 animate-spin" /><Check v-else-if="justSaved && !dirty" class="w-4 h-4" /><RotateCcw v-else class="w-4 h-4" /> {{ readingThis ? 'Đang lưu…' : justSaved && !dirty ? 'Đã lưu' : 'Lưu & đọc lại mục này' }}</Button>
             </div>
           </div>
         </div>
