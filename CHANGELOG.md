@@ -3,20 +3,15 @@
 ## v0.1.14 (27/09/2026)
 
 ### Tính năng
-- **Bước Cách đọc 3 cấp** khi tạo sách nói: **Đọc nguyên văn** (mặc định), **Làm mượt** (nhờ AI đổi bảng, hình, danh sách, chữ viết tắt thành lời, giữ nguyên ý) hoặc **Viết lại thành văn sách nói** (nhờ AI viết lại như người kể: chuyện trước, lý thuyết sau, chương ngắn, cuối chương có ba ý cần nhớ). Mỗi cấp có nút **Nghe mẫu**. Sano nhớ cấp bạn chọn
-- **Nhờ AI theo 3 bước:** chọn Claude, ChatGPT hoặc Gemini, Sano đưa đúng prompt. Claude, ChatGPT trả file Word có sẵn chương, mục để nạp thẳng. Gemini bản miễn phí không tạo được file nên trả văn bản, dán vào ô **Dán văn bản AI trả về** ở bước Nạp file
-- **Nạp skill cho AI** một lần, lần sau chỉ cần gửi file và gõ câu có sẵn, ví dụ "Làm file sách nói dùng skill sano-sach-noi (cấp độ 3)": Claude (mọi gói) và ChatGPT có mục Skills dùng file `sano-sach-noi.zip`; ChatGPT chưa có mục Skills dùng Dự án kèm file hướng dẫn. Trang [Ba cách đọc](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu) có đủ prompt và cách làm
-- **Hành trình nghe:** thời gian nghe thật mỗi ngày, chuỗi ngày nghe, sách nghe xong, giờ hay nghe, lịch nghe 6 tháng, mục tiêu nghe mỗi ngày. Xem theo tuần, tháng, năm. Số liệu chỉ lưu trên máy (`~/Sano/.nghe.json`), xoá được ở **Cài đặt** → **Dữ liệu nghe**
-- **Thư viện dạng danh sách:** nút cạnh **Sắp xếp** đổi giữa lưới bìa và danh sách, Sano nhớ cách xem
-- **Xoá lịch sử nghe** ở hàng Nghe tiếp: bỏ vị trí nghe dở và dấu đã nghe, giữ số liệu Hành trình nghe
-- Thanh bên có dòng nhà tài trợ phát triển; menu đổi thành Thư viện → **Tạo sách nói** → Hành trình nghe → Cài đặt → Giới thiệu
-
-### Thay đổi
-- Dấu ✓ trong mục lục trình phát chỉ hiện khi nghe thật từ 85% trở lên, nhảy qua không tính
+- **Cách đọc 3 cấp:** đọc nguyên văn, hoặc nhờ AI làm mượt, viết lại thành văn sách nói
+- **Nhờ AI:** chọn Claude, ChatGPT hoặc Gemini, Sano đưa đúng prompt; tặng kèm skill làm sách nói
+- **Hành trình nghe:** thời gian nghe, chuỗi ngày, sách nghe xong, mục tiêu mỗi ngày
+- **Thư viện:** xem dạng danh sách, xoá lịch sử nghe
 
 ### Lưu ý khi nâng cấp
-- Từ **0.1.2 – 0.1.12**: bấm **Cập nhật ngay** trong app. Từ **0.1.0 / 0.1.1**: tải bản 0.1.14 và cài đè một lần
-- Không có bản 0.1.13: các thay đổi dự định cho 0.1.13 ra chung trong 0.1.14
+- Từ **0.1.2 – 0.1.12**: bấm **Cập nhật ngay**. Không có bản 0.1.13, các thay đổi ra chung trong 0.1.14
+
+Chi tiết: [Ba cách đọc và skill](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu) · [Hành trình nghe](https://tanviet12.github.io/sano-sach-noi/hanh-trinh-nghe). Nhỏ hơn: menu đổi thành Thư viện → Tạo sách nói → Hành trình nghe → Cài đặt → Giới thiệu; thanh bên có dòng nhà tài trợ; dấu ✓ trong mục lục chỉ hiện khi nghe thật từ 85% trở lên. Từ 0.1.0 / 0.1.1: tải bản 0.1.14 và cài đè một lần.
 
 ## v0.1.12 (27/09/2026)
 
