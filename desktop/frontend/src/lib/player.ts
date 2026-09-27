@@ -51,6 +51,15 @@ let pendingSeek = 0
 let loadSeq = 0
 let loading: Promise<void> = Promise.resolve()
 let played = false // chỉ mở rồi thoát, chưa phát → không tính là "nghe gần đây"
+// Nghỉ trước khi phát tiểu mục kế: cộng với ~0,5 giây lặng sẵn trong MP3 và
+// lúc nạp file, nghe ra khoảng 1 giây.
+const TRACK_GAP_MS = 500
+let gapTimer = 0
+
+function cancelGap() {
+  if (gapTimer) clearTimeout(gapTimer)
+  gapTimer = 0
+}
 
 export const tracks = computed(() => player.detail?.tracks ?? [])
 export const track = computed(() => tracks.value[player.current])
@@ -119,6 +128,7 @@ async function open(slug: string, autoplay: boolean) {
   }
   remember()
   listenStop()
+  cancelGap()
   audio.pause()
   player.playing = false
   player.detail = null
@@ -172,6 +182,7 @@ watch(
 function load(i: number, at = 0) {
   const t = tracks.value[i]
   if (!t) return
+  cancelGap()
   player.current = i
   player.time = at
   player.duration = t.durationSec
@@ -204,12 +215,21 @@ export async function play() {
 }
 
 export function pause() {
+  stopGap()
   audio.pause()
+}
+
+// Đang nghỉ giữa hai tiểu mục mà bấm dừng: bỏ lượt phát tiếp.
+function stopGap() {
+  if (!gapTimer) return
+  cancelGap()
+  player.playing = false
 }
 
 export function toggle() {
   if (!track.value) return
-  if (player.playing) audio.pause()
+  if (gapTimer) stopGap()
+  else if (player.playing) audio.pause()
   else void play()
 }
 
@@ -249,6 +269,7 @@ export function setSpeed(v: number) {
 /** Dừng hẳn và bỏ cuốn đang phát (nút ✕ ở thanh nghe nhỏ, xoá sách). */
 export function closePlayer() {
   remember()
+  cancelGap()
   audio.pause()
   clearAudioSource(audio)
   loadSeq++
@@ -285,7 +306,7 @@ function remember() {
 }
 
 // Nghe mẫu giọng / nghe thử ở Tạo sách → tạm dừng sách để không chồng tiếng.
-beforeClipPlay(() => audio.pause())
+beforeClipPlay(() => pause())
 
 audio.addEventListener('loadedmetadata', () => {
   if (audio.duration && isFinite(audio.duration)) player.duration = audio.duration
@@ -320,7 +341,11 @@ audio.addEventListener('ended', () => {
   if (trackHeard >= player.duration * 0.5) markHeard(player.current) // nghe tới hết (tiểu mục ngắn, timeupdate thưa)
   if (player.current < tracks.value.length - 1) {
     load(player.current + 1)
-    void play()
+    player.playing = true
+    gapTimer = window.setTimeout(() => {
+      gapTimer = 0
+      void play()
+    }, TRACK_GAP_MS)
   } else {
     player.time = player.duration
     remember()
