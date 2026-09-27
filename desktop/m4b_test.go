@@ -59,7 +59,7 @@ func TestExportM4BVaoThuMuc(t *testing.T) {
 	outDir := t.TempDir()
 	t.Setenv(EnvM4BOut, outDir)
 
-	st, err := a.ExportM4B("sach-thu", 1.5, 2)
+	st, err := a.ExportM4B("sach-thu", 1.5, 2, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestExportM4BDuongDanFile(t *testing.T) {
 	a := m4bTestApp(t)
 	out := filepath.Join(t.TempDir(), "con", "ten-rieng.m4b")
 	t.Setenv(EnvM4BOut, out)
-	if _, err := a.ExportM4B("sach-thu", 1.5, 2); err != nil {
+	if _, err := a.ExportM4B("sach-thu", 1.5, 2, true); err != nil {
 		t.Fatal(err)
 	}
 	if st := waitM4B(t, a); !st.Done || st.Path != out {
@@ -96,7 +96,7 @@ func TestExportM4BTuChoiKhiDangXuat(t *testing.T) {
 	a := m4bTestApp(t)
 	t.Setenv(EnvM4BOut, t.TempDir())
 	a.m4b = &m4bJob{cancel: func() {}, status: M4BStatus{Running: true, Slug: "khac"}}
-	if _, err := a.ExportM4B("sach-thu", 1.5, 2); err == nil || !strings.Contains(err.Error(), "đang xuất") {
+	if _, err := a.ExportM4B("sach-thu", 1.5, 2, true); err == nil || !strings.Contains(err.Error(), "đang xuất") {
 		t.Fatalf("err = %v, muốn từ chối vì đang xuất cuốn khác", err)
 	}
 }
@@ -104,10 +104,10 @@ func TestExportM4BTuChoiKhiDangXuat(t *testing.T) {
 func TestExportM4BSachKhongCo(t *testing.T) {
 	a := m4bTestApp(t)
 	t.Setenv(EnvM4BOut, t.TempDir())
-	if _, err := a.ExportM4B("khong-co", 1.5, 2); err == nil {
+	if _, err := a.ExportM4B("khong-co", 1.5, 2, true); err == nil {
 		t.Fatal("sách không có phải báo lỗi")
 	}
-	if _, err := a.ExportM4B("../x", 1.5, 2); err == nil {
+	if _, err := a.ExportM4B("../x", 1.5, 2, true); err == nil {
 		t.Fatal("slug lạ phải báo lỗi")
 	}
 }
@@ -133,7 +133,23 @@ func TestM4BGaps(t *testing.T) {
 		}
 	}
 	a := m4bTestApp(t)
-	if _, err := a.ExportM4B("sach-thu", 11, 2); err == nil {
+	if _, err := a.ExportM4B("sach-thu", 11, 2, true); err == nil {
 		t.Error("ExportM4B với quãng nghỉ 11 giây phải báo lỗi")
+	}
+}
+
+// Hộp "Nghe trên điện thoại" lưu thẳng vào Tải về, không mở hộp lưu file.
+func TestM4BTargetKhongHoi(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv(EnvM4BOut, "")
+	if err := os.MkdirAll(filepath.Join(home, "Downloads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	a := &App{}
+	out, reveal, err := a.m4bTarget("Sách: thử", false)
+	if err != nil || reveal || out != filepath.Join(home, "Downloads", "Sách thử.m4b") {
+		t.Fatalf("m4bTarget = %q, %v, %v", out, reveal, err)
 	}
 }

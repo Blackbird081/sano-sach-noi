@@ -55,11 +55,12 @@ type m4bJob struct {
 	status M4BStatus
 }
 
-// ExportM4B hỏi nơi lưu (mặc định <Tên sách>.m4b trong thư mục Tải về) rồi
-// xuất cuốn slug trong nền, nghỉ sectionSec giây giữa các tiểu mục và
-// chapterSec giây trước chương mới (0–10, làm tròn 0,1). Người dùng huỷ hộp
-// lưu → (nil, nil).
-func (a *App) ExportM4B(slug string, sectionSec, chapterSec float64) (*M4BStatus, error) {
+// ExportM4B xuất cuốn slug thành M4B trong nền, nghỉ sectionSec giây giữa các
+// tiểu mục và chapterSec giây trước chương mới (0–10, làm tròn 0,1). ask: hỏi
+// nơi lưu (mặc định <Tên sách>.m4b trong Tải về; huỷ hộp lưu → (nil, nil)).
+// Không ask: lưu thẳng <Tên sách>.m4b trong Tải về (ghi đè bản cũ cùng tên) —
+// hộp "Nghe trên điện thoại" dùng cách này.
+func (a *App) ExportM4B(slug string, sectionSec, chapterSec float64, ask bool) (*M4BStatus, error) {
 	gaps, err := m4bGaps(sectionSec, chapterSec)
 	if err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func (a *App) ExportM4B(slug string, sectionSec, chapterSec float64) (*M4BStatus
 	if ffmpeg == "" {
 		return nil, fmt.Errorf("không tìm thấy ffmpeg. %s", tts.FFmpegHint(runtime.GOOS))
 	}
-	out, reveal, err := a.m4bTarget(d.Title)
+	out, reveal, err := a.m4bTarget(d.Title, ask)
 	if err != nil || out == "" {
 		return nil, err
 	}
@@ -213,6 +214,22 @@ func (a *App) RevealM4B() error {
 	return openPath(st.Path, true)
 }
 
+// CanAirDrop — máy này có AirDrop (macOS) để hộp "Nghe trên điện thoại" hiện nút gửi.
+func (a *App) CanAirDrop() bool { return airDropSupported }
+
+// AirDropM4B mở bảng AirDrop cho file M4B vừa xuất (chỉ file của lượt xuất gần
+// nhất, không nhận đường dẫn từ giao diện).
+func (a *App) AirDropM4B() error {
+	st := a.M4BStatus()
+	if st == nil || !st.Done {
+		return errors.New("chưa có file M4B nào vừa xuất")
+	}
+	if !fileExists(st.Path) {
+		return fmt.Errorf("không thấy file %s (đã bị chuyển hoặc xoá?)", st.Path)
+	}
+	return airDrop(st.Path)
+}
+
 func (a *App) exportingM4B() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -221,13 +238,20 @@ func (a *App) exportingM4B() bool {
 
 // m4bTarget chọn nơi lưu: biến SANO_M4B_OUT (dev/test) hoặc hộp lưu file của
 // hệ điều hành. Trả reveal = có mở thư mục khi xong không. Huỷ → ("", false, nil).
-func (a *App) m4bTarget(title string) (string, bool, error) {
+func (a *App) m4bTarget(title string, ask bool) (string, bool, error) {
 	name := m4b.FileName(title)
 	if v := strings.TrimSpace(os.Getenv(EnvM4BOut)); v != "" {
 		if strings.EqualFold(filepath.Ext(v), ".m4b") {
 			return v, false, nil
 		}
 		return filepath.Join(v, name), false, nil
+	}
+	if !ask {
+		dir := downloadsDir()
+		if dir == "" {
+			return "", false, errors.New("không tìm thấy thư mục Tải về")
+		}
+		return filepath.Join(dir, name), false, nil
 	}
 	if a.ctx == nil {
 		return "", false, errors.New("ứng dụng chưa khởi động xong")

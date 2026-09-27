@@ -50,6 +50,7 @@ Sano gọi ffmpeg như một chương trình riêng (chuyển WAV → MP3), khô
 - Wails v2 — MIT — https://github.com/wailsapp/wails
 - Vue 3 — MIT — https://github.com/vuejs/core
 - Tailwind CSS — MIT — https://github.com/tailwindlabs/tailwindcss
+- node-qrcode (mã QR tải app nghe sách) — MIT — https://github.com/soldair/node-qrcode
 - lucide (biểu tượng) — ISC — https://github.com/lucide-icons/lucide
 - golang.org/x/sys — BSD-3-Clause — https://go.googlesource.com/sys
 - github.com/ulikunitz/xz (giải nén bản ffmpeg Linux) — BSD-3-Clause — https://github.com/ulikunitz/xz
