@@ -93,7 +93,7 @@ Sano đọc cả cuốn và chạy nền: màn hình hiện phần trăm, số m
 
 <img class="app-shot" src="./images/app/b6-render.jpg" alt="Đang render cả cuốn: phần trăm và từng chương" width="1600" height="955">
 
-Xong, sách tự vào [Thư viện](./thu-vien). Các nút ngay sau đó: **Nghe ngay**, **Xuất file M4B** (để [nghe trên điện thoại](./nghe-tren-dien-thoai)), **Xuất gói zip**, **Mở thư mục**, **Tạo cuốn khác**.
+Xong, sách tự vào [Thư viện](./thu-vien). Các nút ngay sau đó: **Nghe ngay**, **Nghe trên điện thoại** (tạo file M4B, xem [nghe trên điện thoại](./nghe-tren-dien-thoai)), **Xuất gói zip**, **Mở thư mục**, **Tạo cuốn khác**.
 
 ## Nghe thử một cuốn Sano đã tạo
 

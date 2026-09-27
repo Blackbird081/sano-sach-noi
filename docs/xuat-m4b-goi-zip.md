@@ -11,10 +11,10 @@ Sano có hai cách mang sách ra khỏi phần mềm: **file M4B** để nghe �
 
 M4B là định dạng sách nói chuẩn: **một file duy nhất** chứa cả cuốn, có mục lục chương, tên sách, tác giả và ảnh bìa. App sách nói trên điện thoại và màn hình xe (CarPlay, Android Auto) đọc được.
 
-1. Mở cuốn sách trong Thư viện → bấm **Xuất M4B** (hoặc **Xuất file M4B** ngay khi render xong).
-2. Chọn nơi lưu. Mặc định là thư mục Tải về, tên file là tên sách.
-3. Sano xuất chạy nền, hiện phần trăm, bấm **Huỷ** được (không để lại file dở).
-4. Xong, Sano mở thư mục và chọn sẵn file.
+1. Mở cuốn sách trong Thư viện → bấm **Nghe trên điện thoại** (hoặc nút cùng tên ngay khi render xong). Lần đầu, Sano hỏi bạn dùng iPhone hay Android và chỉ cách cài app nghe BookPlayer.
+2. Sano lưu thẳng vào thư mục Tải về, tên file là tên sách (có sẵn cuốn cùng tên thì ghi đè bản cũ). Muốn lưu chỗ khác: bấm **Đổi chỗ lưu**.
+3. Sano tạo file, hiện phần trăm, bấm **Huỷ** được (không để lại file dở). Bấm **Để chạy nền** thì vẫn nghe, làm việc khác được; xong hộp tự mở lại.
+4. Xong, Sano chỉ cách chép sang iPhone hoặc Android, có nút **Gửi bằng AirDrop** (máy Mac) và **Mở thư mục chứa file**.
 
 <img class="app-shot" src="./images/app/xuat-m4b.jpg" alt="Trình phát với nút Xuất M4B, Xuất gói zip; dòng báo đã lưu file M4B kèm số mốc chương" width="1600" height="955">
 
@@ -30,7 +30,7 @@ File M4B giữ quãng nghỉ lúc xuất. Đổi mức, hoặc file xuất bằn
 Tiếp theo: [chép file M4B sang điện thoại](./nghe-tren-dien-thoai).
 
 ::: tip File M4B mẫu
-Muốn thử xuất M4B mà chưa tạo cuốn nào? Thư viện có sẵn 3 cuốn mẫu ngay lần đầu mở, cuốn ngắn nhất là "Giới thiệu Sano" (3 phút). Mở cuốn đó, bấm **Xuất M4B** rồi chép sang điện thoại để xem.
+Muốn thử xuất M4B mà chưa tạo cuốn nào? Thư viện có sẵn 3 cuốn mẫu ngay lần đầu mở, cuốn ngắn nhất là "Giới thiệu Sano" (3 phút). Mở cuốn đó, bấm **Nghe trên điện thoại** rồi làm theo hướng dẫn.
 :::
 
 ## Gói zip

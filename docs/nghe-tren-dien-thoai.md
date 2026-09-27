@@ -7,9 +7,9 @@ description: 'Làm sách nói bằng AI với Sano rồi chép sang iPhone, Andr
 
 Sano xuất cả cuốn thành **một file `.m4b`**: có mục lục chương, tên sách, tác giả và ảnh bìa. Chép file này vào điện thoại là nghe được bằng app sách nói, không cần mạng, không cần máy chủ. App nghe tự nhớ chỗ đang nghe dở. Nghe khi lái xe ô tô qua CarPlay, Android Auto: xem [Nghe khi lái xe ô tô](./nghe-khi-lai-xe).
 
-## Xuất file M4B
+## Tạo file cho điện thoại
 
-Mở cuốn sách trong **Thư viện** → **Xuất M4B** (hoặc **Xuất file M4B** ngay khi render xong) → chọn nơi lưu (mặc định thư mục Tải về). Xong, Sano mở thư mục và chọn sẵn file. Chi tiết ở [Xuất M4B và gói zip](./xuat-m4b-goi-zip).
+Mở cuốn sách trong **Thư viện** → bấm **Nghe trên điện thoại** (hoặc nút cùng tên ngay khi render xong). Từ 0.1.16, Sano dẫn từng bước ngay trong phần mềm: chọn iPhone hay Android, quét mã QR để cài BookPlayer, tạo file (lưu vào thư mục Tải về), rồi chỉ cách chép sang máy (AirDrop trên Mac, Zalo, Google Drive, cáp USB). Lần sau bấm là tạo file luôn. Chi tiết ở [Xuất M4B và gói zip](./xuat-m4b-goi-zip).
 
 ::: tip Mẹo
 Dung lượng khoảng **29 MB cho mỗi giờ nghe** (AAC 64 kbps), đủ rõ cho giọng đọc.

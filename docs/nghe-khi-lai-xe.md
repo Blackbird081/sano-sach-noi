@@ -11,7 +11,7 @@ Sách nằm sẵn trong điện thoại nên nghe không cần mạng, đi đư�
 
 ## Chuẩn bị trước khi lên xe
 
-1. Trong Sano, mở cuốn sách → **Xuất M4B**. Được một file có mục lục chương, tên sách và bìa.
+1. Trong Sano, mở cuốn sách → **Nghe trên điện thoại**. Sano tạo một file M4B có mục lục chương, tên sách và bìa.
 2. Chép file vào điện thoại và thêm vào **BookPlayer**. Làm từng bước ở [Nghe trên điện thoại](./nghe-tren-dien-thoai).
 
 ## CarPlay (iPhone)
