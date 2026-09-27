@@ -126,15 +126,16 @@ async function act(fn: (slug: string) => Promise<void>) {
 <template>
   <LyricsPanel v-if="lyricsOpen && player.detail" @close="lyricsOpen = false" />
   <section v-else class="flex-1 flex min-h-0">
-    <div class="flex-1 flex flex-col p-6 min-w-0">
-      <button class="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground w-fit" @click="go('library')"><ChevronLeft class="w-4 h-4" /> Thư viện</button>
+    <div class="flex-1 flex flex-col p-6 min-w-0 min-h-0">
+      <button class="shrink-0 text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground w-fit" @click="go('library')"><ChevronLeft class="w-4 h-4" /> Thư viện</button>
       <div v-if="!player.detail || player.slug !== state.playerSlug" class="flex-1 grid place-items-center text-sm text-muted-foreground">
         <span v-if="player.error" class="text-destructive">{{ player.error }}</span>
         <span v-else-if="!state.playerSlug">Chọn một cuốn trong thư viện để nghe.</span>
         <span v-else class="flex items-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> Đang mở sách…</span>
       </div>
-      <div v-else class="flex-1 flex flex-col items-center justify-center">
-        <div class="aspect-[3/4] rounded-xl shadow-2xl overflow-hidden" :class="bookHasLyrics ? 'w-40' : 'w-48'">
+      <!-- Cửa sổ thấp: phần này tự cuộn (bìa thu nhỏ trước), hàng nút + tiến độ xuất M4B ở dưới luôn hiện. -->
+      <div v-else class="flex-1 min-h-0 overflow-y-auto -mx-6 px-6"><div class="min-h-full flex flex-col items-center justify-center py-4">
+        <div class="aspect-[3/4] rounded-xl shadow-2xl overflow-hidden shrink-0 [@media(max-height:820px)]:w-32 [@media(max-height:700px)]:w-24" :class="bookHasLyrics ? 'w-40' : 'w-48'">
           <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
           <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
         </div>
@@ -193,7 +194,7 @@ async function act(fn: (slug: string) => Promise<void>) {
               :class="pauseOpen ? 'border-foreground/40 bg-muted' : 'border-border'" @click="pauseOpen = !pauseOpen">
               <Timer class="w-3.5 h-3.5" />{{ pauseLabel }}<ChevronDown class="w-3 h-3 text-muted-foreground" />
             </button>
-            <div v-if="pauseOpen" role="listbox" aria-label="Quãng nghỉ cho cuốn này" class="absolute bottom-full left-0 mb-2 w-72 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
+            <div v-if="pauseOpen" role="listbox" aria-label="Quãng nghỉ cho cuốn này" class="absolute bottom-full left-0 mb-2 w-72 max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
               <div class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quãng nghỉ cho cuốn này</div>
               <button role="option" :aria-selected="!mine" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted" :class="!mine && 'font-medium'" @click="pickPause('global')">
                 <span class="text-sm">Theo cài đặt chung ({{ levelLabel(pauseState.global.level) }})<span class="block text-[11px] font-normal text-muted-foreground">{{ fmtGap(pauseState.global.section) }} giữa tiểu mục · {{ fmtGap(pauseState.global.chapter) }} sang chương</span></span>
@@ -216,8 +217,8 @@ async function act(fn: (slug: string) => Promise<void>) {
         </div>
         <p v-if="pauseMsg" class="mt-3 text-xs text-muted-foreground flex items-center gap-1.5"><Check class="w-3.5 h-3.5" /> {{ pauseMsg }}</p>
         <p v-if="player.error || actionError" class="mt-3 text-sm text-destructive">{{ player.error || actionError }}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+      </div></div>
+      <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Button variant="outline" size="sm" :disabled="!player.detail || m4bBusy()" title="Một file có mục lục chương và bìa — chép sang điện thoại nghe bằng app sách nói bất kỳ" @click="startM4B(state.playerSlug)"><Download class="w-4 h-4" /> Xuất M4B</Button>
         <Button variant="outline" size="sm" :disabled="!player.detail?.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="act(revealBookZip)"><Package class="w-4 h-4" /> Xuất gói zip</Button>
         <Button variant="ghost" size="sm" :disabled="!player.detail" @click="act(openBookFolder)"><FolderOpen class="w-4 h-4" /> Mở thư mục</Button>
