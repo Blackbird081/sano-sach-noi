@@ -61,10 +61,41 @@ watch(midEl, (el, old) => {
   midRO.observe(el)
 })
 onBeforeUnmount(() => midRO?.disconnect())
+// Bìa to nhất vừa chỗ trống. Đo thật phần còn lại của cách xếp Rộng: khối tên sách
+// (titleH) và phần dưới (lời đọc, thanh thời gian, hàng nút). Rộng: bìa giữa, trên
+// khối tên. Vừa: bìa bên trái khối tên nên được cao hơn. Chọn cách cho bìa to hơn;
+// bìa Rộng từ WIDE_MIN px là giữ Rộng (bìa giữa đẹp hơn khi đủ lớn).
+const WIDE_MIN = 180
+const SIDE_MIN = 96
+const restH = ref(0) // phần còn lại của cách xếp Rộng (không tính bìa), đo thật
+const titleH = ref(0) // khối tên sách, giọng, tiểu mục (kể cả khoảng cách trên)
+const coverMax = computed(() => (bookHasLyrics.value ? 240 : 300))
+const rest = computed(() => restH.value || (bookHasLyrics.value ? 310 : 210))
+const coverH = computed(() => Math.floor(Math.min(coverMax.value, midH.value - rest.value - 16)))
+const sideCoverH = computed(() => Math.floor(Math.min(220, midH.value - (rest.value - (titleH.value || 84)) - 16)))
 const fit = computed<'wide' | 'medium' | 'narrow'>(() => {
-  const [wide, medium] = bookHasLyrics.value ? [540, 360] : [440, 240]
-  return midH.value >= wide ? 'wide' : midH.value >= medium ? 'medium' : 'narrow'
+  if (coverH.value >= WIDE_MIN || (coverH.value >= SIDE_MIN && coverH.value >= sideCoverH.value)) return 'wide'
+  return sideCoverH.value >= SIDE_MIN ? 'medium' : 'narrow'
 })
+// Đo lại phần còn lại mỗi khi đang ở cách xếp Rộng (đổi sách, có / không lời đọc, lỗi).
+function measureRest() {
+  const el = midEl.value
+  if (!el || fit.value !== 'wide') return
+  let h = 0 // mọi thứ trừ bìa
+  let t = 0 // khối tên sách: các dòng H2/P đứng trước khung Lời đọc
+  let beforeLyrics = true
+  for (const c of Array.from(el.children) as HTMLElement[]) {
+    const cs = getComputedStyle(c)
+    if (c.dataset.cover !== undefined || cs.position === 'absolute' || cs.display === 'none') continue
+    const ch = c.offsetHeight + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom)
+    h += ch
+    if (c.tagName === 'BUTTON' || c.tagName === 'DIV') beforeLyrics = false
+    else if (beforeLyrics) t += ch
+  }
+  if (Math.abs(h - restH.value) > 1) restH.value = h
+  if (Math.abs(t - titleH.value) > 1) titleH.value = t
+}
+watch([midH, fit, bookHasLyrics, () => player.detail?.slug, () => player.error], () => void nextTick(measureRest))
 
 // Quãng nghỉ riêng cuốn đang nghe (wireframe D9); null = theo cài đặt chung.
 const pauseOpen = ref(false)
@@ -178,7 +209,7 @@ async function act(fn: (slug: string) => Promise<void>) {
            không cuộn, không cắt. Menu tốc độ / Nghỉ được tràn ra ngoài cột (không overflow). -->
       <div v-else ref="midEl" data-fit-check="mid" class="relative flex-1 min-h-0 flex flex-col items-center justify-center py-2">
         <template v-if="fit === 'wide'">
-          <div class="aspect-[3/4] rounded-xl shadow-2xl overflow-hidden shrink-0" :class="bookHasLyrics ? 'w-36' : 'w-44'">
+          <div data-cover class="rounded-xl shadow-2xl overflow-hidden shrink-0" :style="{ height: coverH + 'px', width: Math.round(coverH * 0.75) + 'px' }">
             <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
             <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
           </div>
@@ -190,7 +221,7 @@ async function act(fn: (slug: string) => Promise<void>) {
           <p class="text-sm text-muted-foreground max-w-md truncate" :title="track?.title">{{ track?.title }}</p>
         </template>
         <div v-else class="w-full max-w-md flex items-center gap-4 shrink-0">
-          <div v-if="fit === 'medium'" class="w-20 aspect-[3/4] rounded-lg shadow-lg overflow-hidden shrink-0">
+          <div v-if="fit === 'medium'" class="rounded-lg shadow-lg overflow-hidden shrink-0" :style="{ height: sideCoverH + 'px', width: Math.round(sideCoverH * 0.75) + 'px' }">
             <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
             <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
           </div>
