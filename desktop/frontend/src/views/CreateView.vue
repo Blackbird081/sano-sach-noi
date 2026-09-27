@@ -101,7 +101,7 @@ function jump(n: number) {
       <Button variant="ghost" :disabled="state.step === 1 && state.levelScreen === 'choose'" @click="back"><ChevronLeft class="w-4 h-4" /> Quay lại</Button>
       <p v-if="state.renderError" class="text-sm text-destructive truncate" :title="state.renderError">{{ state.renderError }}</p>
       <label v-else-if="state.step === 6" class="flex-1 min-w-0 flex cursor-pointer items-center justify-end gap-2.5 rounded-md border px-3 py-2 text-sm"
-        :class="rightsOk ? 'border-primary/40 bg-primary/5' : 'border-rag-amber/60 bg-rag-amber/10'"
+        :class="rightsOk ? 'border-border' : 'border-rag-amber/60 bg-rag-amber/10'"
         title="Tài liệu của tôi, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép">
         <input :checked="rightsOk" type="checkbox" class="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" @change="toggleRights" />
         <span class="min-w-0">
