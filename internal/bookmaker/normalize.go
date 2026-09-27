@@ -105,7 +105,7 @@ func normalizeReadingScript(original string) string {
 //   - mở rộng viết tắt (vd. → ví dụ, TP.HCM → Thành phố Hồ Chí Minh)
 //   - đọc viết tắt theo từ điển cách đọc (vd "KPI" → "ca pê i")
 //   - văn nói: "&" → "và", mũi tên → "dẫn tới", "/" giữa chữ theo ngữ cảnh,
-//     khoảng số nhỏ "2-3" → "2 đến 3" (xem spoken.go)
+//     khoảng số nhỏ "2-3" → "2 đến 3", dấu ":" → ngắt câu (xem spoken.go)
 //   - số La Mã trong tiêu đề chương → chữ ("Chương I" → "Chương một")
 //   - ký hiệu xếp loại A-/B+ → "A trừ"/"B cộng"
 //   - gộp khoảng trắng thừa nhưng giữ xuống dòng giữa các đoạn
@@ -123,6 +123,7 @@ func (n *Normalizer) script(original string) string {
 	s = expandArrows(s)
 	s = expandSlashes(s)
 	s = expandSmallRanges(s)
+	s = expandColons(s)
 	s = expandHeadingRomans(s)
 	s = expandGradeSigns(s)
 	s = expandMarketingP(s)

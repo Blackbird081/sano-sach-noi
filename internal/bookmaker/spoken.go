@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Luật "văn nói": đổi văn viết để đọc bằng mắt thành lời đọc trôi chảy. Chỉ
@@ -277,4 +278,53 @@ func expandSmallRanges(s string) string {
 		s = next
 	}
 	return s
+}
+
+// colonRe — dấu hai chấm cùng khoảng trắng sau nó (không vượt xuống dòng).
+var colonRe = regexp.MustCompile(`:[ \t]*`)
+
+// expandColons đổi dấu hai chấm thành ngắt câu. v3 Turbo nghỉ ở ":" chỉ ngang dấu
+// phẩy (~0,25 s, đo 09/2026) nên "một nguyên tắc: phục vụ..." nghe như đọc liền;
+// dấu chấm cho khoảng nghỉ ~0,4–0,5 s đúng nhịp giới thiệu vế sau. Giữ nguyên
+// ":" giữa hai chữ số (giờ 10:30, tỉ lệ 3:1) và trong địa chỉ web ("https://").
+// Chữ đầu vế sau viết hoa cho giống đầu câu.
+func expandColons(s string) string {
+	return replaceOutside(s, urlRe, func(seg string) string {
+		locs := colonRe.FindAllStringIndex(seg, -1)
+		if locs == nil {
+			return seg
+		}
+		var b strings.Builder
+		prev := 0
+		for _, loc := range locs {
+			before, _ := utf8.DecodeLastRuneInString(seg[:loc[0]])
+			after, _ := utf8.DecodeRuneInString(seg[loc[1]:])
+			if loc[1] == loc[0]+1 && unicode.IsDigit(before) && unicode.IsDigit(after) {
+				continue // 10:30, 3:1
+			}
+			head := strings.TrimRight(seg[prev:loc[0]], " \t")
+			b.WriteString(head)
+			rest := seg[loc[1]:]
+			switch {
+			case head == "":
+				// ":" đứng đầu dòng: chỉ bỏ ":"
+			case rest == "" || rest[0] == '\n':
+				if !strings.ContainsAny(lastRune(head), ".!?;,") {
+					b.WriteByte('.')
+				}
+			case strings.ContainsAny(lastRune(head), ".!?;,"):
+				b.WriteByte(' ') // ngay sau dấu câu khác: bỏ ":", giữ dấu sẵn có
+			default:
+				b.WriteString(". ")
+			}
+			if r, n := utf8.DecodeRuneInString(rest); n > 0 && unicode.IsLower(r) {
+				b.WriteRune(unicode.ToUpper(r))
+				prev = loc[1] + n
+			} else {
+				prev = loc[1]
+			}
+		}
+		b.WriteString(seg[prev:])
+		return b.String()
+	})
 }

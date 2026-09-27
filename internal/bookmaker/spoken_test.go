@@ -122,7 +122,7 @@ func TestExpandSmallRanges(t *testing.T) {
 
 func TestScript_SpokenRulesTogether(t *testing.T) {
 	in := "Các bước chính:\n\n1. Đo KPI mỗi tuần\n\n- Rà soát R&D/marketing → điều chỉnh sau 4-6 tháng"
-	want := "Các bước chính:\n\nThứ nhất, Đo ca pê i mỗi tuần\n\nRà soát a en đi, marketing, dẫn tới điều chỉnh sau 4 đến 6 tháng"
+	want := "Các bước chính.\n\nThứ nhất, Đo ca pê i mỗi tuần\n\nRà soát a en đi, marketing, dẫn tới điều chỉnh sau 4 đến 6 tháng"
 	if got := normalizeReadingScript(in); got != want {
 		t.Errorf("normalizeReadingScript =\n%q\nmuốn\n%q", got, want)
 	}
@@ -155,5 +155,23 @@ func TestExpandArrowsLongLineLinear(t *testing.T) {
 	}
 	if !strings.HasPrefix(got, "a, dẫn tới a, dẫn tới") {
 		t.Errorf("đầu kết quả = %q", got[:40])
+	}
+}
+
+func TestExpandColons(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"Nhớ một nguyên tắc: phục vụ tốt hơn mong đợi.", "Nhớ một nguyên tắc. Phục vụ tốt hơn mong đợi."},
+		{"Ba việc:lắng nghe, ghi chép", "Ba việc. Lắng nghe, ghi chép"},
+		{"Các bước chính:\n\nThứ nhất", "Các bước chính.\n\nThứ nhất"},
+		{"Lưu ý : Ghi rõ nguồn", "Lưu ý. Ghi rõ nguồn"},
+		{"Họp lúc 10:30 sáng, tỉ lệ 3:1.", "Họp lúc 10:30 sáng, tỉ lệ 3:1."},
+		{"Xem https://sepay.vn/blog", "Xem https://sepay.vn/blog"},
+		{"Ai làm?: trưởng nhóm", "Ai làm? Trưởng nhóm"},
+		{": mở đầu", "Mở đầu"},
+	}
+	for _, tc := range cases {
+		if got := expandColons(tc.in); got != tc.want {
+			t.Errorf("expandColons(%q) = %q, muốn %q", tc.in, got, tc.want)
+		}
 	}
 }
