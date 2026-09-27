@@ -1,33 +1,73 @@
 ---
-title: Làm mượt tài liệu trước khi tạo sách nói
-description: 'Dùng ChatGPT, Gemini hoặc Claude viết lại bảng, hình, danh sách trong file Word thành lời văn dễ nghe trước khi làm sách nói bằng AI với Sano. Có sẵn lời nhắc mẫu.'
+title: Ba cách đọc — làm mượt, viết lại thành văn sách nói bằng AI
+description: 'Chọn cách Sano đọc tài liệu: đọc nguyên văn, nhờ ChatGPT, Gemini hoặc Claude làm mượt bảng, hình, danh sách, hoặc viết lại thành văn sách nói nghe cuốn hút. Có sẵn prompt và skill cho AI.'
 ---
 
-# Làm mượt tài liệu trước khi tạo sách nói
+# Ba cách đọc: nguyên văn, làm mượt, viết lại
 
-Sano đọc được file Word thường. Nhưng một số thứ trong tài liệu viết để **nhìn** chứ không để **nghe**: bảng, hình, sơ đồ, danh sách gạch đầu dòng, câu kiểu "xem hình bên dưới". Sano sẽ cảnh báo khi nạp file nếu gặp những thứ này.
+Văn viết để đọc bằng mắt. Đọc to lên thường nghe chán: câu dài, bảng biểu, gạch đầu dòng, chữ viết tắt, câu kiểu "xem hình bên dưới". Vì vậy bước đầu tiên khi **Tạo sách nói** là **Cách đọc**, chọn một trong ba cấp.
 
-<img class="app-shot" src="./images/app/canh-bao-bang-hinh.jpg" alt="Cảnh báo khi nạp file có hình chưa có lời tả, kèm nút Sao chép lời nhắc mẫu" width="1056" height="426">
+| Cấp | Sano làm gì | Hợp khi | Chuẩn bị thêm |
+|---|---|---|---|
+| 1. Đọc nguyên văn | Đọc đúng từng chữ trong file Word | Bài viết, ghi chép đã dễ đọc; muốn nghe y nguyên | Không |
+| 2. Làm mượt | Nhờ AI đổi bảng, hình, danh sách, chữ viết tắt thành lời. Giữ nguyên ý và giọng tác giả | Tài liệu nhiều bảng biểu, gạch đầu dòng | Khoảng 5 phút với AI |
+| 3. Viết lại thành văn sách nói | Nhờ AI viết lại như người kể: chuyện trước, lý thuyết sau, chương ngắn, cuối chương có ba ý cần nhớ | Sách, giáo trình, tài liệu dài muốn nghe cuốn như sách nói | Khoảng 10–15 phút với AI |
 
-Cách xử lý nhanh nhất: nhờ một trợ lý AI bất kỳ (ChatGPT, Gemini, Claude…) viết lại thành bản để đọc to, rồi nạp bản đó vào Sano. Không cần tài khoản trả phí.
+Không chắc thì: sách hay tài liệu dài chọn **cấp 3**, bài ngắn đã trôi chảy chọn **cấp 1**. Sano nhớ lựa chọn cho lần sau.
 
-## Các bước
+## Nghe thử khác biệt
 
-1. Mở ChatGPT, Gemini hoặc Claude trên trình duyệt.
-2. Đính kèm file Word (hoặc dán nội dung vào khung chat).
-3. Dán **lời nhắc mẫu** ở cuối trang này rồi gửi. Trong phần mềm Sano, bước "Nạp file" có sẵn nút **Sao chép lời nhắc mẫu**.
-4. Tài liệu dài: AI sẽ làm từng chương, gõ "tiếp" để làm phần sau.
-5. Chép kết quả vào một file Word mới.
-6. Đặt kiểu chữ cho tiêu đề: dòng bắt đầu bằng `#` đặt **Heading 1** (chương), dòng bắt đầu bằng `##` đặt **Heading 2** (mục), rồi xoá các dấu `#`. Sano dựa vào Heading 1 và Heading 2 để làm mục lục.
-7. Nạp file mới vào Sano, nghe thử vài đoạn trước khi tạo cả cuốn.
+Cùng một ý, viết theo ba cách, đọc bằng giọng Hải Đăng. Trong phần mềm, mỗi cấp cũng có nút **Nghe mẫu**.
+
+<p><b>Cấp 1 · Đọc nguyên văn</b><br><audio controls preload="none" src="/sano-sach-noi/audio/cach-doc-cap-1.mp3"></audio></p>
+<p><b>Cấp 2 · Làm mượt</b><br><audio controls preload="none" src="/sano-sach-noi/audio/cach-doc-cap-2.mp3"></audio></p>
+<p><b>Cấp 3 · Viết lại thành văn sách nói</b><br><audio controls preload="none" src="/sano-sach-noi/audio/cach-doc-cap-3.mp3"></audio></p>
+
+## Nhờ AI làm cấp 2 hoặc cấp 3
+
+Dùng Claude, ChatGPT hoặc Gemini trên trình duyệt, bản miễn phí cũng được. Chọn cấp 2 hoặc 3 thì Sano hiện 3 bước:
+
+1. Chọn AI bạn dùng, bấm **Sao chép prompt** (câu lệnh gửi cho AI).
+2. Bấm **Mở Claude / ChatGPT / Gemini**, đính kèm file Word của bạn, dán prompt rồi gửi. Tài liệu dài thì AI làm từng phần, gõ "tiếp" cho tới khi xong.
+3. Lấy kết quả về Sano:
+   - **Claude, ChatGPT**: tải file Word AI tạo về, bấm **Tiếp: nạp file AI tạo** rồi nạp file đó. Prompt đã dặn AI đặt sẵn tên sách, chương (Heading 1), mục (Heading 2), bạn không phải chỉnh gì.
+   - **Gemini**: bản miễn phí không tạo được file Word, nên prompt cho Gemini dặn trả văn bản trong một khung. Bấm nút sao chép ở góc khung đó, sang bước Nạp file dán vào ô **Dán văn bản AI trả về**. Dòng `%` là tên sách, `#` là chương, `##` là mục.
+
+Cấp 3 có thêm **prompt soát lại** (không bắt buộc): gửi cho AI cả file gốc và bản viết lại, AI đối chiếu, bổ sung chỗ mất ý và sửa chỗ tự thêm.
+
+::: tip AI từ chối hoặc dừng giữa chừng
+Thỉnh thoảng AI trả lời "không giúp được" khi chưa đọc xong file đính kèm, hoặc hứa tạo file rồi dừng. Bấm tạo lại câu trả lời, hoặc mở cuộc trò chuyện mới và đính kèm lại file. Với Gemini, gõ thêm: "Hãy trả toàn bộ nội dung sách trong một khối mã như yêu cầu."
+:::
+
+## Nạp skill cho AI: làm một lần, dùng mãi
+
+Làm sách thường xuyên thì nạp hướng dẫn của Sano cho AI một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2"), không phải dán prompt. Trong phần mềm, bấm **Nạp skill cho AI** ở màn nhờ AI để tải file.
+
+- **Claude**: tải `sano-sach-noi.zip` (không cần giải nén), mở claude.ai → **Cài đặt** → **Capabilities** → **Skills** → **Tải lên**. Skill tự tạo cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution). Skill này cũng dùng được trong Claude Code.
+- **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm.
+- **Gemini**: tải `sano-huong-dan-ai.txt`, mở **Gem** → **Gem mới** tên "Sano – sách nói", thêm file ở mục **Kiến thức** (Knowledge), dán câu ngắn Sano đưa vào ô **Hướng dẫn** rồi **Lưu**. Gem dùng được với tài khoản Google miễn phí.
+
+Tên các mục trong Claude, ChatGPT, Gemini có thể đổi theo phiên bản.
 
 ## Lưu ý
 
-- Đọc lại bản AI viết, nhất là số liệu và tên riêng. AI đôi khi tóm tắt hoặc tự thêm ý dù đã dặn.
+- Đọc lại bản AI viết, nhất là số liệu và tên riêng. AI đôi khi tóm tắt hoặc tự thêm ý dù đã dặn. Nghe thử vài đoạn ở bước **Nghe thử** trước khi tạo cả cuốn.
+- Bản viết lại (cấp 3) hợp với tài liệu của bạn hoặc để nghe riêng, không để phát hành lại sách của người khác.
 - Tài liệu riêng tư hoặc nhạy cảm: cân nhắc trước khi gửi lên dịch vụ AI trên mạng.
+- Không muốn dùng AI: chọn cấp 1. Sano vẫn cảnh báo khi nạp file có bảng, hình hay tiêu đề gõ tay để bạn tự sửa trong Word.
 
-## Lời nhắc mẫu
+## Các prompt
 
-Nội dung đầy đủ ở file [`prompts/loi-nhac-mau.txt`](prompts/loi-nhac-mau.txt). Phần mềm Sano dùng đúng file này.
+Phần mềm Sano dùng đúng các file dưới đây. Bản cho Gemini thay đoạn "Cách trả kết quả" bằng yêu cầu trả văn bản trong khung.
 
+::: details Cấp 3 · Viết lại thành văn sách nói — [`prompts/viet-lai-sach-noi.txt`](prompts/viet-lai-sach-noi.txt)
+<<< @/prompts/viet-lai-sach-noi.txt{txt}
+:::
+
+::: details Cấp 3 · Soát lại — [`prompts/soat-lai-sach-noi.txt`](prompts/soat-lai-sach-noi.txt)
+<<< @/prompts/soat-lai-sach-noi.txt{txt}
+:::
+
+::: details Cấp 2 · Làm mượt — [`prompts/loi-nhac-mau.txt`](prompts/loi-nhac-mau.txt)
 <<< @/prompts/loi-nhac-mau.txt{txt}
+:::

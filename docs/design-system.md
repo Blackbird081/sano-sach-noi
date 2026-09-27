@@ -92,7 +92,7 @@ Helper `cn()` ở `@/lib/utils` (clsx + tailwind-merge) để gộp class.
 ```
 
 - Màn cài bộ đọc (`SetupView`) và điều khoản (`TermsView`) chiếm cả cửa sổ, không có thanh bên.
-- Tạo sách: thanh 6 bước ở đầu (Nạp file → Mục lục → Giọng đọc → Lời mở đầu → Nghe thử → Render).
+- Tạo sách: thanh 7 bước ở đầu (Cách đọc → Nạp file → Mục lục → Giọng đọc → Lời mở đầu → Nghe thử → Render).
 - Cửa sổ tối thiểu ~1100×720; lưới sách tự dàn cột theo bề rộng.
 
 ---

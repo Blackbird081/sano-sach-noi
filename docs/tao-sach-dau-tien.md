@@ -5,10 +5,10 @@ description: 'Hướng dẫn từng bước làm sách nói bằng AI từ file 
 
 # Cách làm sách nói bằng AI từ file Word
 
-Trong Sano, bấm **Tạo sách nói**. Việc tạo sách gồm 6 bước: **Nạp file** → **Mục lục** → **Giọng đọc** → **Lời mở đầu** → **Nghe thử** → **Render**. Giọng đọc AI chạy ngay trên máy bạn, tài liệu không gửi đi đâu.
+Trong Sano, bấm **Tạo sách nói**. Việc tạo sách gồm 7 bước: **Cách đọc** → **Nạp file** → **Mục lục** → **Giọng đọc** → **Lời mở đầu** → **Nghe thử** → **Render**. Giọng đọc AI chạy ngay trên máy bạn, tài liệu không gửi đi đâu.
 
 ::: tip Chuẩn bị file Word
-Sano chỉ nhận file `.docx`. Đặt kiểu **Heading 1** cho tên chương và **Heading 2** cho tên mục, Sano dựa vào đó để làm mục lục. Tài liệu có nhiều bảng, hình, sơ đồ thì nên [làm mượt tài liệu](./lam-muot-tai-lieu) trước.
+Sano chỉ nhận file `.docx`. Đặt kiểu **Heading 1** cho tên chương và **Heading 2** cho tên mục, Sano dựa vào đó để làm mục lục. Tài liệu có nhiều bảng, hình, sơ đồ, hoặc muốn nghe cuốn hơn, chọn cấp 2 hay cấp 3 ở bước [Cách đọc](./lam-muot-tai-lieu).
 :::
 
 ## Chuẩn bị file Word {#chuan-bi-file}
@@ -19,9 +19,13 @@ Cách nhanh nhất là làm theo **file Word mẫu**: đã đặt sẵn đúng k
 
 <a class="sano-btn outline" href="/sano-sach-noi/mau/Mau-sach-noi-Sano.docx" download>Tải file Word mẫu (.docx)</a>
 
-Trong phần mềm, bước **Nạp file** cũng có nút **Tải file Word mẫu**. Tài liệu có bảng, hình, danh sách: xem thêm [Làm mượt tài liệu](./lam-muot-tai-lieu).
+Trong phần mềm, bước **Nạp file** cũng có nút **Tải file Word mẫu**. Tài liệu có bảng, hình, danh sách: xem thêm [Ba cách đọc](./lam-muot-tai-lieu).
 
-## 1. Nạp file
+## 1. Cách đọc
+
+Chọn một trong ba cấp: **Đọc nguyên văn** (Sano đọc đúng từng chữ), **Làm mượt** (nhờ AI đổi bảng, hình, danh sách thành lời, giữ nguyên ý), hoặc **Viết lại thành văn sách nói** (nhờ AI viết lại như người kể, nghe hấp dẫn nhất). Mỗi cấp có nút **Nghe mẫu**. Chọn cấp 2 hoặc 3, Sano hướng dẫn 3 bước nhờ Claude, ChatGPT hoặc Gemini, có sẵn prompt để sao chép. Chi tiết ở trang [Ba cách đọc](./lam-muot-tai-lieu).
+
+## 2. Nạp file
 
 Kéo file `.docx` vào ô **Kéo file .docx vào đây**, hoặc bấm vào ô để chọn file. Muốn thử trước thì bấm **Thử với tài liệu mẫu** (nạp thẳng file Word mẫu), hoặc **Tải file Word mẫu** để lưu về máy làm theo.
 
@@ -32,7 +36,7 @@ Sano đọc file rồi cho biết số chương, số tiểu mục, số ký t�
 - đoạn chữ to đậm trông như tiêu đề nhưng không dùng kiểu Heading,
 - chữ viết tắt chưa có cách đọc.
 
-Cạnh cảnh báo có nút **Sao chép lời nhắc mẫu** để nhờ ChatGPT, Gemini hoặc Claude viết lại tài liệu thành bản dễ nghe.
+Muốn đọc đủ phần này, chọn cấp 2 **Làm mượt** ở bước Cách đọc. Đã chọn cấp 2 hoặc 3 thì nạp file AI tạo, hoặc bấm **Dán văn bản AI trả về** nếu AI không tạo được file Word (như Gemini bản miễn phí).
 
 Điền **Tên sách** (bắt buộc), **Tác giả** và **Danh mục** (không bắt buộc). **Ảnh bìa** nhận jpg, png, webp tối đa 10 MB; không chọn thì Sano tự tạo bìa theo tên sách.
 
@@ -42,7 +46,7 @@ Cạnh cảnh báo có nút **Sao chép lời nhắc mẫu** để nhờ ChatGPT
 File Word có mật khẩu hoặc khoá bảo vệ sẽ bị từ chối. Sano không có tính năng gỡ khoá.
 :::
 
-## 2. Mục lục
+## 3. Mục lục
 
 Tick hoặc bỏ tick từng chương, từng mục để chọn phần sẽ đọc. Trang mục lục gốc trong file được bỏ tick sẵn. Sano ước tính thời lượng nghe và thời gian render trên máy của bạn.
 
@@ -50,13 +54,13 @@ Số đầu tiêu đề (như "1.2.") mặc định không đọc. Muốn đọc
 
 <img class="app-shot" src="./images/app/b2-muc-luc.jpg" alt="Bước Mục lục: tick chọn chương, mục sẽ đọc, ước tính thời lượng" width="1600" height="955">
 
-## 3. Giọng đọc
+## 4. Giọng đọc
 
 Chọn một trong 25 giọng Việt. Giọng gom theo miền: **Miền Bắc** (15), **Miền Trung** (2), **Miền Nam** (8) hoặc **Tất cả**, lọc thêm giọng **Nam** / **Nữ**. Sano mở sẵn đúng miền bạn chọn lần trước, giọng của cuốn tạo gần nhất có nhãn **Dùng lần trước**. Mỗi giọng có nút **Nghe mẫu**; câu nghe mẫu sửa được. Giọng mặc định là **Hải Đăng** (nam, miền Bắc, giọng tự nhiên).
 
 <img class="app-shot" src="./images/app/b3-giong-doc.jpg" alt="Bước Giọng đọc: chọn miền Bắc, Trung, Nam, lọc giọng nam nữ, nút Nghe mẫu" width="1600" height="955">
 
-## 4. Lời mở đầu
+## 5. Lời mở đầu
 
 Sano tự điền lời mở đầu đọc trước chương 1, ví dụ:
 
@@ -66,7 +70,7 @@ Sửa được, hoặc bỏ tick **Có lời mở đầu** nếu không cần. G
 
 <img class="app-shot" src="./images/app/b4-loi-mo-dau.jpg" alt="Bước Lời mở đầu: đoạn đọc trước chương 1, sửa được, nút Nghe lời mở đầu" width="1600" height="955">
 
-## 5. Nghe thử
+## 6. Nghe thử
 
 Sano tự đọc lời mở đầu và 2 mục đầu tiên (mỗi đoạn khoảng 500 ký tự đầu). Lần đầu mất khoảng nửa phút để nạp bộ đọc.
 
@@ -78,7 +82,7 @@ Cuối bước, tick ô xác nhận bạn có quyền dùng tài liệu này (t�
 
 <img class="app-shot" src="./images/app/b5-nghe-thu.jpg" alt="Bước Nghe thử: nghe từng đoạn, sửa lời đọc" width="1600" height="955">
 
-## 6. Render
+## 7. Render
 
 Sano đọc cả cuốn và chạy nền: màn hình hiện phần trăm, số mục đã xong, thời gian còn lại. Bạn vẫn dùng được phần khác của Sano trong lúc chờ; thanh bên luôn có thẻ **Đang render**. Mỗi lúc render một cuốn.
 

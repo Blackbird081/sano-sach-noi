@@ -49,7 +49,7 @@ const extraMeta: Record<string, { title: string; description: string }> = {
 const guide = [
   { text: 'Cài đặt Sano', link: '/cai-dat' },
   { text: 'Tạo sách đầu tiên', link: '/tao-sach-dau-tien' },
-  { text: 'Làm mượt tài liệu', link: '/lam-muot-tai-lieu' },
+  { text: 'Ba cách đọc (làm mượt, viết lại)', link: '/lam-muot-tai-lieu' },
   { text: 'Nghe trên điện thoại', link: '/nghe-tren-dien-thoai' },
   { text: 'Nghe khi lái xe ô tô', link: '/nghe-khi-lai-xe' },
   { text: 'Câu hỏi thường gặp', link: '/cau-hoi-thuong-gap' },
@@ -177,7 +177,7 @@ export default defineConfig({
       {
         text: 'Dùng Sano',
         items: [
-          { text: 'Làm mượt tài liệu', link: '/lam-muot-tai-lieu' },
+          { text: 'Ba cách đọc (làm mượt, viết lại)', link: '/lam-muot-tai-lieu' },
           { text: 'Nghe trên điện thoại', link: '/nghe-tren-dien-thoai' },
           { text: 'Nghe khi lái xe ô tô', link: '/nghe-khi-lai-xe' },
           { text: 'Thư viện & danh mục', link: '/thu-vien' },
