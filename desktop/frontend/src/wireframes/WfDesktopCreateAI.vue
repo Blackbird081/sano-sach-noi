@@ -35,7 +35,7 @@ type DStep = { text: string; act?: 'file' | 'open' | 'copy'; file?: string; labe
 const dlgSteps = computed<DStep[]>(() => {
   if (tool.value === 'claude') return [
     { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: 'sano-sach-noi.zip' },
-    { text: 'Mở Cài đặt → Capabilities → Skills → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Skills của Claude' },
+    { text: 'Mở Cài đặt → Customize → Skills → nút + → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Cài đặt Claude' },
   ]
   if (plan.value === 'skills') return [
     { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: 'sano-sach-noi.zip' },

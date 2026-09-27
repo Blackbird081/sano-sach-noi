@@ -68,7 +68,7 @@ export interface SkillStep {
 export const SKILL_STEPS: Record<'claude' | ChatGPTPlan, SkillStep[]> = {
   claude: [
     { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: SKILL_ZIP },
-    { text: 'Mở Cài đặt → Capabilities → Skills → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Skills của Claude', url: 'https://claude.ai/settings/capabilities' },
+    { text: 'Mở Cài đặt → Customize → Skills → nút + → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Cài đặt Claude', url: 'https://claude.ai/settings' },
   ],
   skills: [
     { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: SKILL_ZIP },
