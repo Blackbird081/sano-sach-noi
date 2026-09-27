@@ -48,6 +48,21 @@ const dlgSteps = computed<DStep[]>(() => {
   ]
 })
 
+// Câu gõ mỗi lần làm sách sau khi đã nạp skill (anh Việt chốt: nêu rõ tên skill + cấp độ).
+const phrases = computed(() => {
+  const via = tool.value === 'chatgpt' && plan.value === 'project' ? 'theo file sano-huong-dan-ai.txt' : 'dùng skill sano-sach-noi'
+  return [
+    { say: `Làm file sách nói ${via} (cấp độ 3)`, what: 'Viết lại thành văn sách nói' },
+    { say: `Làm file sách nói ${via} (cấp độ 2)`, what: 'Làm mượt, giữ nguyên ý' },
+    { say: `Soát lại file sách nói ${via}`, what: 'Gửi kèm bản gốc và bản đã viết lại' },
+  ]
+})
+const copiedSay = ref(-1)
+function copySay(i: number) {
+  copiedSay.value = i
+  setTimeout(() => (copiedSay.value = -1), 1500)
+}
+
 const tools = [
   { k: 'claude' as const, name: 'Claude', gives: 'Trả về file Word', icon: FileText },
   { k: 'chatgpt' as const, name: 'ChatGPT', gives: 'Trả về file Word', icon: FileText },
@@ -188,11 +203,11 @@ const nav = [
 
       <!-- ═══ Hộp nạp skill: theo AI đã chọn, mỗi bước có nút làm ngay tại dòng ═══ -->
       <div v-if="skill && t && !gemini" class="absolute inset-0 bg-black/40 grid place-items-center z-30" @click.self="skill = false">
-        <div class="w-[560px] rounded-xl border border-border bg-background shadow-2xl">
+        <div class="w-[640px] max-h-[680px] overflow-auto rounded-xl border border-border bg-background shadow-2xl">
           <div class="flex items-start justify-between p-5 pb-0">
             <div>
               <h2 class="font-semibold">Nạp skill làm sách nói cho {{ t.name }}</h2>
-              <p class="text-xs text-muted-foreground mt-0.5">Làm một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2").</p>
+              <p class="text-xs text-muted-foreground mt-0.5">Nạp một lần. Sau đó mỗi lần làm sách chỉ cần đính kèm file và gõ một câu có sẵn.</p>
             </div>
             <button class="text-muted-foreground" @click="skill = false"><X class="w-4 h-4" /></button>
           </div>
@@ -220,7 +235,19 @@ const nav = [
                 <Button v-else-if="st.act === 'copy'" size="sm" variant="outline" class="shrink-0 w-44" @click="copy"><component :is="copied ? Check : Copy" class="w-4 h-4" /> {{ copied ? 'Đã sao chép' : 'Sao chép câu dán' }}</Button>
               </li>
             </ol>
-            <p v-if="tool === 'chatgpt' && plan === 'project'" class="mt-2 text-xs text-muted-foreground">Câu dán: "Mỗi khi tôi gửi tài liệu để làm sách nói, làm đúng theo file sano-huong-dan-ai.txt đã đính kèm…"</p>
+            <!-- Từ nay làm sách: câu gõ mẫu -->
+            <div v-if="tool === 'claude' || plan" class="mt-4">
+              <p class="text-sm font-medium">Từ nay làm sách: mở cuộc trò chuyện mới{{ plan === 'project' ? ' trong dự án "Sano – sách nói"' : '' }}, đính kèm file Word rồi gõ:</p>
+              <ul class="mt-2 space-y-1.5">
+                <li v-for="(ph, i) in phrases" :key="i" class="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-1.5">
+                  <p class="flex-1 min-w-0 text-sm"><span class="font-medium">"{{ ph.say }}"</span> <span class="text-xs text-muted-foreground">· {{ ph.what }}</span></p>
+                  <button class="h-7 px-2.5 rounded-md border border-border bg-background text-xs flex items-center gap-1 shrink-0 hover:bg-muted" @click="copySay(i)">
+                    <component :is="copiedSay === i ? Check : Copy" class="w-3.5 h-3.5" /> {{ copiedSay === i ? 'Đã sao chép' : 'Sao chép' }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+
             <p class="mt-3 text-xs text-muted-foreground">
               <template v-if="tool === 'claude'">Mọi gói Claude, kể cả miễn phí, đều nạp được skill.</template>
               <template v-else-if="plan === 'skills'">Mục Skills của ChatGPT dùng cùng định dạng skill với Claude, nên dùng chung một file.</template>
