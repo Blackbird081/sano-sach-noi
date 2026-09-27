@@ -75,7 +75,7 @@ function retry() {
 
 <template>
   <div v-if="info" class="absolute inset-0 bg-background/70 backdrop-blur-sm grid place-items-center z-20" @keydown.esc="close">
-    <div role="dialog" aria-modal="true" aria-labelledby="upd-title" class="w-[460px] rounded-xl border border-border bg-card text-card-foreground shadow-2xl p-6">
+    <div role="dialog" aria-modal="true" aria-labelledby="upd-title" class="w-[460px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-auto rounded-xl border border-border bg-card text-card-foreground shadow-2xl p-6">
       <div class="flex items-start justify-between">
         <div class="flex items-center gap-3">
           <div class="h-10 w-10 rounded-full bg-primary/10 grid place-items-center"><ArrowUpCircle class="w-5 h-5 text-primary" /></div>
@@ -90,7 +90,8 @@ function retry() {
       <template v-if="screen === 'info'">
         <template v-if="info.notes.length">
           <p class="mt-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Có gì mới</p>
-          <ul class="mt-2 space-y-1.5 text-sm list-disc pl-5">
+          <!-- Ghi chú dài (bản 0.1.14 làm tràn nút ở 0.1.12): danh sách tự cuộn, nút luôn nằm trong khung -->
+          <ul class="mt-2 space-y-1.5 text-sm list-disc pl-5 max-h-[40vh] overflow-auto pr-1">
             <li v-for="(n, i) in info.notes" :key="i">{{ n }}</li>
           </ul>
         </template>
