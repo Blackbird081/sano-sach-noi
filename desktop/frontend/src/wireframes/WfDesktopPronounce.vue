@@ -306,7 +306,7 @@ const playing = ref(false)
                     <span v-if="d.builtin" class="text-[11px] rounded bg-muted px-1.5 py-0.5 text-muted-foreground">có sẵn</span>
                     <Play class="w-3.5 h-3.5 text-muted-foreground" /><Pencil class="w-3.5 h-3.5 text-muted-foreground" /><Trash2 v-if="!d.builtin" class="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
-                  <div class="px-3 py-2 text-xs text-muted-foreground">+ 180 từ có sẵn (CEO, CFO, HR, B2B…). Sửa từ có sẵn = ghi đè cách đọc của anh; xoá chỉ xoá được từ tự thêm.</div>
+                  <div class="px-3 py-2 text-xs text-muted-foreground">+ 65 từ có sẵn (CEO, CFO, HR, B2B…). Sửa từ có sẵn = ghi đè cách đọc của anh; xoá chỉ xoá được từ tự thêm.</div>
                 </div>
               </div>
               <p class="mt-2 text-xs text-muted-foreground">Đổi từ điển chung chỉ áp cho sách tạo sau. Sách đã tạo muốn đọc theo cách mới: Sửa sách → tab Từ điển → Lưu & đọc lại.</p>

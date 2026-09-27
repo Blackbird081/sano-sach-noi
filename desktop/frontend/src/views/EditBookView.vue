@@ -5,9 +5,9 @@
 //   (bản sửa giữ tạm khi rời màn). Dưới ô chữ luôn báo: chưa lưu / đang lưu / đã lưu xong.
 // - Thông tin & bìa: đổi tên → bìa tự vẽ vẽ lại, lời mở đầu "Cuốn sách: …" đọc lại.
 // - Giọng đọc: đổi giọng cả cuốn, chạy nền, xong hết mới thay.
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import {
-  AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Headphones, ImagePlus, Loader2, Mic, Pause, Play,
+  AlertCircle, BookA, Check, ChevronDown, Plus, Search, Trash2, ChevronLeft, ChevronRight, Headphones, ImagePlus, Loader2, Mic, Pause, Play,
   RotateCcw, Square, Wand2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -16,9 +16,10 @@ import CategoryPicker from '../components/CategoryPicker.vue'
 import { chooseCover, errText, saveBookInfo, setBookCover, speakSample, useAutoCover, type EditSection } from '../lib/backend'
 import { useClipPlayer } from '../lib/audio'
 import {
-  busySection, changeVoice, closeEdit, current, discardVoice, dropDraft, edit, fmtRemain, load, pendingIdx, reread,
-  rereadWith, runningHere, setDraft, stopEdit, type EditTab,
+  busySection, changeVoice, closeEdit, current, deleteWord, discardVoice, dropDraft, edit, fmtRemain, isStale, load, pendingIdx, reread,
+  rereadWith, sectionsWith, setDraft, setWord, stopEdit, type EditTab,
 } from '../lib/edit'
+import { WORD_HINT, globalReading, isDictWord, loadGlobalDict } from '../lib/dict'
 import { categoryCounts, seriesKey } from '../lib/find'
 import { refreshInfo } from '../lib/player'
 import { loadVoices, refreshLibrary, state } from '../lib/store'
@@ -102,6 +103,7 @@ const estSec = computed(() => {
 const changeNote = computed(() => {
   const s = sec.value
   if (!s || !dirty.value) return ''
+  if (isStale(s.index)) return 'Từ điển cách đọc đã đổi, mục này cần đọc lại.'
   const a = s.text
   const b = text.value
   if (a === b) return 'Đã sửa tiêu đề.'
@@ -307,6 +309,74 @@ const voiceRunning = computed(() => st.value?.running && st.value.kind === 'voic
 const voicePending = computed(() => !voiceRunning.value && v.value?.voiceJob ? v.value.voiceJob : null)
 const voicePct = computed(() => (st.value && st.value.total ? Math.round((st.value.finished / st.value.total) * 100) : 0))
 
+// ── Tab Từ điển (D12) ─────────────────────────────────────────────────────
+
+watch(() => edit.tab, (t) => { if (t === 'dict') void loadGlobalDict() }, { immediate: true })
+const dictSearch = ref('')
+const dictRows = computed(() =>
+  Object.entries(edit.dict)
+    .filter(([w, r]) => !dictSearch.value || (w + ' ' + r).toLowerCase().includes(dictSearch.value.toLowerCase()))
+    .sort((a, b) => a[0].localeCompare(b[0], 'vi'))
+    .map(([word, reading]) => ({ word, reading, hits: sectionsWith(word) })),
+)
+const pickedWord = ref('')
+const picked = computed(() => dictRows.value.find((r) => r.word === pickedWord.value) ?? dictRows.value[0] ?? null)
+const pickedPending = computed(() => (picked.value?.hits ?? []).filter((h) => edit.drafts[h.sec.index]))
+const editing = reactive<Record<string, string>>({})
+const dictBusy = ref('')
+const dictError = ref('')
+async function saveWord(word: string, reading: string) {
+  if (!reading.trim()) return void (dictError.value = 'Chưa gõ cách đọc.')
+  dictBusy.value = word
+  dictError.value = ''
+  try {
+    await setWord(word, reading)
+    delete editing[word]
+    pickedWord.value = word
+  } catch (e) {
+    dictError.value = errText(e)
+  } finally {
+    dictBusy.value = ''
+  }
+}
+async function removeWord(word: string) {
+  dictBusy.value = word
+  dictError.value = ''
+  try {
+    await deleteWord(word)
+  } catch (e) {
+    dictError.value = errText(e)
+  } finally {
+    dictBusy.value = ''
+  }
+}
+/** Mở ô sửa cách đọc: chọn sẵn chữ cũ để gõ đè. */
+function focusSelect({ el }: { el: unknown }) {
+  // v-model gán giá trị sau khi mount (làm mất vùng chọn) → chọn ở nhịp vẽ kế tiếp.
+  if (el instanceof HTMLInputElement) requestAnimationFrame(() => {
+    el.focus()
+    el.select()
+  })
+}
+const newWord = reactive({ open: false, word: '', reading: '' })
+async function addWord() {
+  const w = newWord.word.trim()
+  if (!isDictWord(w)) return void (dictError.value = WORD_HINT)
+  await saveWord(w, newWord.reading)
+  if (!dictError.value) Object.assign(newWord, { open: false, word: '', reading: '' })
+}
+async function sayWord(word: string, reading: string) {
+  await sample(voiceName.value, reading, 'dict-' + word)
+}
+function listenSection(s: EditSection) {
+  if (v.value) void clip.toggle('cur-' + s.stem, v.value.urls[s.stem])
+}
+const pickedEst = computed(() => {
+  const n = pickedPending.value.reduce((a, h) => a + h.sec.text.length, 0)
+  const sec = 5 + (n / 15) * 0.2
+  return sec < 60 ? `khoảng ${Math.max(5, Math.round(sec / 5) * 5)} giây` : `khoảng ${Math.round(sec / 60)} phút`
+})
+
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && !(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) closeEdit()
 }
@@ -332,7 +402,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         </template>
       </div>
       <div class="mt-4 flex gap-5 text-sm" role="tablist">
-        <button v-for="t in ([['content', 'Nội dung'], ['info', 'Thông tin & bìa'], ['voice', 'Giọng đọc']] as const)" :key="t[0]" role="tab" :aria-selected="edit.tab === t[0]"
+ <button v-for="t in ([['content', 'Nội dung'], ['info', 'Thông tin & bìa'], ['voice', 'Giọng đọc'], ['dict', 'Từ điển']] as const)" :key="t[0]" role="tab" :aria-selected="edit.tab === t[0]"
           class="pb-2.5 -mb-px border-b-2" :class="edit.tab === t[0] ? 'border-primary text-foreground font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'"
           @click="setTab(t[0])">{{ t[1] }}</button>
       </div>
@@ -458,6 +528,82 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <p class="mt-2 text-[11px] text-muted-foreground max-w-xs leading-relaxed">Ảnh jpg, png, webp. Đã chọn ảnh thì đổi tên không vẽ lại bìa; bấm "Dùng bìa tự vẽ" để quay về bìa theo tên.</p>
         </div>
       </form>
+
+      <!-- ─── Tab Từ điển (D12) ─── -->
+      <div v-else-if="edit.tab === 'dict'" class="flex-1 flex min-h-0">
+        <div class="w-[420px] shrink-0 border-r border-border flex flex-col">
+          <div class="p-4 flex gap-2">
+            <label class="flex-1 h-9 rounded-md border border-input px-3 text-sm flex items-center gap-2 text-muted-foreground focus-within:ring-1 focus-within:ring-ring">
+              <Search class="w-4 h-4 shrink-0" /><input v-model="dictSearch" class="flex-1 min-w-0 bg-transparent outline-none text-foreground" placeholder="Tìm trong từ điển" />
+            </label>
+            <Button variant="outline" size="sm" @click="newWord.open = true; dictError = ''"><Plus class="w-4 h-4" /> Thêm từ</Button>
+          </div>
+          <p v-if="dictError" class="px-4 pb-2 text-xs text-destructive">{{ dictError }}</p>
+          <div class="flex-1 overflow-auto divide-y divide-border border-t border-border">
+            <form v-if="newWord.open" class="px-4 py-3 space-y-2 bg-muted/40" @submit.prevent="addWord">
+              <div class="grid grid-cols-[1fr_auto_1fr] gap-1.5 items-center">
+                <input v-model="newWord.word" class="h-8 min-w-0 rounded-md border border-input bg-background px-2 text-sm" placeholder="Chữ trong sách" />
+                <span class="text-muted-foreground text-sm">→</span>
+                <input v-model="newWord.reading" class="h-8 min-w-0 rounded-md border border-input bg-background px-2 text-sm" :placeholder="globalReading(newWord.word.trim()) || 'Đọc là'" />
+              </div>
+              <div class="flex justify-end gap-2">
+                <Button type="button" variant="ghost" size="sm" @click="newWord.open = false">Huỷ</Button>
+                <Button type="submit" size="sm" :disabled="!!dictBusy">Thêm</Button>
+              </div>
+            </form>
+            <div v-for="r in dictRows" :key="r.word" class="px-4 py-2.5 flex items-center gap-2 text-sm cursor-pointer"
+              :class="picked?.word === r.word ? 'bg-primary/5' : 'hover:bg-muted/50'" @click="pickedWord = r.word">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1"><b>{{ r.word }}</b> →
+                  <form v-if="editing[r.word] !== undefined" class="inline-flex" @submit.prevent="saveWord(r.word, editing[r.word])" @click.stop>
+                    <input v-model="editing[r.word]" class="h-7 w-32 rounded border border-rag-amber bg-background px-2 text-sm" @vue:mounted="focusSelect" @keydown.esc="delete editing[r.word]" />
+                  </form>
+                  <button v-else type="button" class="truncate hover:underline" title="Bấm để sửa" @click.stop="editing[r.word] = r.reading">{{ r.reading }}</button>
+                </div>
+                <div class="text-[11px] text-muted-foreground">{{ r.hits.reduce((n, h) => n + h.count, 0) }} chỗ ·
+                  {{ r.word in edit.dictChanged && r.hits.some((h) => edit.drafts[h.sec.index]) ? (edit.dictChanged[r.word] ? `đã đổi từ "${edit.dictChanged[r.word]}"` : 'từ mới thêm') + ', chưa lưu' : r.hits.length ? 'đã đọc theo cách này' : 'chưa có trong sách' }}</div>
+              </div>
+              <span v-if="r.word in edit.dictChanged && r.hits.some((h) => edit.drafts[h.sec.index])" class="h-2 w-2 rounded-full bg-rag-amber shrink-0" title="Đã đổi, chưa lưu"></span>
+              <Loader2 v-if="dictBusy === r.word" class="w-3.5 h-3.5 animate-spin" />
+              <button type="button" class="text-muted-foreground hover:text-foreground" :aria-label="'Nghe ' + r.word" @click.stop="sayWord(r.word, editing[r.word] ?? r.reading)">
+                <Loader2 v-if="sampling === 'dict-' + r.word" class="w-3.5 h-3.5 animate-spin" /><component :is="clip.playing.value === 'dict-' + r.word ? Pause : Play" v-else class="w-3.5 h-3.5" />
+              </button>
+              <button type="button" class="text-muted-foreground hover:text-destructive" :aria-label="'Xoá ' + r.word" @click.stop="removeWord(r.word)"><Trash2 class="w-3.5 h-3.5" /></button>
+            </div>
+            <p v-if="!dictRows.length && !newWord.open" class="px-4 py-4 text-sm text-muted-foreground">
+              {{ dictSearch ? 'Không thấy từ nào.' : 'Cuốn này chưa có từ nào. Bấm Thêm từ, gõ chữ trong sách và cách đọc.' }}
+            </p>
+            <div class="px-4 py-3 text-[11px] text-muted-foreground">Từ dùng cho mọi sách (Cài đặt → Từ điển chung) cũng áp cho cuốn này, không liệt kê ở đây.</div>
+          </div>
+        </div>
+        <div class="flex-1 p-5 min-w-0 overflow-auto">
+          <template v-if="picked">
+            <div class="text-sm font-medium">"{{ picked.word }}" có ở {{ picked.hits.length }} mục</div>
+            <p class="text-xs text-muted-foreground">Đổi cách đọc thì các mục này phải đọc lại. Bấm Lưu & đọc lại để làm một lượt.</p>
+            <div v-if="picked.hits.length" class="mt-3 rounded-lg border border-border divide-y divide-border text-sm">
+              <div v-for="h in picked.hits" :key="h.sec.index" class="px-3 py-2 flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full shrink-0" :class="edit.drafts[h.sec.index] ? 'bg-rag-amber' : 'bg-transparent'"></span>
+                <button type="button" class="flex-1 truncate text-left hover:underline" @click="edit.index = h.sec.index; setTab('content')">{{ h.sec.intro ? 'Lời giới thiệu đầu sách' : h.sec.chapter }} · {{ current(h.sec).title }}</button>
+                <Loader2 v-if="busySection(h.sec.index)" class="w-3.5 h-3.5 animate-spin" />
+                <span class="text-xs text-muted-foreground">{{ h.count }} chỗ</span>
+                <button type="button" class="text-muted-foreground hover:text-foreground" :aria-label="'Nghe ' + h.sec.title" @click="listenSection(h.sec)">
+                  <component :is="clip.playing.value === 'cur-' + h.sec.stem ? Pause : Headphones" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div v-if="pickedPending.length && !edit.status?.running" class="mt-4 rounded-md border border-rag-amber/50 bg-rag-amber/10 px-3 py-2 text-xs flex items-center gap-2">
+              <AlertCircle class="w-3.5 h-3.5 text-rag-amber shrink-0" />
+              <span class="flex-1"><b>Chưa lưu.</b> {{ pickedPending.length }} mục cần đọc lại ({{ pickedEst }}). Chưa lưu thì khi nghe vẫn đọc theo cách cũ.</span>
+              <Button size="sm" @click="reread(pickedPending.map((h) => h.sec.index))"><RotateCcw class="w-4 h-4" /> Lưu & đọc lại {{ pickedPending.length }} mục</Button>
+            </div>
+            <div v-else-if="st?.running && st.kind === 'sections'" class="mt-4 rounded-md bg-muted/60 px-3 py-2 text-xs flex items-center gap-2"><Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" /> <span><b>{{ readingLabel }}</b> {{ fmtRemain(st.remainSec) }}</span></div>
+            <div v-else-if="picked.hits.length" class="mt-4 rounded-md border border-rag-green/40 bg-rag-green/10 px-3 py-2 text-xs flex items-center gap-2"><Check class="w-3.5 h-3.5 text-rag-green shrink-0" /> Các mục có từ này đã đọc theo cách đọc hiện tại.</div>
+          </template>
+          <div v-else class="h-full grid place-items-center text-center text-sm text-muted-foreground">
+            <div><BookA class="w-8 h-8 mx-auto mb-2 opacity-60" />Từ điển chỉ đổi cách máy đọc.<br />Chữ hiện khi nghe giữ nguyên.</div>
+          </div>
+        </div>
+      </div>
 
       <!-- ─── Tab Giọng đọc ─── -->
       <div v-else class="flex-1 flex flex-col min-h-0 p-6 gap-4 overflow-auto">

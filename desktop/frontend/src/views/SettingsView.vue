@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GlobalDictSettings from '../components/GlobalDictSettings.vue'
 import { onMounted, ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -99,6 +100,12 @@ const updateLine: Record<string, string> = {
             <span>Đã lưu. Áp dụng ngay khi nghe trong Sano. Cuốn nào đã chọn riêng ở màn nghe thì giữ mức riêng. File M4B đã xuất trước đây giữ quãng nghỉ cũ, muốn đổi thì xuất lại.</span>
           </div>
         </div>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Từ điển chung · dùng cho mọi sách</h2>
+        <GlobalDictSettings />
+        <p class="mt-2 text-xs text-muted-foreground">Đổi từ điển chung chỉ áp cho sách tạo sau. Sách đã tạo giữ cách đọc cũ; muốn đổi thì thêm từ đó ở Sửa sách → tab Từ điển của cuốn, rồi Lưu & đọc lại.</p>
       </div>
 
       <div>

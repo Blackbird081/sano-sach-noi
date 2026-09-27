@@ -2,19 +2,21 @@
 // lại / đổi giọng đang chạy (chạy nền, xem ở thanh bên từ màn nào cũng được).
 import { computed, reactive } from 'vue'
 import {
-  cancelEdit, discardVoiceChange, editBook, editStatus, errText, onEvent, startReread, startVoiceChange,
-  type EditSection, type EditStatus, type EditView, type SectionEdit,
+  bookPronunciations, cancelEdit, deleteBookPronunciation, discardVoiceChange, editBook, editStatus, errText, onEvent,
+  setBookPronunciation, startReread, startVoiceChange, type EditSection, type EditStatus, type EditView, type SectionEdit,
 } from './backend'
+import { countWord } from './dict'
 import { pause, player, reloadBook } from './player'
 import { refreshLibrary, state } from './store'
 
-export type EditTab = 'content' | 'info' | 'voice'
+export type EditTab = 'content' | 'info' | 'voice' | 'dict'
 
 /** Bản sửa của một tiểu mục (chưa đọc lại). stem để nhận ra khi sách đã đổi mục lục. */
 interface Draft {
   stem: string
   title: string
   text: string
+  stale?: boolean // chữ không đổi nhưng từ điển đã đổi → cần đọc lại
 }
 
 export const edit = reactive({
@@ -28,6 +30,9 @@ export const edit = reactive({
   status: null as EditStatus | null,
   actionError: '',
   back: 'library' as 'library' | 'player',
+  // Từ điển cách đọc riêng của cuốn (D12) + từ vừa đổi (từ → cách đọc cũ, '' = từ mới).
+  dict: {} as Record<string, string>,
+  dictChanged: {} as Record<string, string>,
 })
 
 // ── Bản sửa: lưu trên máy theo từng cuốn (rời màn, tắt app vẫn còn) ─────────
@@ -61,9 +66,17 @@ export function current(sec: EditSection) {
 
 /** Ghi bản sửa; trùng bản đang có thì bỏ bản sửa. */
 export function setDraft(sec: EditSection, title: string, text: string) {
-  if (title === sec.title && text.trim() === sec.text.trim()) delete edit.drafts[sec.index]
-  else edit.drafts[sec.index] = { stem: sec.stem, title, text }
+  const stale = edit.drafts[sec.index]?.stale
+  if (title === sec.title && text.trim() === sec.text.trim() && !stale) delete edit.drafts[sec.index]
+  else edit.drafts[sec.index] = { stem: sec.stem, title, text, ...(stale ? { stale } : {}) }
   saveDrafts()
+}
+
+/** Mục chỉ cần đọc lại vì từ điển đổi (chữ giữ nguyên). */
+export function isStale(i: number) {
+  const d = edit.drafts[i]
+  const s = edit.view?.sections[i]
+  return !!d?.stale && !!s && d.title === s.title && d.text.trim() === s.text.trim()
 }
 
 export function dropDraft(index: number) {
@@ -129,6 +142,8 @@ export function openEdit(slug: string, opts: { tab?: EditTab; index?: number } =
   if (edit.slug !== slug) {
     edit.view = null
     edit.drafts = readDrafts(slug)
+    edit.dict = {}
+    edit.dictChanged = {}
   }
   edit.slug = slug
   edit.tab = opts.tab ?? 'content'
@@ -148,6 +163,11 @@ export async function load(reset: boolean) {
     const v = await editBook(slug)
     if (edit.slug !== slug) return
     edit.view = v
+    try {
+      edit.dict = await bookPronunciations(slug)
+    } catch {
+      edit.dict = {}
+    }
     // Bản sửa của mục không còn (mục lục đã đổi) thì bỏ.
     for (const [k, d] of Object.entries(edit.drafts)) {
       if (v.sections[Number(k)]?.stem !== d.stem) delete edit.drafts[Number(k)]
@@ -227,4 +247,48 @@ export function fmtRemain(sec: number) {
   if (sec <= 0) return ''
   if (sec < 60) return `còn khoảng ${Math.max(5, Math.round(sec / 5) * 5)} giây`
   return `còn khoảng ${Math.round(sec / 60)} phút`
+}
+
+// ── Từ điển của cuốn (tab Từ điển, D12) ───────────────────────────────────
+
+/** Các mục có `word` (trong tiêu đề hoặc chữ), kèm số chỗ. */
+export function sectionsWith(word: string) {
+  const out: { sec: EditSection; count: number }[] = []
+  for (const s of edit.view?.sections ?? []) {
+    const c = current(s)
+    const n = countWord(c.title, word) + countWord(c.text, word)
+    if (n) out.push({ sec: s, count: n })
+  }
+  return out
+}
+
+/** Đánh dấu các mục có `word` cần đọc lại (từ điển vừa đổi). */
+function markStale(word: string) {
+  for (const { sec } of sectionsWith(word)) {
+    const d = edit.drafts[sec.index]
+    if (d) d.stale = true
+    else edit.drafts[sec.index] = { stem: sec.stem, title: sec.title, text: sec.text, stale: true }
+  }
+  saveDrafts()
+}
+
+/** Thêm / sửa một từ trong từ điển của cuốn. */
+export async function setWord(word: string, reading: string) {
+  const old = edit.dict[word]
+  await setBookPronunciation(edit.slug, word, reading)
+  edit.dict = { ...edit.dict, [word]: reading.trim() }
+  if (old !== reading.trim()) {
+    if (!(word in edit.dictChanged)) edit.dictChanged[word] = old ?? ''
+    markStale(word)
+  }
+}
+
+/** Xoá một từ khỏi từ điển của cuốn (mục có từ đó đọc lại theo bộ chuẩn / từ điển chung). */
+export async function deleteWord(word: string) {
+  await deleteBookPronunciation(edit.slug, word)
+  const d = { ...edit.dict }
+  delete d[word]
+  edit.dict = d
+  delete edit.dictChanged[word]
+  markStale(word)
 }

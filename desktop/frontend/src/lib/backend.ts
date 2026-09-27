@@ -128,6 +128,7 @@ export interface BookSettings {
   dropStems: string[]
   coverPath: string
   readingEdits: Record<string, ReadingEdit>
+  pronunciations: Record<string, string> // từ điển cách đọc riêng của cuốn (D12)
 }
 
 export interface Clip {
@@ -335,6 +336,13 @@ interface GoApp {
   SaveBookInfo(slug: string, info: BookInfo): Promise<SaveInfoResult>
   SetBookCover(slug: string, path: string): Promise<LibraryBook>
   UseAutoCover(slug: string): Promise<LibraryBook>
+  Pronunciations(): Promise<DictEntry[]>
+  SetGlobalPronunciation(word: string, reading: string): Promise<void>
+  DeleteGlobalPronunciation(word: string): Promise<void>
+  BookPronunciations(slug: string): Promise<Record<string, string>>
+  SetBookPronunciation(slug: string, word: string, reading: string): Promise<void>
+  DeleteBookPronunciation(slug: string, word: string): Promise<void>
+  CountWords(path: string, words: string[]): Promise<Record<string, number>>
 }
 
 interface WailsRuntime {
@@ -879,4 +887,37 @@ export async function setBookCover(slug: string, path: string): Promise<LibraryB
 }
 export async function useAutoCover(slug: string): Promise<LibraryBook> {
   return need().UseAutoCover(slug)
+}
+
+// ── Từ điển cách đọc (wireframe D12) ─────────────────────────────────────
+
+/** Một dòng từ điển chung — khớp DictEntry bên Go. */
+export interface DictEntry {
+  word: string
+  reading: string
+  builtin: boolean // có trong bộ chuẩn
+  mine: boolean // tự thêm / ghi đè (xoá được)
+  default: string // cách đọc chuẩn khi đã ghi đè
+}
+export async function pronunciations(): Promise<DictEntry[]> {
+  return (await goApp()?.Pronunciations()) ?? []
+}
+export async function setGlobalPronunciation(word: string, reading: string): Promise<void> {
+  return need().SetGlobalPronunciation(word, reading)
+}
+export async function deleteGlobalPronunciation(word: string): Promise<void> {
+  return need().DeleteGlobalPronunciation(word)
+}
+export async function bookPronunciations(slug: string): Promise<Record<string, string>> {
+  return (await need().BookPronunciations(slug)) ?? {}
+}
+export async function setBookPronunciation(slug: string, word: string, reading: string): Promise<void> {
+  return need().SetBookPronunciation(slug, word, reading)
+}
+export async function deleteBookPronunciation(slug: string, word: string): Promise<void> {
+  return need().DeleteBookPronunciation(slug, word)
+}
+export async function countWords(path: string, words: string[]): Promise<Record<string, number>> {
+  if (!words.length) return {}
+  return (await goApp()?.CountWords(path, words)) ?? {}
 }

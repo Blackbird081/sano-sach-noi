@@ -11,7 +11,9 @@ import { chooseCover, chooseDocx, copyText, describeDocx, errText, onFileDrop, p
 import { DOCS } from '../../lib/mock'
 import { promptFor } from '../../lib/prompt'
 import { categoryCounts, seriesKey } from '../../lib/find'
-import { clearFile, setFile, state } from '../../lib/store'
+import { addBookWord, clearFile, setFile, state } from '../../lib/store'
+import { globalReading, loadGlobalDict } from '../../lib/dict'
+import DictWordPopover from '../../components/DictWordPopover.vue'
 import CategoryPicker from '../../components/CategoryPicker.vue'
 
 const copied = ref(false)
@@ -154,11 +156,33 @@ watch(() => state.series, (n, old) => {
 })
 const w = computed(() => state.outline?.warnings)
 const chapterCount = computed(() => state.toc.filter((c) => c.kind === 'chapter').length)
-const acronyms = computed(() => {
-  const list = w.value?.unknownAcronyms ?? []
-  const shown = list.slice(0, 8).map((a) => a.word).join(', ')
-  return list.length > 8 ? `${shown}…` : shown
-})
+// Từ viết tắt chưa có cách đọc (D12): bấm từng từ để dạy Sano đọc. Từ đã thêm (của cuốn
+// hoặc từ điển chung) hiện ✓ kèm cách đọc.
+onMounted(() => void loadGlobalDict())
+const acronymList = computed(() => (w.value?.unknownAcronyms ?? []).slice(0, 20).map((a) => ({
+  ...a, reading: state.bookDict[a.word] || globalReading(a.word),
+})))
+const acronymLeft = computed(() => acronymList.value.filter((a) => !a.reading).length)
+const teaching = ref('')
+const teachBusy = ref(false)
+const teachError = ref('')
+async function teach(reading: string, scope: 'book' | 'global') {
+  teachBusy.value = true
+  teachError.value = ''
+  try {
+    await addBookWord(teaching.value, reading, scope, false)
+    teaching.value = ''
+  } catch (e) {
+    teachError.value = errText(e)
+  } finally {
+    teachBusy.value = false
+  }
+}
+function closeTeach(e: MouseEvent) {
+  if (teaching.value && !(e.target as HTMLElement).closest('[data-teach]')) teaching.value = ''
+}
+onMounted(() => document.addEventListener('mousedown', closeTeach))
+onBeforeUnmount(() => document.removeEventListener('mousedown', closeTeach))
 const hasWarnings = computed(() => !!w.value && (w.value.images + (w.value.skippedImages ?? 0) + w.value.tables + w.value.fakeHeadings.length + w.value.unknownAcronyms.length) > 0)
 // Bảng, hình, tiêu đề gõ tay còn sót (khác chữ viết tắt: AI không cần làm lại).
 const layoutLeft = computed(() => !!w.value && (w.value.images + (w.value.skippedImages ?? 0) + w.value.tables + w.value.fakeHeadings.length) > 0)
@@ -241,8 +265,26 @@ const fake = computed(() => (w.value?.fakeHeadings ?? []).slice(0, 2).map((s) =>
             <li v-if="w!.images">{{ w!.images }} hình — không có lời tả, người nghe sẽ không biết nội dung hình</li>
             <li v-if="w!.skippedImages">{{ w!.skippedImages }} hình quá lớn hoặc vượt giới hạn số hình — đã bỏ qua, không trích ra</li>
             <li v-if="w!.fakeHeadings.length">{{ w!.fakeHeadings.length }} đoạn chữ to đậm có vẻ là tiêu đề nhưng không dùng kiểu Heading ({{ fake }})</li>
-            <li v-if="w!.unknownAcronyms.length">{{ w!.unknownAcronyms.length }} từ viết tắt chưa có cách đọc: {{ acronyms }} — bộ đọc có thể đọc sai</li>
           </ul>
+          <!-- Từ chưa có cách đọc: từng từ là một nút, bấm để dạy Sano đọc (D12) -->
+          <div v-if="acronymList.length" class="mt-3 border-t border-rag-amber/30 pt-3" data-teach>
+            <p class="text-foreground/80">
+              <template v-if="acronymLeft"><b>{{ acronymLeft }} từ viết tắt chưa có cách đọc</b>, bộ đọc có thể đọc sai. Bấm từng từ để dạy Sano cách đọc:</template>
+              <template v-else><b>Đã có cách đọc cho các từ viết tắt.</b> Bấm một từ để sửa lại.</template>
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2 relative">
+              <button v-for="a in acronymList" :key="a.word" type="button" class="h-8 px-3 rounded-full border text-sm flex items-center gap-1.5 bg-background"
+                :class="teaching === a.word ? 'border-primary ring-2 ring-primary/30' : a.reading ? 'border-rag-green/50' : 'border-border hover:border-primary/50'"
+                @click="teaching = teaching === a.word ? '' : a.word; teachError = ''">
+                <Check v-if="a.reading" class="w-3.5 h-3.5 text-rag-green" /><b>{{ a.word }}</b>
+                <span class="text-xs text-muted-foreground">{{ a.reading ? '→ ' + a.reading : a.count + ' lần' }}</span>
+              </button>
+              <span v-if="acronymLeft" class="h-8 px-1 text-sm text-muted-foreground flex items-center">Bỏ qua cũng được, sửa sau ở bước Nghe thử</span>
+              <DictWordPopover v-if="teaching" :key="teaching" class="absolute top-10 left-0" :word="teaching" :voice="state.voice"
+                :reading="state.bookDict[teaching] || globalReading(teaching)" :count="acronymList.find((a) => a.word === teaching)?.count ?? null"
+                :busy="teachBusy" :error="teachError" @add="teach" @cancel="teaching = ''" />
+            </div>
+          </div>
           <template v-if="viaAI && layoutLeft">
             <p class="mt-3 text-foreground/80">AI còn để sót bảng, hình hoặc tiêu đề gõ tay. Gửi lại file cho AI cùng prompt làm mượt rồi nạp lại, hoặc cứ tiếp tục nếu chấp nhận được.</p>
             <Button variant="outline" size="sm" class="mt-3" @click="copyPrompt">

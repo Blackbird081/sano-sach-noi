@@ -8,11 +8,12 @@ import {
   cancelSetup as goCancelSetup, mockSetupStatus, setupInfo as goSetupInfo, setupStatus as goSetupStatus,
   startSetup as goStartSetup, acceptTermsVersion, termsStatus, checkUpdate,
   startUpdate as goStartUpdate, cancelUpdate as goCancelUpdate, updateStatus as goUpdateStatus,
-  applyUpdate as goApplyUpdate, applyUpdateOnQuit as goApplyUpdateOnQuit,
+  applyUpdate as goApplyUpdate, applyUpdateOnQuit as goApplyUpdateOnQuit, countWords, setGlobalPronunciation,
   type BookSettings, type TermsStatus, type Clip, type DocxFile, type LibraryInfo, type Outline, type ReadingEdit,
   type RenderStatus, type SetupInfo, type SetupStatus, type TTSStatus, type UpdateInfo, type UpdateStatus, type Voice,
 } from './backend'
 import { TERMS_VERSION } from './terms'
+import { globalReading, loadGlobalDict } from './dict'
 import type { AITool } from './prompt'
 
 export type View = 'setup' | 'terms' | 'library' | 'stats' | 'create' | 'player' | 'settings' | 'about' | 'edit'
@@ -173,6 +174,9 @@ export const state = reactive({
   rightsConfirmedAt: '', // lúc tick "có quyền dùng tài liệu này" ở bước Nghe thử
   origText: {} as Record<string, string>, // lời đọc gốc của đoạn nghe thử (trước khi sửa)
   edits: {} as Record<string, ReadingEdit>,
+  // Từ điển cách đọc riêng của cuốn đang tạo (D12) + số chỗ mỗi từ xuất hiện trong file.
+  bookDict: {} as Record<string, string>,
+  wordCounts: {} as Record<string, number>,
 
   // B7 Render
   render: null as RenderStatus | null,
@@ -269,13 +273,14 @@ export function settings(): BookSettings {
     coverPath: state.coverPath,
     readingEdits: { ...state.edits },
     rightsConfirmedAt: state.rightsConfirmedAt,
+    pronunciations: { ...state.bookDict },
   }
 }
 
 /** Lựa chọn ảnh hưởng tới lời đọc / giọng (không tính lời đã sửa ở B5). */
 function previewKey() {
   const s = settings()
-  return JSON.stringify([s.path, s.title, s.author, s.voice, s.introText, s.keepHeadingNumbers, s.dropStems])
+  return JSON.stringify([s.path, s.title, s.author, s.voice, s.introText, s.keepHeadingNumbers, s.dropStems, s.pronunciations])
 }
 
 /** Đủ điều kiện render cả cuốn: đã xác nhận quyền dùng tài liệu (nghe thử không bắt buộc). */
@@ -342,6 +347,8 @@ export async function setFile(f: DocxFile) {
     state.origText = {}
     state.edits = {}
     state.previewNote = ''
+    state.bookDict = {}
+    state.wordCounts = {}
     state.introTouched = false
     state.introText = defaultIntro()
   } catch (e) {
@@ -396,6 +403,8 @@ export function clearFile() {
   state.origText = {}
   state.edits = {}
   state.previewNote = ''
+  state.bookDict = {}
+  state.wordCounts = {}
 }
 
 function capitalize(s: string) {
@@ -486,6 +495,48 @@ export async function editClip(stem: string, text: string) {
   if (text.trim() === from.trim()) delete state.edits[stem]
   else state.edits[stem] = { from, to: text.trim() }
   await addPreview([stem])
+}
+
+// ── Từ điển cách đọc của cuốn đang tạo (D12) ─────────────────────────────
+
+/** Đếm lại số chỗ mỗi từ trong từ điển (và các từ thêm) xuất hiện trong file Word. */
+export async function refreshWordCounts(extra: string[] = []) {
+  const words = [...new Set([...Object.keys(state.bookDict), ...extra])]
+  if (!state.file || !words.length) return
+  try {
+    state.wordCounts = { ...state.wordCounts, ...(await countWords(state.file.path, words)) }
+  } catch {
+    // không đếm được thì bỏ số chỗ
+  }
+}
+
+/** Đoạn nghe thử có chữ `needle` trong lời đã đọc (để đọc lại sau khi đổi từ điển). */
+function clipsWith(needle: string) {
+  return state.clips.filter((c) => c.text.includes(needle)).map((c) => c.stem)
+}
+
+/** Thêm / sửa một từ: "book" = chỉ cuốn này, "global" = từ điển chung. Đọc lại đoạn nghe thử có từ đó. */
+export async function addBookWord(word: string, reading: string, scope: 'book' | 'global', rerender = true) {
+  const old = state.bookDict[word] || globalReading(word)
+  if (scope === 'global') {
+    await setGlobalPronunciation(word, reading)
+    await loadGlobalDict(true)
+    delete state.bookDict[word]
+  } else {
+    state.bookDict[word] = reading
+  }
+  void refreshWordCounts([word])
+  if (!rerender) return
+  const stems = [...new Set([...clipsWith(word), ...(old ? clipsWith(old) : [])])]
+  if (stems.length) await addPreview(stems)
+}
+
+/** Bỏ một từ khỏi từ điển của cuốn; đọc lại đoạn nghe thử đang đọc theo cách đó. */
+export async function removeBookWord(word: string) {
+  const reading = state.bookDict[word]
+  delete state.bookDict[word]
+  const stems = reading ? clipsWith(reading) : []
+  if (stems.length) await addPreview(stems)
 }
 
 export function markHeard(stem: string) {
