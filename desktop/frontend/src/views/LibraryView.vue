@@ -237,7 +237,8 @@ function openItem(i: ShelfItem) {
 const continueList = computed(() => [...listening.value].sort((a, b) => b.listenedAt - a.listenedAt).slice(0, 3))
 const showContinue = computed(() => filter.value === 'all' && !query.value.trim() && continueList.value.length > 0)
 
-// Xoá lịch sử nghe: mọi cuốn về "Chưa nghe", hàng "Nghe tiếp" trống. Sách giữ nguyên.
+// Xoá lịch sử nghe: mọi cuốn về "Chưa nghe", hàng "Nghe tiếp" trống. Sách giữ nguyên,
+// vị trí cũ cất sang lịch sử (clearPositions) cho thống kê sau này.
 const confirmClear = ref(false)
 const listenedCount = computed(() => books.value.filter((b) => b.progress > 0 || b.listenedAt > 0).length)
 function clearHistory() {

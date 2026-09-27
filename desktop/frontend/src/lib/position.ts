@@ -27,11 +27,36 @@ export function savePosition(slug: string, p: Position) {
   }
 }
 
-/** Xoá lịch sử nghe: vị trí nghe của mọi cuốn (sách không bị đụng). Trả số cuốn đã xoá. */
+const histKey = (slug: string) => `sano:hist:${slug}`
+
+/** Một lượt nghe đã xoá khỏi màn hình, cất lại cho thống kê sau này. */
+export interface ClearedPosition extends Position {
+  clearedAt: number
+}
+
+/** Lịch sử nghe đã cất của một cuốn (cũ trước, mới sau). */
+export function loadHistory(slug: string): ClearedPosition[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(histKey(slug)) ?? '[]')
+    return Array.isArray(v) ? v : []
+  } catch {
+    return []
+  }
+}
+
+/** Xoá lịch sử nghe khỏi màn hình: mọi cuốn về "Chưa nghe", nghe lại từ đầu. Vị trí
+ *  cũ (tiến độ, lúc nghe) KHÔNG mất mà cất sang sano:hist:<slug> để làm thống kê.
+ *  Trả số cuốn đã xoá. */
 export function clearPositions(): number {
   try {
+    const now = Date.now()
     const keys = Object.keys(localStorage).filter((k) => k.startsWith('sano:pos:'))
-    for (const k of keys) localStorage.removeItem(k)
+    for (const k of keys) {
+      const slug = k.slice('sano:pos:'.length)
+      const pos = loadPosition(slug)
+      if (pos) localStorage.setItem(histKey(slug), JSON.stringify([...loadHistory(slug), { ...pos, clearedAt: now }]))
+      localStorage.removeItem(k)
+    }
     return keys.length
   } catch {
     return 0
