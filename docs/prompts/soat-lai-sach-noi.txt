@@ -9,5 +9,6 @@ Soát bốn việc:
 Báo ngắn danh sách lỗi theo bốn việc trên. Rồi sửa: bổ sung hết ý nghiêm trọng và hết tên còn thiếu, sửa hết chỗ bịa và sai lệch, sửa lỗi nghe. Chèn vào đúng chỗ, giữ giọng văn, không làm gãy câu.
 
 Cách trả kết quả:
+- File Word CHỈ chứa nội dung sách để đọc to. Lời chào hỏi, báo cáo, ghi chú chỉ ghi trong khung chat, KHÔNG đưa vào file.
 - Trả về MỘT file Word (.docx) đã sửa, giữ nguyên cách đặt kiểu: tên sách kiểu Title, chương kiểu Heading 1, mục kiểu Heading 2, còn lại là đoạn văn thường.
-- Chỉ khi bạn không tạo được file Word: trả văn bản, dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ".
+- Chỉ khi bạn không tạo được file Word: trả nội dung sách trong một khối mã (code block) để tôi sao chép. Dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ". Trong khối mã chỉ có nội dung sách.

@@ -11,13 +11,14 @@ Giữ nguyên nội dung:
 6. Bỏ những câu chỉ có nghĩa khi nhìn trang giấy, như "xem hình bên dưới", "như bảng trên", số trang, chú thích cuối trang.
 7. Danh sách gạch đầu dòng: nối thành đoạn văn. Danh sách có thứ tự: dùng "thứ nhất", "thứ hai"...
 8. Từ viết tắt ít gặp, ký hiệu lạ, từ tiếng nước ngoài khó đọc: lần đầu xuất hiện thì viết ra cách đọc đầy đủ. Viết tắt quen thuộc như CEO, KPI, AI thì giữ nguyên.
-9. Ký hiệu toán và dấu nối số viết thành chữ, ví dụ "3+2" thành "ba cộng hai", "5-3-1" thành "năm ba một".
+9. Ký hiệu toán và dấu nối số viết thành chữ, ví dụ "3+2" thành "ba cộng hai", "5-3-1" thành "năm ba một", "50/30/20" thành "năm mươi, ba mươi, hai mươi".
 10. Câu quá dài: tách thành câu ngắn hơn, không đổi ý.
 11. Sửa lỗi chính tả và lỗi gõ phím.
 
 Cách trả kết quả:
+- File Word CHỈ chứa nội dung sách để đọc to. Lời chào hỏi, báo cáo, ghi chú chỉ ghi trong khung chat, KHÔNG đưa vào file.
 - Trả về MỘT file Word (.docx) để tôi tải về. Tên sách dùng kiểu Title. Mỗi chương dùng kiểu Heading 1. Mỗi mục trong chương dùng kiểu Heading 2. Phần còn lại là đoạn văn thường.
 - Trong file không có bảng, hình, gạch đầu dòng, không in đậm một dòng để làm tiêu đề. Tiêu đề không viết IN HOA toàn bộ.
 - Trả về toàn bộ bản đã làm mượt, không bỏ sót phần nào.
 - Nếu tài liệu dài quá một lần trả lời, làm lần lượt từng chương. Hết mỗi phần thì dừng và chờ tôi gõ "tiếp". Làm xong phần cuối thì gộp tất cả vào một file Word duy nhất.
-- Chỉ khi bạn không tạo được file Word: trả văn bản, dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ".
+- Chỉ khi bạn không tạo được file Word: trả nội dung sách trong một khối mã (code block) để tôi sao chép. Dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ". Trong khối mã chỉ có nội dung sách.

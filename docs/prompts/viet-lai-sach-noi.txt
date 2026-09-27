@@ -16,21 +16,22 @@ Khung mỗi chương:
 9. Mục cuối chương tên là "Ba ý cần nhớ", viết dạng "Một... Hai... Ba...", nhắc lại tên các khái niệm chính. Ngay sau đó là một câu gợi sang chương sau.
 
 Viết để nghe:
-10. Câu ngắn, mỗi câu một ý, viết như nói. Không câu nào quá khoảng 35 chữ. Xen vài câu ngắn với một câu dài hơn cho có nhịp. Tránh ngoặc đơn.
+10. Câu ngắn, mỗi câu một ý, viết như nói. Không câu nào quá khoảng 35 chữ. Xen vài câu ngắn với một câu dài hơn cho có nhịp. Không dùng ngoặc đơn: điều muốn ghi trong ngoặc thì viết thành câu riêng.
 11. Chuyện trước, khái niệm sau: nêu vấn đề trước, khung lý thuyết là lời giải.
 12. Mỗi lần nêu tối đa 3 ý. Danh sách dài thì báo trước số ý rồi chia nhóm có tên, ví dụ "gồm sáu bước, chia hai nhóm".
 13. Bảng kể lại thành lời. Hình, sơ đồ tả bằng một đoạn ngắn. Bỏ những câu chỉ có nghĩa khi nhìn trang giấy, như "xem hình dưới", số trang, chú thích.
-14. Viết tắt quen thuộc như CEO, KPI, AI thì giữ nguyên. Viết tắt ít gặp thì viết cách đọc, ví dụ "G, T" hoặc tên đầy đủ. Ký hiệu viết thành chữ, ví dụ "3+2" thành "ba cộng hai".
+14. Viết tắt quen thuộc như CEO, KPI, AI thì giữ nguyên. Viết tắt ít gặp thì viết cách đọc, ví dụ "G, T" hoặc tên đầy đủ. Ký hiệu và dấu nối số viết thành chữ, ví dụ "3+2" thành "ba cộng hai", "50/30/20" thành "năm mươi, ba mươi, hai mươi".
 15. Không lặp vụng một cụm từ. Câu hỏi treo dùng vừa phải.
 
 Cách làm:
-- Bước 1: đọc hết tài liệu. Lập danh sách mọi ý kiến thức và mọi thuật ngữ, ghi ngắn gọn trong câu trả lời. Đây là thước đo để tự soát.
+- Bước 1: đọc hết tài liệu. Lập danh sách mọi ý kiến thức và mọi thuật ngữ, ghi ngắn gọn trong khung chat. Đây là thước đo để tự soát.
 - Bước 2: viết theo các yêu cầu trên.
 - Bước 3: tự soát bản viết với danh sách ở bước 1. Ý hoặc thuật ngữ nào còn thiếu thì bổ sung. Chỗ nào không có trong tài liệu thì sửa lại.
-- Cuối cùng báo ngắn: tổng số chữ, số chương, những ví dụ đã lược, những chỗ đã dựng tình huống tưởng tượng.
+- Cuối cùng báo ngắn trong khung chat: tổng số chữ, số chương, những ví dụ đã lược, những chỗ đã dựng tình huống tưởng tượng.
 
 Cách trả kết quả:
+- File Word CHỈ chứa nội dung sách để đọc to. Danh sách ý, thuật ngữ, báo cáo, ghi chú biên tập và lời chào hỏi chỉ ghi trong khung chat, KHÔNG đưa vào file.
 - Trả về MỘT file Word (.docx) để tôi tải về. Tên sách dùng kiểu Title. Mỗi chương dùng kiểu Heading 1, viết dạng "Chương 1. Tên chương". Mỗi mục trong chương dùng kiểu Heading 2. Phần còn lại là đoạn văn thường.
 - Trong file không có bảng, hình, gạch đầu dòng, không in đậm một dòng để làm tiêu đề. Tiêu đề không viết IN HOA toàn bộ.
 - Nếu tài liệu dài quá một lần trả lời, làm lần lượt từng chương. Hết mỗi phần thì dừng và chờ tôi gõ "tiếp". Làm xong phần cuối thì gộp tất cả vào một file Word duy nhất.
-- Chỉ khi bạn không tạo được file Word: trả văn bản, dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ".
+- Chỉ khi bạn không tạo được file Word: trả nội dung sách trong một khối mã (code block) để tôi sao chép. Dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ". Trong khối mã chỉ có nội dung sách.
