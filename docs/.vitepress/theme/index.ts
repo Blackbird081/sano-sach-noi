@@ -10,6 +10,7 @@ import HomeHero from './components/HomeHero.vue'
 import SamplePlayer from './components/SamplePlayer.vue'
 import NormalizeCompare from './components/NormalizeCompare.vue'
 import HowItWorks from './components/HowItWorks.vue'
+import AiRewrite from './components/AiRewrite.vue'
 import PhoneSection from './components/PhoneSection.vue'
 import Highlights from './components/Highlights.vue'
 import RightsSummary from './components/RightsSummary.vue'
@@ -36,6 +37,7 @@ export default {
     app.component('SamplePlayer', SamplePlayer)
     app.component('NormalizeCompare', NormalizeCompare)
     app.component('HowItWorks', HowItWorks)
+    app.component('AiRewrite', AiRewrite)
     app.component('PhoneSection', PhoneSection)
     app.component('Highlights', Highlights)
     app.component('RightsSummary', RightsSummary)

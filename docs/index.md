@@ -25,6 +25,8 @@ markdownStyles: false
 
 <HowItWorks />
 
+<AiRewrite />
+
 <PhoneSection />
 
 <Highlights />
