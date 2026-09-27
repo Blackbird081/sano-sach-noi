@@ -14,7 +14,7 @@ import {
 } from './backend'
 import { TERMS_VERSION } from './terms'
 
-export type View = 'setup' | 'terms' | 'library' | 'create' | 'player' | 'settings' | 'about'
+export type View = 'setup' | 'terms' | 'library' | 'stats' | 'create' | 'player' | 'settings' | 'about'
 export type UpdateState = 'closed' | 'info'
 /** Kiểm tra bản mới: chưa kiểm / đang kiểm / đang dùng bản mới nhất / có bản mới / lỗi. */
 export type UpdateCheck = 'idle' | 'checking' | 'latest' | 'available' | 'error'
@@ -61,7 +61,7 @@ function saveLastVoice(v: string) {
 // tiện chụp màn hình so với wireframe khi phát triển. Chỉ khi chạy dev: bản phát
 // hành bỏ qua để không nhảy qua được màn điều khoản.
 const q = new URLSearchParams(import.meta.env.DEV ? window.location.search : '')
-const views: View[] = ['setup', 'terms', 'library', 'create', 'player', 'settings', 'about']
+const views: View[] = ['setup', 'terms', 'library', 'stats', 'create', 'player', 'settings', 'about']
 const initialView = views.includes(q.get('screen') as View) ? (q.get('screen') as View) : 'library'
 
 export const state = reactive({

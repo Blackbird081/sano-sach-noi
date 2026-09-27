@@ -13,6 +13,7 @@ import LibraryView from './views/LibraryView.vue'
 import PlayerView from './views/PlayerView.vue'
 import SettingsView from './views/SettingsView.vue'
 import AboutView from './views/AboutView.vue'
+import StatsView from './views/StatsView.vue'
 import CreateView from './views/CreateView.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
 import { player } from './lib/player'
@@ -36,6 +37,7 @@ onMounted(async () => {
       <main class="flex-1 min-w-0 flex flex-col">
         <LibraryView v-if="state.view === 'library'" />
         <PlayerView v-else-if="state.view === 'player'" />
+        <StatsView v-else-if="state.view === 'stats'" />
         <SettingsView v-else-if="state.view === 'settings'" />
         <AboutView v-else-if="state.view === 'about'" />
         <CreateView v-else />

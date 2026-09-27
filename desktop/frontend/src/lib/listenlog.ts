@@ -30,22 +30,25 @@ export function listenTick(slug: string, track: number, audioTime: number, rate:
   lastPlace = place
   lastWall = now
   lastAudio = audioTime
-  if (now - lastFlush > FLUSH_MS) flushListening()
+  if (now - lastFlush > FLUSH_MS) void flushListening()
 }
 
 /** Tạm dừng / đổi tiểu mục / đổi cuốn: ghi phần đã gom, lần phát sau đếm lại từ đầu. */
 export function listenStop() {
   lastWall = 0
   lastAudio = -1
-  flushListening()
+  void flushListening()
 }
 
-export function flushListening() {
+/** Ghi phần đang gom; trả Promise để trang thống kê đợi ghi xong rồi mới đọc. */
+export function flushListening(): Promise<unknown> {
   lastFlush = Date.now()
+  const jobs: Promise<void>[] = []
   for (const [slug, p] of pending) {
-    if (p.listen >= 1 || p.audio >= 1) void recordListening(slug, p.listen, p.audio).catch(() => {})
+    if (p.listen >= 1 || p.audio >= 1) jobs.push(recordListening(slug, p.listen, p.audio).catch(() => {}))
   }
   pending.clear()
+  return Promise.all(jobs)
 }
 
 /** Nghe tới cuối cuốn: ghi ngày nghe xong (phần Go chỉ nhận lần đầu). */

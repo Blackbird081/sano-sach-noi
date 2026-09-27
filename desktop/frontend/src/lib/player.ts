@@ -342,5 +342,5 @@ audio.addEventListener('error', () => {
 })
 window.addEventListener('beforeunload', () => {
   remember()
-  flushListening()
+  void flushListening()
 })
