@@ -53,6 +53,7 @@ function toggleRights(e: Event) {
       <Loader2 class="w-4 h-4 animate-spin" /> Đang đọc thử{{ state.clips.length ? ' đoạn mới' : ' các đoạn đầu' }}… lần đầu mất khoảng nửa phút để nạp bộ đọc.
     </p>
     <p v-if="state.previewError" class="mt-4 text-sm text-destructive">{{ state.previewError }}</p>
+    <p v-if="state.previewNote && !state.previewing" class="mt-4 rounded-md border border-rag-amber/50 bg-rag-amber/10 px-3 py-2 text-sm">{{ state.previewNote }}</p>
     <p v-if="player.error.value" class="mt-2 text-sm text-destructive">{{ player.error.value }}</p>
     <div class="mt-5 space-y-3">
       <div v-for="s in state.clips" :key="s.stem" class="rounded-lg border border-border p-4">

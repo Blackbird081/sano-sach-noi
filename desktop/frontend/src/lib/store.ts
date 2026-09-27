@@ -168,6 +168,7 @@ export const state = reactive({
   clipsKey: '', // lựa chọn lúc render nghe thử; đổi lựa chọn → nghe thử lại
   previewing: false,
   previewError: '',
+  previewNote: '', // báo khi chỗ đã sửa không áp được nữa (lời đọc gốc đã đổi)
   heard: [] as string[], // stem các đoạn đã bấm nghe
   rightsConfirmedAt: '', // lúc tick "có quyền dùng tài liệu này" ở bước Nghe thử
   origText: {} as Record<string, string>, // lời đọc gốc của đoạn nghe thử (trước khi sửa)
@@ -340,6 +341,7 @@ export async function setFile(f: DocxFile) {
     state.rightsConfirmedAt = '' // file mới → xác nhận lại
     state.origText = {}
     state.edits = {}
+    state.previewNote = ''
     state.introTouched = false
     state.introText = defaultIntro()
   } catch (e) {
@@ -393,6 +395,7 @@ export function clearFile() {
   state.rightsConfirmedAt = ''
   state.origText = {}
   state.edits = {}
+  state.previewNote = ''
 }
 
 function capitalize(s: string) {
@@ -426,15 +429,21 @@ function defaultPreviewStems() {
   return introText() ? [INTRO_STEM, ...stems] : stems
 }
 
-/** Vào B5: lựa chọn đổi từ lần nghe trước (hoặc chưa nghe) thì render nghe thử lại. */
+/** Vào B5: lựa chọn đổi từ lần nghe trước (hoặc chưa nghe) thì render nghe thử lại.
+ *  Giữ các chỗ đã sửa lời đọc (đổi giọng, tên sách... không làm mất công sửa): đọc lại
+ *  cả những đoạn đã nghe trước đó, bản mới áp luôn chỗ đã sửa. */
 export async function ensurePreview() {
   if (state.previewing) return
   if (state.clips.length && state.clipsKey === previewKey()) return
+  const selected = new Set(introText() ? [INTRO_STEM, ...selectedStems.value] : selectedStems.value)
+  const stems = [...defaultPreviewStems()]
+  for (const st of [...state.clips.map((c) => c.stem), ...Object.keys(state.edits)]) {
+    if (selected.has(st) && !stems.includes(st)) stems.push(st)
+  }
   state.clips = []
   state.heard = []
-  state.origText = {}
-  state.edits = {}
-  await addPreview(defaultPreviewStems())
+  state.previewNote = ''
+  await addPreview(stems)
 }
 
 /** Render thêm / render lại các đoạn nghe thử (giữ thứ tự, thay đoạn trùng). */
@@ -444,12 +453,23 @@ export async function addPreview(stems: string[]) {
   state.previewError = ''
   try {
     const got = await previewClips(settings(), stems)
+    const lost: string[] = []
     for (const c of got) {
-      if (!state.edits[c.stem] && !(c.stem in state.origText)) state.origText[c.stem] = c.text
+      const e = state.edits[c.stem]
+      // Lời đọc không còn bắt đầu bằng đoạn đã sửa (vd bật đọc số tiêu đề, đổi lời mở đầu):
+      // bộ đọc bỏ chỗ sửa → báo để sửa lại, không âm thầm đọc bản chưa sửa.
+      if (e && c.text.trim() !== e.to.trim()) {
+        delete state.edits[c.stem]
+        lost.push(c.stem === INTRO_STEM ? INTRO_LABEL : c.title)
+      }
+      if (!state.edits[c.stem]) state.origText[c.stem] = c.text
       const i = state.clips.findIndex((x) => x.stem === c.stem)
       if (i >= 0) state.clips.splice(i, 1, c)
       else state.clips.push(c)
       state.heard = state.heard.filter((h) => h !== c.stem) // đoạn mới render phải nghe lại
+    }
+    if (lost.length) {
+      state.previewNote = `Chỗ đã sửa ở ${lost.map((t) => `"${t}"`).join(', ')} không còn khớp vì lời đọc gốc đã đổi (vd đổi lời mở đầu, bật đọc số tiêu đề). Hãy sửa lại đoạn đó.`
     }
     state.clipsKey = previewKey()
   } catch (e) {
