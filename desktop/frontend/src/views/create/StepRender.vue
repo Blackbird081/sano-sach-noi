@@ -2,12 +2,13 @@
 // B6 Render thật: tiến độ từ sự kiện Go (tiểu mục x/y, ký tự, thời gian còn lại),
 // huỷ được. Xong → sách đã nằm trong thư viện ~/Sano/Sach/<slug>/.
 import { computed, ref, watch } from 'vue'
-import { BookOpen, Check, ChevronRight, Download, FolderOpen, Loader2, Package } from 'lucide-vue-next'
+import { BookOpen, Check, ChevronRight, FolderOpen, Loader2, Package, Smartphone } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import M4BProgress from '../../components/M4BProgress.vue'
 import { book, errText, openBookFolder, revealBookZip, type BookDetail } from '../../lib/backend'
 import { INTRO_LABEL, cancelRender, go, introText, openBook, remainMin, renderPct, state } from '../../lib/store'
-import { m4bBusy, startM4B, useM4B } from '../../lib/m4b'
+import { useM4B } from '../../lib/m4b'
+import { openPhone } from '../../lib/phone'
 
 useM4B()
 
@@ -137,8 +138,8 @@ async function act(fn: (slug: string) => Promise<void>) {
           <BookOpen class="w-5 h-5 text-primary" /><span class="flex-1"><span class="block font-medium text-sm">Nghe ngay</span><span class="block text-xs text-muted-foreground">Mở trong thư viện</span></span><ChevronRight class="w-4 h-4 text-muted-foreground" />
         </button>
         <div class="rounded-lg border border-border">
-          <button class="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-transparent" :disabled="m4bBusy()" @click="startM4B(state.render.slug)">
-            <Download class="w-5 h-5 text-primary" /><span class="flex-1"><span class="block font-medium text-sm">Xuất file M4B</span><span class="block text-xs text-muted-foreground">Một file có mục lục chương, chép sang điện thoại nghe bằng app sách nói bất kỳ</span></span><ChevronRight class="w-4 h-4 text-muted-foreground" />
+          <button class="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50" @click="openPhone(state.render.slug, made?.title ?? state.render.title, made?.durationSec ?? 0)">
+            <Smartphone class="w-5 h-5 text-primary" /><span class="flex-1"><span class="block font-medium text-sm">Nghe trên điện thoại</span><span class="block text-xs text-muted-foreground">Sano tạo một file có bìa, mục lục chương và chỉ cách chép sang iPhone, Android</span></span><ChevronRight class="w-4 h-4 text-muted-foreground" />
           </button>
           <div class="empty:hidden px-4 pb-3 flex flex-wrap gap-2"><M4BProgress :slug="state.render.slug" /></div>
         </div>

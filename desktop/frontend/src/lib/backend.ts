@@ -320,7 +320,9 @@ interface GoApp {
   RevealBookZip(slug: string): Promise<void>
   OpenLibraryFolder(): Promise<void>
   ChooseCover(): Promise<CoverFile | null>
-  ExportM4B(slug: string, sectionSec: number, chapterSec: number): Promise<M4BStatus | null>
+  ExportM4B(slug: string, sectionSec: number, chapterSec: number, ask: boolean): Promise<M4BStatus | null>
+  CanAirDrop(): Promise<boolean>
+  AirDropM4B(): Promise<void>
   CancelM4B(): Promise<void>
   M4BStatus(): Promise<M4BStatus | null>
   RevealM4B(): Promise<void>
@@ -705,9 +707,22 @@ export async function chooseCover(): Promise<CoverFile | null> {
   return need().ChooseCover()
 }
 
-/** Hỏi nơi lưu rồi xuất M4B trong nền (tiến độ qua m4b:progress / m4b:finished), nghỉ theo gaps. Huỷ hộp lưu → null. */
-export async function exportM4B(slug: string, gaps: { section: number; chapter: number }): Promise<M4BStatus | null> {
-  return need().ExportM4B(slug, gaps.section, gaps.chapter)
+/**
+ * Xuất M4B trong nền (tiến độ qua m4b:progress / m4b:finished), nghỉ theo gaps.
+ * ask: hỏi nơi lưu (huỷ hộp lưu → null); không ask: lưu thẳng vào Tải về.
+ */
+export async function exportM4B(slug: string, gaps: { section: number; chapter: number }, ask = true): Promise<M4BStatus | null> {
+  return need().ExportM4B(slug, gaps.section, gaps.chapter, ask)
+}
+
+/** Máy có AirDrop (macOS) không. */
+export async function canAirDrop(): Promise<boolean> {
+  return (await goApp()?.CanAirDrop()) ?? false
+}
+
+/** Mở bảng AirDrop cho file M4B vừa xuất. */
+export async function airDropM4B(): Promise<void> {
+  return need().AirDropM4B()
 }
 
 export async function cancelM4B(): Promise<void> {

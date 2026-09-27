@@ -4,8 +4,8 @@
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  Check, ChevronDown, ChevronLeft, Download, FolderOpen, Gauge, Loader2, Mic, Package, Pause, Play, RotateCcw, RotateCw,
-  SkipBack, SkipForward, Timer, Trash2, Volume2,
+  Check, ChevronDown, ChevronLeft, FolderOpen, Gauge, Loader2, Mic, Package, Pause, Play, RotateCcw, RotateCw,
+  SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -16,7 +16,8 @@ import { PAUSE_PRESETS, bookPause, fmtGap, levelLabel, makeSetting, pauseState, 
 import { deleteBook, errText, openBookFolder, revealBookZip } from '../lib/backend'
 import { fmtClock, fmtLong } from '../lib/position'
 import { go, state } from '../lib/store'
-import { m4bBusy, startM4B, useM4B } from '../lib/m4b'
+import { useM4B } from '../lib/m4b'
+import { openPhone } from '../lib/phone'
 import {
   SPEEDS as speeds, bookHasLyrics, forgetBook, lyricIndex, lyrics, pause, pctTrack, pick, player, seek, seekFrac, setSpeed as applySpeed, skip, toggle, totalSec,
   track, tracks,
@@ -219,7 +220,7 @@ async function act(fn: (slug: string) => Promise<void>) {
         <p v-if="player.error || actionError" class="mt-3 text-sm text-destructive">{{ player.error || actionError }}</p>
       </div></div>
       <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <Button variant="outline" size="sm" :disabled="!player.detail || m4bBusy()" title="Một file có mục lục chương và bìa — chép sang điện thoại nghe bằng app sách nói bất kỳ" @click="startM4B(state.playerSlug)"><Download class="w-4 h-4" /> Xuất M4B</Button>
+        <Button size="sm" :disabled="!player.detail" title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</Button>
         <Button variant="outline" size="sm" :disabled="!player.detail?.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="act(revealBookZip)"><Package class="w-4 h-4" /> Xuất gói zip</Button>
         <Button variant="ghost" size="sm" :disabled="!player.detail" @click="act(openBookFolder)"><FolderOpen class="w-4 h-4" /> Mở thư mục</Button>
         <Button variant="ghost" size="sm" class="ml-auto text-destructive hover:text-destructive" :disabled="!player.detail" title="Chuyển cuốn sách vào Thùng rác (lấy lại được)" @click="removeBook"><Trash2 class="w-4 h-4" /> Xoá</Button>

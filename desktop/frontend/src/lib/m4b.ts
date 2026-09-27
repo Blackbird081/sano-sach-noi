@@ -31,13 +31,14 @@ export function m4bBusy(): boolean {
   return m4b.asking || !!m4b.status?.running
 }
 
-export async function startM4B(slug: string) {
+/** Xuất M4B cuốn slug; ask = hỏi nơi lưu (mặc định), không thì lưu thẳng vào Tải về. */
+export async function startM4B(slug: string, ask = true) {
   if (m4bBusy()) return
   m4b.error = ''
   m4b.errorSlug = slug
   m4b.asking = true
   try {
-    const st = await goExport(slug, gapsFor(slug))
+    const st = await goExport(slug, gapsFor(slug), ask)
     if (st) m4b.status = st
   } catch (e) {
     m4b.error = errText(e)

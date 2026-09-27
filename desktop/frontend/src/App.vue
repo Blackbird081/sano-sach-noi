@@ -7,6 +7,7 @@ import { init, state } from './lib/store'
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/AppSidebar.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
+import PhoneDialog from './components/PhoneDialog.vue'
 import SetupView from './views/SetupView.vue'
 import TermsView from './views/TermsView.vue'
 import LibraryView from './views/LibraryView.vue'
@@ -46,5 +47,6 @@ onMounted(async () => {
     </div>
 
     <UpdateDialog v-if="state.update !== 'closed'" />
+    <PhoneDialog />
   </div>
 </template>
