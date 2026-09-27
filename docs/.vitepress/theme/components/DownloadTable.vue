@@ -18,7 +18,7 @@ const { version, links } = useRelease()
           <a :href="links['win-zip'].url">{{ links['win-zip'].name }}</a> — bản portable, giải nén là chạy
         </td>
       </tr>
-      <tr><td>macOS 10.13+ (Apple Silicon, Intel)</td><td><a :href="links.mac.url">{{ links.mac.name }}</a></td></tr>
+      <tr><td>macOS 14+ Apple Silicon, macOS 13+ Intel</td><td><a :href="links.mac.url">{{ links.mac.name }}</a></td></tr>
       <tr><td>Linux x86_64</td><td><a :href="links.linux.url">{{ links.linux.name }}</a></td></tr>
     </tbody>
   </table>

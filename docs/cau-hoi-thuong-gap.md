@@ -88,6 +88,10 @@ Sách nói làm từ một tác phẩm là tác phẩm phái sinh của tác ph�
 
 Mở lại Sano, bấm **Cài tiếp**: Sano bỏ qua bước đã xong và tải tiếp phần dở. Kiểm tra mạng và ổ đĩa còn trống khoảng 2,5 GB. Lỗi lặp lại thì bấm **Thử lại** và ghi lại thông báo lỗi khi [báo lỗi](https://github.com/tanviet12/sano-sach-noi/issues).
 
+### Báo lỗi onnxruntime "doesn't have a source distribution or wheel"
+
+Thư viện đọc giọng không có bản cho máy của bạn. Sano từ bản 0.1.12 đã sửa lỗi này trên Mac Intel: cập nhật Sano rồi bấm **Thử lại**. Nếu Sano báo cần macOS mới hơn thì máy đang chạy macOS quá cũ: bộ đọc cần macOS 14 trở lên trên Apple Silicon, macOS 13 trở lên trên Mac Intel. Cập nhật macOS rồi mở lại Sano.
+
 ### Máy báo không mở được Sano
 
 Bản cài chưa ký số, xem [Mở app lần đầu khi chưa ký số](./mo-app-lan-dau).

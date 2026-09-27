@@ -20,7 +20,7 @@ const cards: { id: OS; name: string; icon: typeof Apple; req: string; asset: Ass
     asset: 'win', file: 'bộ cài .exe', hint: 'Cài vào thư mục của bạn, không cần quyền quản trị',
     alt: { asset: 'win-zip', label: 'Bản portable .zip', hint: 'giải nén là chạy, không cần cài' },
   },
-  { id: 'mac', name: 'macOS', icon: Apple, req: 'macOS 10.13 trở lên · Apple Silicon và Intel', asset: 'mac', file: 'file .dmg', hint: 'Mở file, kéo Sano vào thư mục Applications' },
+  { id: 'mac', name: 'macOS', icon: Apple, req: 'macOS 14 trở lên (Intel: macOS 13) · Apple Silicon và Intel', asset: 'mac', file: 'file .dmg', hint: 'Mở file, kéo Sano vào thư mục Applications' },
   { id: 'linux', name: 'Linux', icon: Laptop, req: 'x86_64 · Ubuntu 22.04+, Debian 12+, Fedora 36+', asset: 'linux', file: 'file .AppImage', hint: 'Cấp quyền chạy rồi mở, cần WebKitGTK 4.1' },
 ]
 

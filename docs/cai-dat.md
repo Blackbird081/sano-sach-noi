@@ -18,7 +18,7 @@ Sano là phần mềm cài trên máy tính để tạo sách nói bằng AI t�
 
 ## Máy cần có
 
-- **Windows 10/11** 64-bit, **macOS 10.13** trở lên (Apple Silicon hoặc Intel), hoặc **Linux x86_64** có WebKitGTK 4.1 (Ubuntu 22.04+, Debian 12+, Fedora 36+).
+- **Windows 10/11** 64-bit, **macOS 14** trở lên (Apple Silicon) hoặc **macOS 13** trở lên (Intel), hoặc **Linux x86_64** có WebKitGTK 4.1 (Ubuntu 22.04+, Debian 12+, Fedora 36+).
 - Ổ đĩa trống khoảng **2,5 GB** lúc cài bộ đọc. Cài xong bộ đọc chiếm khoảng 1,5 GB, chưa tính sách bạn tạo.
 - RAM từ 4 GB trở lên. Máy ít RAM hơn vẫn chạy được nhưng đọc chậm.
 - Mạng internet cho lần cài bộ đọc đầu tiên (tải khoảng 1 GB).
