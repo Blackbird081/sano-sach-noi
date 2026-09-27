@@ -8,6 +8,8 @@ import (
 type InspectOptions struct {
 	KeepHeadingNumbers bool   // đọc số đầu tiêu đề ("một chấm hai") thay vì bỏ
 	PronunciationFile  string // TSV bổ sung từ điển cách đọc; trống = mặc định
+	// Pronunciations — các lớp từ điển người dùng (chung, của cuốn), chồng sau PronunciationFile.
+	Pronunciations []map[string]string
 }
 
 // Outline — mục lục + cảnh báo của một file Word, chưa render gì.
@@ -67,6 +69,7 @@ func Inspect(path string, opt InspectOptions) (*Outline, error) {
 	if err != nil {
 		return nil, err
 	}
+	norm.dict.overlay(opt.Pronunciations...)
 	out := &Outline{
 		Title:     strings.TrimSpace(book.Title),
 		FileTitle: titleFromDocxName(path),

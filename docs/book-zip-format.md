@@ -18,6 +18,7 @@ book-<slug>.zip
 ├── manifest.json
 ├── chapters.json
 ├── cover.jpg            (hoặc cover.png)
+├── pronunciations.tsv   (tuỳ chọn, từ 0.1.17)
 └── audio/
     ├── ch01/
     │   ├── sec01.mp3
@@ -30,6 +31,7 @@ book-<slug>.zip
 - `chapters.json` — mục lục nhiều cấp + nội dung từng tiểu mục.
 - `cover.jpg` / `cover.png` — ảnh bìa (tên khớp `manifest.cover_filename`).
 - `audio/` — file audio, gom theo chương.
+- `pronunciations.tsv` — *tuỳ chọn*. Từ điển cách đọc riêng của cuốn: mỗi dòng `<từ trong sách><TAB><đọc là>`, dòng `#` là chú thích. Chỉ đổi lời đọc, không đổi chữ hiển thị. Nơi nhận không hiểu thì bỏ qua; file hỏng thì bỏ qua cả file, vẫn nhập được sách. Không đổi `version` vì gói cũ và nơi đọc cũ vẫn dùng được.
 
 ## 2. manifest.json
 

@@ -67,7 +67,10 @@ type Options struct {
 	CoverPath         string          // != "" → dùng ảnh bìa này thay bìa tự vẽ
 	CoverFirstImage   bool            // không có CoverPath → dùng ảnh đầu sách (mặc định: tự vẽ bìa)
 	OutputZip         string          // != "" → đóng gói thêm zip chuẩn ở đường dẫn này
-	Logf              func(string, ...any)
+	// BookPronunciations — từ điển cách đọc riêng của cuốn (đã gộp vào Norm); ghi ra
+	// tu-dien.tsv trong thư mục sách + pronunciations.tsv trong gói zip để sửa / đọc lại sau.
+	BookPronunciations map[string]string
+	Logf               func(string, ...any)
 
 	// ReadingEdits — lời đọc người dùng sửa ở bước nghe thử, theo stem GỐC
 	// (IntroStem cho lời mở đầu). Chỉ áp khi lời đọc hiện tại còn bắt đầu bằng
@@ -151,6 +154,12 @@ func RunContext(ctx context.Context, opts Options) (int, error) {
 		return 0, err
 	}
 	meta.Cover = coverName
+	if len(opts.BookPronunciations) > 0 {
+		dict := FormatPronunciations(opts.BookPronunciations)
+		if err := os.WriteFile(filepath.Join(opts.OutputDir, BookPronunciationsFile), []byte(dict), 0o644); err != nil {
+			return 0, fmt.Errorf("ghi từ điển của cuốn: %w", err)
+		}
+	}
 
 	printLoadWarnings(os.Stdout, p.book.Stats, unknownAcronyms(jobTexts(jobs), opts.norm().dict))
 

@@ -164,6 +164,12 @@ func packageBookZip(opts Options, meta outMeta, zipPath string) (string, error) 
 			return "", fmt.Errorf("ghi bìa vào zip: %w", err)
 		}
 	}
+	// Từ điển cách đọc riêng của cuốn (tuỳ chọn): nhập sang máy khác vẫn đọc lại đúng.
+	if dict := filepath.Join(opts.OutputDir, BookPronunciationsFile); safepath.IsRegularFile(dict) {
+		if err := writeZipFile(zw, ZipPronunciationsEntry, dict); err != nil {
+			return "", fmt.Errorf("ghi từ điển vào zip: %w", err)
+		}
+	}
 	for _, a := range audios {
 		if err := writeZipFile(zw, a.zipPath, a.srcPath); err != nil {
 			return "", fmt.Errorf("ghi audio %q vào zip: %w", a.zipPath, err)
