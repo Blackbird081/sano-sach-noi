@@ -29,6 +29,7 @@
 - **Nghe trên điện thoại**: xuất một file M4B có mục lục chương và bìa, nghe bằng app BookPlayer (miễn phí, có cho iPhone và Android)
 - **Nghe khi lái xe ô tô**: BookPlayer chạy trên CarPlay và Android Auto, chọn sách, chọn chương ngay trên màn hình xe
 - **25 giọng đọc AI tiếng Việt**: nam, nữ, giọng Bắc, Trung, Nam
+- **Nghe cuốn hơn nhờ AI viết lại** (không bắt buộc): ba cách đọc, từ đọc nguyên văn tới viết lại thành văn sách nói bằng Claude, ChatGPT hoặc Gemini bản miễn phí. Tặng kèm [skill làm sách nói](skills/) cho Claude và ChatGPT: nạp một lần, lần sau chỉ cần gửi file
 - **Không cần API key, không tốn tiền token**: mô hình AI tải về một lần rồi chạy ngay trên máy, không cần tài khoản ChatGPT hay dịch vụ AI nào; tài liệu không gửi lên mạng
 
 ## Nghe thử
@@ -182,6 +183,8 @@ go run ./cmd/sano-docx2tts -h                                                 # 
 sano-sach-noi/
 ├── desktop/             # phần mềm (Wails, Go module riêng) — giao diện ở desktop/frontend/
 ├── cmd/sano-docx2tts/   # CLI tạo sách từ file Word
+├── cmd/sano-skill/      # ghi skill làm sách nói từ docs/prompts ra skills/
+├── skills/              # skill làm sách nói cho Claude / ChatGPT (dựng từ docs/prompts)
 ├── internal/
 │   ├── bookmaker/       # đọc docx, chuẩn hóa lời đọc, gọi bộ đọc, ghi MP3 + metadata, gói zip
 │   ├── cover/           # vẽ bìa mặc định
@@ -189,7 +192,7 @@ sano-sach-noi/
 ├── scripts/
 │   ├── tts/             # script Python gọi VieNeu-TTS + phiên bản ghim (nhúng vào app)
 │   └── release/         # build + đóng gói bản cài 3 hệ điều hành
-└── docs/                # hướng dẫn, điều khoản sử dụng, design system
+└── docs/                # hướng dẫn, điều khoản sử dụng, design system; prompt gửi AI ở docs/prompts/
 ```
 
 ### Kế hoạch tiếp theo

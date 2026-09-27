@@ -84,3 +84,19 @@ func SkillZip() ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
+
+// RepoFiles — các file skill đặt trong repo (đường dẫn tính từ gốc repo), để
+// người dùng tải trên GitHub hoặc trang hướng dẫn. Ghi bằng cmd/sano-skill.
+func RepoFiles() (map[string][]byte, error) {
+	zip, err := SkillZip()
+	if err != nil {
+		return nil, err
+	}
+	guide := []byte(GuideText())
+	return map[string][]byte{
+		"skills/sano-sach-noi/SKILL.md":      []byte(SkillMD()),
+		"skills/" + GuideFileName:            guide,
+		"docs/public/skill/" + SkillZipName:  zip,
+		"docs/public/skill/" + GuideFileName: guide,
+	}, nil
+}

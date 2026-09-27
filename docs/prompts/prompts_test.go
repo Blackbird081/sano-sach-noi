@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -40,5 +42,24 @@ func TestGuideText(t *testing.T) {
 	}
 	if !strings.Contains(g, strings.TrimSpace(rewrite)[:40]) || !strings.Contains(g, strings.TrimSpace(smooth)[:40]) {
 		t.Error("file hướng dẫn phải chứa nguyên prompt cấp 2 và cấp 3")
+	}
+}
+
+// File skill trong repo phải khớp prompt hiện tại (sửa prompt thì chạy
+// go run ./cmd/sano-skill để ghi lại).
+func TestRepoFilesUpToDate(t *testing.T) {
+	files, err := RepoFiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for path, want := range files {
+		got, err := os.ReadFile(filepath.Join("..", "..", path))
+		if err != nil {
+			t.Errorf("thiếu %s: chạy go run ./cmd/sano-skill", path)
+			continue
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("%s lệch với prompt: chạy go run ./cmd/sano-skill", path)
+		}
 	}
 }

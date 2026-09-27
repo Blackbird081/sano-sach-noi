@@ -45,7 +45,14 @@ Thỉnh thoảng AI trả lời "không giúp được" khi chưa đọc xong fi
 
 ## Nạp skill cho AI: làm một lần, dùng mãi
 
-Làm sách thường xuyên thì nạp hướng dẫn của Sano cho AI một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2"), không phải dán prompt. Trong phần mềm, ở màn nhờ AI bấm **Nạp skill cho Claude** (hoặc ChatGPT) để tải file.
+Làm sách thường xuyên thì nạp skill làm sách nói của Sano cho AI một lần. Lần sau chỉ cần đính kèm file Word và gõ một câu có sẵn, không phải dán prompt. Skill miễn phí, tải ngay ở đây, hoặc trong phần mềm bấm **Nạp skill cho Claude** (hoặc ChatGPT) ở màn nhờ AI.
+
+<p>
+  <a class="sano-btn brand" href="/sano-sach-noi/skill/sano-sach-noi.zip" download>Tải skill sano-sach-noi.zip</a>
+  <a class="sano-btn outline" href="/sano-sach-noi/skill/sano-huong-dan-ai.txt" download>Tải sano-huong-dan-ai.txt (Dự án ChatGPT)</a>
+</p>
+
+Mã nguồn skill ở thư mục [`skills/`](https://github.com/tanviet12/sano-sach-noi/tree/main/skills) trên GitHub.
 
 - **Claude**: tải `sano-sach-noi.zip` (không cần giải nén), mở claude.ai → **Customize** → **Skills** → nút **+** → **Create skill** → **Upload a skill**. Mọi gói Claude, kể cả miễn phí, đều nạp được skill. Skill này cũng dùng được trong Claude Code.
 - **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm. Dùng ChatGPT Business hoặc Enterprise thì mục **Skills** nhận luôn file `sano-sach-noi.zip` của Claude (cùng định dạng SKILL.md): **Skills** → **Tạo** → **Tải lên**.
