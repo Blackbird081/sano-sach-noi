@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Trang chủ: ba cách đọc + tặng kèm skill làm sách nói (anh Việt yêu cầu 27/09, chờ duyệt).
+// Trang chủ: ba cách đọc + tặng kèm skill làm sách nói (anh Việt duyệt 27/09).
 // Nghe mẫu dùng chung 3 đoạn với app (docs/public/audio/cach-doc-cap-*.mp3).
 import { ref } from 'vue'
 import { withBase } from 'vitepress'
