@@ -6,7 +6,8 @@
 //   3. Tạo file cho điện thoại (file M4B): tiến độ ngay trong hộp, dùng quãng nghỉ của cuốn
 //   4. Chép sang điện thoại: cách theo máy (iPhone từ Mac: AirDrop; iPhone từ Windows,
 //      Android: Zalo / Google Drive / cáp USB) rồi mở trong BookPlayer
-// Lần sau (đã làm một lần): mở thẳng bước 3, có link "Xem lại hướng dẫn".
+// Lần nào cũng đi đủ 4 bước (anh Việt chốt 27/09: ai cài rồi thì bấm Tiếp); máy đã chọn được chọn sẵn.
+// (Trạng thái 5 "Lần sau" bỏ, giữ để tham khảo.)
 // Wireframe tĩnh: dữ liệu giả, KHÔNG gọi API. Nút ngoài khung để chuyển trạng thái duyệt.
 import { computed, ref } from 'vue'
 import {
@@ -207,7 +208,7 @@ const nav = [
     </div>
 
     <p class="text-xs text-muted-foreground max-w-[1100px] text-center">
-      D10 · Nút "Nghe trên điện thoại" thay "Xuất M4B" (màn nghe và màn render xong). Chữ "M4B" chỉ nhắc phụ. Lần đầu đi đủ 4 bước; lần sau vào thẳng bước tạo file.
+      D10 · Nút "Nghe trên điện thoại" thay "Xuất M4B" (màn nghe và màn render xong). Chữ "M4B" chỉ nhắc phụ. Lần nào cũng đi đủ 4 bước, máy đã chọn được chọn sẵn, có nút Tiếp.
       "Để chạy nền": đóng hộp, tiến độ vẫn hiện dưới hàng nút như hiện tại; xong thì hộp tự mở lại ở bước 4.
     </p>
   </div>

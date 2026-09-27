@@ -9,7 +9,7 @@ Sano xuất cả cuốn thành **một file `.m4b`**: có mục lục chương, 
 
 ## Tạo file cho điện thoại
 
-Mở cuốn sách trong **Thư viện** → bấm **Nghe trên điện thoại** (hoặc nút cùng tên ngay khi render xong). Từ 0.1.16, Sano dẫn từng bước ngay trong phần mềm: chọn iPhone hay Android, quét mã QR để cài BookPlayer, tạo file (lưu vào thư mục Tải về), rồi chỉ cách chép sang máy (AirDrop trên Mac, Zalo, Google Drive, cáp USB). Lần sau bấm là tạo file luôn. Chi tiết ở [Xuất M4B và gói zip](./xuat-m4b-goi-zip).
+Mở cuốn sách trong **Thư viện** → bấm **Nghe trên điện thoại** (hoặc nút cùng tên ngay khi render xong). Từ 0.1.16, Sano dẫn từng bước ngay trong phần mềm: chọn iPhone hay Android, quét mã QR để cài BookPlayer, tạo file (lưu vào thư mục Tải về), rồi chỉ cách chép sang máy (AirDrop trên Mac, Zalo, Google Drive, cáp USB). Lần sau Sano nhớ loại máy, bạn bấm **Tiếp** qua các bước đã làm. Chi tiết ở [Xuất M4B và gói zip](./xuat-m4b-goi-zip).
 
 ::: tip Mẹo
 Dung lượng khoảng **29 MB cho mỗi giờ nghe** (AAC 64 kbps), đủ rõ cho giọng đọc.

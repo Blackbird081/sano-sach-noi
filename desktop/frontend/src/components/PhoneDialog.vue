@@ -13,7 +13,7 @@ import { DOCS } from '../lib/mock'
 import { cancelM4B, fmtSize, showM4B, useM4B } from '../lib/m4b'
 import { fmtGap, gapsFor, bookPause, levelLabel, pauseState } from '../lib/pause'
 import { fmtLong } from '../lib/position'
-import { STORE_URL, changeLocation, closePhone, make, phone, pickDevice, restartGuide, runInBackground, type Phone } from '../lib/phone'
+import { STORE_URL, changeLocation, closePhone, make, phone, pickDevice, runInBackground, type Phone } from '../lib/phone'
 
 const m4b = useM4B()
 const st = computed(() => (m4b.status?.slug === phone.slug ? m4b.status : null))
@@ -159,7 +159,6 @@ const pick = (d: Phone) => pickDevice(d)
             </li>
             <li class="flex items-center gap-1"><Timer class="w-3.5 h-3.5 shrink-0" /> {{ pauseLine }}</li>
           </ul>
-          <p v-if="phone.done" class="mt-4 text-xs text-muted-foreground">Đã cài BookPlayer rồi nên Sano tạo file luôn. <button class="text-primary hover:underline" @click="restartGuide">Xem lại hướng dẫn từ đầu</button></p>
         </template>
 
         <!-- 4. Chép sang máy -->
@@ -207,6 +206,7 @@ const pick = (d: Phone) => pickDevice(d)
       <div class="flex items-center justify-between gap-2 border-t border-border px-6 py-3">
         <button class="text-xs text-muted-foreground inline-flex items-center gap-1 hover:text-foreground" @click="openURL(`${DOCS}/nghe-tren-dien-thoai`)"><ExternalLink class="w-3 h-3" /> Hướng dẫn có ảnh</button>
         <div class="flex gap-2">
+          <Button v-if="phone.step === 'pick' && phone.device" size="sm" @click="pick(phone.device)">Tiếp <ArrowRight class="w-4 h-4" /></Button>
           <Button v-if="phone.step === 'app'" variant="outline" size="sm" @click="phone.step = 'pick'"><ArrowLeft class="w-4 h-4" /> Quay lại</Button>
           <Button v-if="phone.step === 'app'" size="sm" @click="make()"><Download class="w-4 h-4" /> Đã cài, tạo file</Button>
           <Button v-if="phone.step === 'make' && st?.running" variant="outline" size="sm" @click="runInBackground">Để chạy nền</Button>

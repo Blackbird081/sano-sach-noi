@@ -1,6 +1,6 @@
 // Hộp "Nghe trên điện thoại" (wireframe D10): chọn máy → cài BookPlayer → tạo
-// file (M4B, lưu thẳng vào Tải về) → chép sang máy. Lần sau (đã làm xong một
-// lần) mở thẳng bước tạo file. Nhớ loại máy trong bộ nhớ cửa sổ app.
+// file (M4B, lưu thẳng vào Tải về) → chép sang máy. Lần nào cũng đi đủ các bước
+// (anh Việt chốt: ai cài rồi thì bấm tiếp); nhớ loại máy đã chọn để chọn sẵn.
 import { reactive, watch } from 'vue'
 import { cancelM4B, m4b, startM4B } from './m4b'
 
@@ -13,12 +13,12 @@ export const STORE_URL: Record<Phone, string> = {
 }
 
 const KEY = 'sano.phone'
-function read(): { device: Phone | null; done: boolean } {
+function read(): Phone | null {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    return { device: v?.device === 'ios' || v?.device === 'android' ? v.device : null, done: v?.done === true }
+    return v?.device === 'ios' || v?.device === 'android' ? v.device : null
   } catch {
-    return { device: null, done: false }
+    return null
   }
 }
 const saved = read()
@@ -29,14 +29,13 @@ export const phone = reactive({
   title: '',
   totalSec: 0,
   step: 'pick' as PhoneStep,
-  device: saved.device,
-  done: saved.done, // đã đi hết một lần → lần sau vào thẳng bước tạo file
+  device: saved,
   background: false, // đóng hộp khi đang tạo file: xong thì mở lại ở bước chép
 })
 
 function save() {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ device: phone.device, done: phone.done }))
+    localStorage.setItem(KEY, JSON.stringify({ device: phone.device }))
   } catch {
     // không lưu được: lần sau hỏi lại từ đầu
   }
@@ -51,9 +50,7 @@ export function openPhone(slug: string, title: string, totalSec = 0) {
   phone.totalSec = totalSec
   phone.background = false
   phone.open = true
-  if (runningHere()) phone.step = 'make'
-  else if (phone.done && phone.device) void make()
-  else phone.step = 'pick'
+  phone.step = runningHere() ? 'make' : 'pick'
 }
 
 /** Mở thẳng bước chép cho file vừa tạo (nút "Cách chép sang điện thoại"). Chưa chọn máy thì hỏi trước. */
@@ -108,11 +105,7 @@ export function closePhone() {
   phone.background = false
 }
 
-export function restartGuide() {
-  phone.step = 'pick'
-}
-
-// Tạo xong: sang bước chép (mở lại hộp nếu đã để chạy nền), lần sau vào thẳng bước tạo file.
+// Tạo xong: sang bước chép (mở lại hộp nếu đã để chạy nền).
 watch(
   () => m4b.status,
   (st) => {
@@ -121,7 +114,5 @@ watch(
     phone.step = 'copy'
     phone.open = true
     phone.background = false
-    phone.done = true
-    save()
   },
 )
