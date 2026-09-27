@@ -25,6 +25,28 @@ const dark = ref(false)
 const copied = ref(false)
 const skill = ref(q.get('skill') === '1')
 const saved = ref(false)
+// ChatGPT: chọn gói trong hộp nạp skill (không chọn sẵn)
+const plan = ref<'' | 'skills' | 'project'>((q.get('plan') as '' | 'skills' | 'project' | null) || '')
+const plans = [
+  { k: 'skills' as const, title: 'Có mục Skills', sub: 'Gói Business, Enterprise, Edu' },
+  { k: 'project' as const, title: 'Chưa có mục Skills', sub: 'Gói Free, Plus, Pro · dùng Dự án' },
+]
+type DStep = { text: string; act?: 'file' | 'open' | 'copy'; file?: string; label?: string }
+const dlgSteps = computed<DStep[]>(() => {
+  if (tool.value === 'claude') return [
+    { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: 'sano-sach-noi.zip' },
+    { text: 'Mở Cài đặt → Capabilities → Skills → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Skills của Claude' },
+  ]
+  if (plan.value === 'skills') return [
+    { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: 'sano-sach-noi.zip' },
+    { text: 'Mở ChatGPT → Skills → Tạo → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở ChatGPT' },
+  ]
+  return [
+    { text: 'Tải file hướng dẫn về.', act: 'file', file: 'sano-huong-dan-ai.txt' },
+    { text: 'Tạo Dự án (Project) tên "Sano – sách nói", thêm file vừa tải vào phần Tệp.', act: 'open', label: 'Mở ChatGPT' },
+    { text: 'Dán câu Sano đưa vào ô Hướng dẫn (Instructions) của dự án. Từ nay làm sách trong dự án đó.', act: 'copy' },
+  ]
+})
 
 const tools = [
   { k: 'claude' as const, name: 'Claude', gives: 'Trả về file Word', icon: FileText },
@@ -56,6 +78,7 @@ const nav = [
         :class="tool === m[0] ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground'"
         @click="tool = m[0]">{{ m[1] }}</button>
       <button class="h-8 px-3 rounded-full border text-xs" :class="skill ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground'" @click="skill = !skill; if (!tool || tool === 'gemini') tool = 'claude'">5. Hộp nạp skill</button>
+      <button v-if="skill && tool === 'chatgpt'" v-for="p in ([['', 'ChatGPT: chưa chọn gói'], ['skills', 'Có Skills'], ['project', 'Dự án']] as ['' | 'skills' | 'project', string][])" :key="p[0]" class="h-8 px-3 rounded-full border text-xs" :class="plan === p[0] ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground'" @click="plan = p[0]">{{ p[1] }}</button>
       <button class="h-8 px-3 rounded-full border border-border bg-background text-xs text-foreground" @click="level = level === 3 ? 2 : 3">Cấp {{ level }} (đổi)</button>
       <button class="h-8 px-3 rounded-full border border-border bg-background text-xs flex items-center gap-1.5 text-foreground" @click="dark = !dark">
         <component :is="dark ? Sun : Moon" class="w-3.5 h-3.5" /> {{ dark ? 'Sáng' : 'Tối' }}
@@ -147,7 +170,7 @@ const nav = [
                   <button class="text-primary hover:underline" @click="skill = true; saved = false">Nạp skill cho {{ t.name }} một lần, lần sau chỉ cần gửi file</button>
                 </div>
                 <p v-else class="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles class="w-4 h-4 text-chart shrink-0" /> Với Gemini, mỗi lần làm sách chỉ cần dán prompt, không cần nạp skill.
+                  <Sparkles class="w-4 h-4 text-chart shrink-0" /> Với Gemini, mỗi lần làm sách chỉ cần dán prompt, Gemini chưa hỗ trợ skill.
                 </p>
               </template>
             </div>
@@ -163,9 +186,9 @@ const nav = [
         </section>
       </div>
 
-      <!-- ═══ Hộp nạp skill: theo AI đã chọn ═══ -->
+      <!-- ═══ Hộp nạp skill: theo AI đã chọn, mỗi bước có nút làm ngay tại dòng ═══ -->
       <div v-if="skill && t && !gemini" class="absolute inset-0 bg-black/40 grid place-items-center z-30" @click.self="skill = false">
-        <div class="w-[520px] rounded-xl border border-border bg-background shadow-2xl">
+        <div class="w-[560px] rounded-xl border border-border bg-background shadow-2xl">
           <div class="flex items-start justify-between p-5 pb-0">
             <div>
               <h2 class="font-semibold">Nạp skill làm sách nói cho {{ t.name }}</h2>
@@ -173,31 +196,35 @@ const nav = [
             </div>
             <button class="text-muted-foreground" @click="skill = false"><X class="w-4 h-4" /></button>
           </div>
+
           <div class="p-5">
-            <ol class="space-y-2.5 text-sm">
-              <template v-if="tool === 'claude'">
-                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">1</span><span>Tải file <span class="font-mono">sano-sach-noi.zip</span> về, không cần giải nén.</span></li>
-                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">2</span><span>Mở claude.ai → Cài đặt → Capabilities → Skills → Tải lên, chọn file vừa tải.</span></li>
-              </template>
-              <template v-else>
-                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">1</span><span>Tải file <span class="font-mono">sano-huong-dan-ai.txt</span> về.</span></li>
-                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">2</span><span>Mở ChatGPT → tạo Dự án (Project) tên "Sano – sách nói", thêm file vừa tải vào phần Tệp của dự án.</span></li>
-                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">3</span><span>Dán câu dưới đây vào ô Hướng dẫn (Instructions) của dự án. Từ nay làm sách trong dự án đó.</span></li>
-              </template>
+            <!-- ChatGPT: chọn gói trước, hai cách ngang nhau -->
+            <template v-if="tool === 'chatgpt'">
+              <p class="text-sm font-medium">ChatGPT của bạn có mục Skills không?</p>
+              <div class="mt-2 grid grid-cols-2 gap-3">
+                <button v-for="p in plans" :key="p.k" class="relative rounded-xl border p-3 text-left transition"
+                  :class="plan === p.k ? 'border-primary ring-2 ring-primary/15 bg-primary/5' : 'border-border hover:border-primary/40'" @click="plan = p.k; saved = false">
+                  <span class="absolute top-3 right-3 h-4 w-4 rounded-full border-2 grid place-items-center" :class="plan === p.k ? 'border-primary bg-primary' : 'border-muted-foreground/30'"><Check v-if="plan === p.k" class="w-2.5 h-2.5 text-primary-foreground" /></span>
+                  <span class="block text-sm font-semibold">{{ p.title }}</span>
+                  <span class="mt-0.5 block text-xs text-muted-foreground">{{ p.sub }}</span>
+                </button>
+              </div>
+            </template>
+
+            <ol v-if="tool === 'claude' || plan" class="mt-4 rounded-xl border border-border divide-y divide-border text-sm" :class="tool === 'claude' && 'mt-0'">
+              <li v-for="(st, i) in dlgSteps" :key="i" class="flex items-center gap-3 px-4 py-3">
+                <span class="h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold shrink-0">{{ i + 1 }}</span>
+                <span class="flex-1">{{ st.text }}</span>
+                <Button v-if="st.act === 'file'" size="sm" class="shrink-0 w-44" @click="saved = true"><component :is="saved ? CheckCircle2 : Download" class="w-4 h-4" /> {{ saved ? 'Đã lưu vào Tải về' : `Tải ${st.file}` }}</Button>
+                <Button v-else-if="st.act === 'open'" size="sm" variant="outline" class="shrink-0 w-44">{{ st.label }} <ExternalLink class="w-3.5 h-3.5" /></Button>
+                <Button v-else-if="st.act === 'copy'" size="sm" variant="outline" class="shrink-0 w-44" @click="copy"><component :is="copied ? Check : Copy" class="w-4 h-4" /> {{ copied ? 'Đã sao chép' : 'Sao chép câu dán' }}</Button>
+              </li>
             </ol>
-            <div class="mt-4 flex items-center gap-3 rounded-lg bg-muted/40 p-3">
-              <FileText class="w-5 h-5 text-muted-foreground shrink-0" />
-              <span class="flex-1 text-sm font-mono">{{ tool === 'claude' ? 'sano-sach-noi.zip' : 'sano-huong-dan-ai.txt' }}</span>
-              <Button size="sm" @click="saved = true"><Download class="w-4 h-4" /> Tải về</Button>
-            </div>
-            <p v-if="saved" class="mt-2 text-xs text-muted-foreground flex items-center gap-1.5"><CheckCircle2 class="w-3.5 h-3.5 text-rag-green" /> Đã lưu vào Downloads/{{ tool === 'claude' ? 'sano-sach-noi.zip' : 'sano-huong-dan-ai.txt' }}</p>
-            <div v-if="tool === 'chatgpt'" class="mt-3 rounded-lg border border-border p-3 text-sm">
-              <p class="text-muted-foreground">Mỗi khi tôi gửi tài liệu để làm sách nói, làm đúng theo file sano-huong-dan-ai.txt đã đính kèm. Mặc định làm việc A, cấp 3 viết lại thành văn sách nói. Tôi ghi "cấp 2" thì làm việc B, làm mượt.</p>
-              <button class="mt-2 h-7 px-2.5 rounded-md border border-border text-xs flex items-center gap-1 hover:bg-muted"><Copy class="w-3.5 h-3.5" /> Sao chép câu này</button>
-            </div>
+            <p v-if="tool === 'chatgpt' && plan === 'project'" class="mt-2 text-xs text-muted-foreground">Câu dán: "Mỗi khi tôi gửi tài liệu để làm sách nói, làm đúng theo file sano-huong-dan-ai.txt đã đính kèm…"</p>
             <p class="mt-3 text-xs text-muted-foreground">
               <template v-if="tool === 'claude'">Cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution).</template>
-              <template v-else>Dùng ChatGPT Business hoặc Enterprise? Mục Skills nhận luôn file skill của Claude: <button class="text-primary hover:underline">tải sano-sach-noi.zip</button>, rồi Skills → Tạo → Tải lên.</template>
+              <template v-else-if="plan === 'skills'">Mục Skills của ChatGPT dùng cùng định dạng skill với Claude, nên dùng chung một file.</template>
+              <template v-else-if="plan === 'project'">Ô Hướng dẫn của Dự án tối đa 8.000 ký tự, nên hướng dẫn đầy đủ nằm trong file đính kèm.</template>
             </p>
           </div>
         </div>
