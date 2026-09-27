@@ -41,12 +41,13 @@ export interface TocEntry {
 // của máy, mất thì hỏi lại).
 const LEVEL_KEY = 'sano.readLevel'
 const AI_KEY = 'sano.aiTool'
+// Chưa chọn lần nào thì mặc định cấp 1 Đọc nguyên văn (anh Việt chốt 27/09).
 function readLevel(): number {
   try {
     const n = Number(localStorage.getItem(LEVEL_KEY))
-    return n >= 1 && n <= 3 ? n : 0
+    return n >= 1 && n <= 3 ? n : 1
   } catch {
-    return 0
+    return 1
   }
 }
 // Không chọn sẵn AI (wireframe D8b): chưa chọn lần nào thì '' và màn Nhờ AI bắt chọn.
@@ -127,7 +128,7 @@ export const state = reactive({
   setupInfo: null as SetupInfo | null,
   setupError: '', // lỗi khi bấm Cài (vd đang render) — khác lỗi trong lúc cài
 
-  // B1 Cách đọc: 1 đọc nguyên văn, 2 làm mượt, 3 viết lại (0 = chưa chọn).
+  // B1 Cách đọc: 1 đọc nguyên văn (mặc định), 2 làm mượt, 3 viết lại.
   // levelScreen 'ai' = màn nhờ AI (cấp 2/3) trước khi sang Nạp file.
   level: readLevel(),
   levelScreen: 'choose' as 'choose' | 'ai',
