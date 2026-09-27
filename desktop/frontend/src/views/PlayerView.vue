@@ -4,8 +4,8 @@
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  Check, ChevronDown, ChevronLeft, FolderOpen, Gauge, Loader2, Mic, Package, Pause, Play, RotateCcw, RotateCw,
-  SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
+  Check, ChevronDown, ChevronLeft, Download, FolderOpen, Gauge, Loader2, Mic, Package, Pause, Play, RotateCcw, RotateCw,
+  Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -16,7 +16,7 @@ import { PAUSE_PRESETS, bookPause, fmtGap, levelLabel, makeSetting, pauseState, 
 import { deleteBook, errText, openBookFolder, revealBookZip } from '../lib/backend'
 import { fmtClock, fmtLong } from '../lib/position'
 import { go, state } from '../lib/store'
-import { useM4B } from '../lib/m4b'
+import { m4bBusy, startM4B, useM4B } from '../lib/m4b'
 import { openPhone } from '../lib/phone'
 import {
   SPEEDS as speeds, bookHasLyrics, forgetBook, lyricIndex, lyrics, pause, pctTrack, pick, player, seek, seekFrac, setSpeed as applySpeed, skip, toggle, totalSec,
@@ -42,6 +42,12 @@ watch(() => player.current, () => scrollToCurrent(true))
 watch(() => player.detail?.slug, () => scrollToCurrent(false))
 watch(lyricsOpen, (open) => !open && scrollToCurrent(false))
 const speedOpen = ref(false)
+// Menu bánh răng góc trên phải: các việc phụ của cuốn sách (zip, thư mục, lưu M4B chỗ khác, xoá).
+const bookMenu = ref(false)
+function menuAct(fn: () => unknown) {
+  bookMenu.value = false
+  void fn()
+}
 
 // Quãng nghỉ riêng cuốn đang nghe (wireframe D9); null = theo cài đặt chung.
 const pauseOpen = ref(false)
@@ -91,6 +97,7 @@ function closeSpeed(e: Event) {
   const esc = e instanceof KeyboardEvent
   if (esc ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-speed-menu]')) speedOpen.value = false
   if (esc ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-pause-menu]')) pauseOpen.value = false
+  if (esc ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-book-menu]')) bookMenu.value = false
 }
 document.addEventListener('mousedown', closeSpeed)
 document.addEventListener('keydown', closeSpeed)
@@ -128,7 +135,20 @@ async function act(fn: (slug: string) => Promise<void>) {
   <LyricsPanel v-if="lyricsOpen && player.detail" @close="lyricsOpen = false" />
   <section v-else class="flex-1 flex min-h-0">
     <div class="flex-1 flex flex-col p-6 min-w-0 min-h-0">
-      <button class="shrink-0 text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground w-fit" @click="go('library')"><ChevronLeft class="w-4 h-4" /> Thư viện</button>
+      <div class="shrink-0 flex items-center justify-between gap-2">
+        <button class="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground w-fit" @click="go('library')"><ChevronLeft class="w-4 h-4" /> Thư viện</button>
+        <div v-if="player.detail" class="relative" data-book-menu>
+          <button class="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" :class="bookMenu && 'bg-muted text-foreground'"
+            aria-label="Tuỳ chọn cuốn sách" aria-haspopup="menu" :aria-expanded="bookMenu" @click="bookMenu = !bookMenu"><Settings class="w-4 h-4" /></button>
+          <div v-if="bookMenu" role="menu" class="absolute top-full right-0 mt-1 w-64 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-30 text-sm">
+            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="!player.detail.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="menuAct(() => act(revealBookZip))"><Package class="w-4 h-4" /> Xuất gói zip</button>
+            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="m4bBusy()" title="Tạo file M4B và tự chọn nơi lưu" @click="menuAct(() => startM4B(state.playerSlug, true))"><Download class="w-4 h-4" /> Lưu file M4B vào chỗ khác…</button>
+            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="menuAct(() => act(openBookFolder))"><FolderOpen class="w-4 h-4" /> Mở thư mục sách</button>
+            <div class="my-1 border-t border-border"></div>
+            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" title="Chuyển cuốn sách vào Thùng rác (lấy lại được)" @click="menuAct(removeBook)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
+          </div>
+        </div>
+      </div>
       <div v-if="!player.detail || player.slug !== state.playerSlug" class="flex-1 grid place-items-center text-sm text-muted-foreground">
         <span v-if="player.error" class="text-destructive">{{ player.error }}</span>
         <span v-else-if="!state.playerSlug">Chọn một cuốn trong thư viện để nghe.</span>
@@ -221,9 +241,6 @@ async function act(fn: (slug: string) => Promise<void>) {
       </div></div>
       <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Button size="sm" variant="outline" class="border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" :disabled="!player.detail" title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</Button>
-        <Button variant="outline" size="sm" :disabled="!player.detail?.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="act(revealBookZip)"><Package class="w-4 h-4" /> Xuất gói zip</Button>
-        <Button variant="ghost" size="sm" :disabled="!player.detail" @click="act(openBookFolder)"><FolderOpen class="w-4 h-4" /> Mở thư mục</Button>
-        <Button variant="ghost" size="sm" class="ml-auto text-destructive hover:text-destructive" :disabled="!player.detail" title="Chuyển cuốn sách vào Thùng rác (lấy lại được)" @click="removeBook"><Trash2 class="w-4 h-4" /> Xoá</Button>
         <M4BProgress v-if="state.playerSlug" :slug="state.playerSlug" />
       </div>
     </div>

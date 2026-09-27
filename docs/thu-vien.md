@@ -87,7 +87,8 @@ Bấm vào một cuốn để nghe ngay trong Sano:
 - Tự nhớ chỗ nghe dở của từng cuốn, hết mục tự sang mục kế.
 - Cột **Mục lục** liệt kê từng mục và tự cuộn tới mục đang phát, bấm để nhảy tới.
 - **Rời màn nghe vẫn nghe tiếp:** sang Thư viện, Tạo sách hay Cài đặt, sách phát tiếp ở **thanh nghe nhỏ** dưới đáy cửa sổ (phát/dừng, tua, ✕ để dừng hẳn). Bấm tên sách trên thanh để mở lại màn nghe. Khi bấm **Nghe mẫu** giọng lúc tạo sách, sách tự tạm dừng.
-- Hàng nút: **Nghe trên điện thoại** (tạo file M4B, có hướng dẫn chép sang máy), **Xuất gói zip**, **Mở thư mục**, **Xoá**.
+- Nút **Nghe trên điện thoại** dưới cùng: tạo file M4B, có hướng dẫn chép sang máy.
+- Bánh răng góc trên bên phải: **Xuất gói zip**, **Lưu file M4B vào chỗ khác**, **Mở thư mục sách**, **Chuyển vào Thùng rác**.
 
 ### Chữ chạy theo lời đọc
 
