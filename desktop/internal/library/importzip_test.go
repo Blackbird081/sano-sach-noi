@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sano/internal/bookmaker"
 	"sort"
 	"strings"
 	"testing"
@@ -450,5 +451,33 @@ func TestCleanStaleWork(t *testing.T) {
 	}
 	if _, err := os.Stat(book); err != nil {
 		t.Error("không được đụng thư mục sách thật")
+	}
+}
+
+func TestImport_CarriesBookDict(t *testing.T) {
+	lib := New(t.TempDir())
+	entries := append(goodEntries("Sách có từ điển"), zipEntry{name: bookmaker.ZipPronunciationsEntry, data: []byte("Nielsen\tNiu-sen\nsai dong khong tab\n")})
+	// Dòng hỏng → cả file bị bỏ qua, vẫn nhập được sách.
+	p := writeImportZip(t, t.TempDir(), entries)
+	slug, err := importAll(t, lib, p, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m, _ := lib.BookDict(slug); len(m) != 0 {
+		t.Errorf("từ điển hỏng phải bị bỏ qua: %v", m)
+	}
+	entries[len(entries)-1].data = []byte("Nielsen\tNiu-sen\n")
+	p = writeImportZip(t, t.TempDir(), entries)
+	slug, err = importAll(t, lib, p, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m, _ := lib.BookDict(slug); m["Nielsen"] != "Niu-sen" {
+		t.Errorf("từ điển của cuốn không đi theo gói: %v", m)
+	}
+	d, _ := lib.Get(slug)
+	names, _ := readZip(t, filepath.Join(lib.Root(), filepath.FromSlash(d.Zip)))
+	if !strings.Contains(strings.Join(names, ","), bookmaker.ZipPronunciationsEntry) {
+		t.Error("gói lưu lại phải giữ từ điển")
 	}
 }

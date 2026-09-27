@@ -42,6 +42,7 @@ var (
 	maxImportAudioBytes int64  = 512 << 20 // một file mp3
 	maxImportCoverBytes int64  = 10 << 20
 	maxManifestBytes    int64  = 1 << 20
+	maxImportDictBytes  int64  = 256 << 10 // từ điển cách đọc của cuốn
 	maxImportChapters          = 1000
 	maxImportSections          = 5000
 	maxImportRatio      uint64 = 20 // mp3/ảnh hầu như không nén được: tỉ lệ cao = đáng ngờ
@@ -97,6 +98,7 @@ type importPlan struct {
 	chapters                       []planChapter
 	cover                          *zip.File
 	coverExt                       string
+	dict                           map[string]string // từ điển cách đọc riêng của cuốn (pronunciations.tsv), có thể rỗng
 	durationSec                    int
 	sections                       int
 	size                           int64
@@ -218,6 +220,12 @@ func (l *Library) PrepareImport(ctx context.Context, path string, replace bool, 
 	}
 	if p.voice != "" {
 		meta.Narrator = "VieNeu-TTS (" + p.voice + ")"
+	}
+	if len(p.dict) > 0 {
+		data := []byte(bookmaker.FormatPronunciations(p.dict))
+		if err = writeNewFile(filepath.Join(workDir, bookmaker.BookPronunciationsFile), bytes.NewReader(data), int64(len(data))+1, &written); err != nil {
+			return "", "", "", err
+		}
 	}
 	if p.cover != nil {
 		name := "cover" + p.coverExt
@@ -354,6 +362,15 @@ func planImport(zr *importZip, zipSize int64) (*importPlan, error) {
 	if mf == nil || cf == nil {
 		return nil, bad("Gói thiếu manifest.json hoặc chapters.json nên không phải gói sách của Sano, hoặc file bị hỏng khi gửi. Nhờ người gửi xuất lại bằng nút “Xuất gói zip”.")
 	}
+	// Từ điển cách đọc của cuốn (tuỳ chọn, từ bản 0.1.17): hỏng hay quá lớn thì bỏ qua, không chặn nhập.
+	var dict map[string]string
+	if df := get(bookmaker.ZipPronunciationsEntry); df != nil {
+		if data, err := readSmallEntry(df, maxImportDictBytes); err == nil && utf8.Valid(data) {
+			if m, err := bookmaker.ParsePronunciations(string(data), bookmaker.ZipPronunciationsEntry); err == nil {
+				dict = m
+			}
+		}
+	}
 	mdata, err := readSmallEntry(mf, maxManifestBytes)
 	if err != nil {
 		return nil, err
@@ -380,6 +397,7 @@ func planImport(zr *importZip, zipSize int64) (*importPlan, error) {
 		category: NormalizeCategory(cleanLine(man.Category, maxTitleLen)),
 		voice:    cleanLine(man.Voice, maxVoiceLen),
 		series:   NormalizeSeries(cleanLine(man.Series, maxTitleLen)),
+		dict:     dict,
 	}
 	if p.series != "" && man.Volume > 0 && man.Volume <= MaxVolume {
 		p.volume = man.Volume
