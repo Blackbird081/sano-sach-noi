@@ -49,6 +49,23 @@ function menuAct(fn: () => unknown) {
   void fn()
 }
 
+// Cách xếp cột giữa theo chỗ trống thật (wireframe D11). Ngưỡng tính theo nội dung
+// cao nhất của từng cách xếp; sách không có chữ chạy thì cần ít chỗ hơn.
+const midEl = ref<HTMLElement | null>(null)
+const midH = ref(9999)
+let midRO: ResizeObserver | null = null
+watch(midEl, (el, old) => {
+  if (old) midRO?.unobserve(old)
+  if (!el) return
+  midRO ??= new ResizeObserver(([e]) => (midH.value = e.contentRect.height))
+  midRO.observe(el)
+})
+onBeforeUnmount(() => midRO?.disconnect())
+const fit = computed<'wide' | 'medium' | 'narrow'>(() => {
+  const [wide, medium] = bookHasLyrics.value ? [540, 360] : [440, 240]
+  return midH.value >= wide ? 'wide' : midH.value >= medium ? 'medium' : 'narrow'
+})
+
 // Quãng nghỉ riêng cuốn đang nghe (wireframe D9); null = theo cài đặt chung.
 const pauseOpen = ref(false)
 const pauseMsg = ref('')
@@ -66,11 +83,14 @@ watch(() => state.playerSlug, () => {
 })
 watch(pauseOpen, (open) => (custom.value = open && mine.value?.level === 'custom'))
 
+let pauseMsgTimer = 0
 function savePause(v: ReturnType<typeof makeSetting> | null) {
   setBookPause(state.playerSlug, v)
+  clearTimeout(pauseMsgTimer)
+  pauseMsgTimer = window.setTimeout(() => (pauseMsg.value = ''), 4000)
   pauseMsg.value = v
-    ? `Cuốn này nghỉ ${fmtGap(v.section)} giữa tiểu mục, ${fmtGap(v.chapter)} sang chương. Áp dụng từ tiểu mục kế tiếp.`
-    : 'Cuốn này theo cài đặt chung. Áp dụng từ tiểu mục kế tiếp.'
+    ? `Cuốn này nghỉ ${fmtGap(v.section)} giữa tiểu mục, ${fmtGap(v.chapter)} sang chương`
+    : 'Cuốn này theo cài đặt chung'
 }
 function pickPause(level: PauseLevel | 'global') {
   if (level === 'custom') {
@@ -154,51 +174,61 @@ async function act(fn: (slug: string) => Promise<void>) {
         <span v-else-if="!state.playerSlug">Chọn một cuốn trong thư viện để nghe.</span>
         <span v-else class="flex items-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> Đang mở sách…</span>
       </div>
-      <!-- Cửa sổ thấp: phần này tự cuộn (bìa thu nhỏ trước), hàng nút + tiến độ xuất M4B ở dưới luôn hiện. -->
-      <div v-else class="flex-1 min-h-0 overflow-y-auto -mx-6 px-6"><div class="min-h-full flex flex-col items-center justify-center py-4">
-        <div class="aspect-[3/4] rounded-xl shadow-2xl overflow-hidden shrink-0 [@media(max-height:820px)]:w-32 [@media(max-height:700px)]:w-24" :class="bookHasLyrics ? 'w-40' : 'w-48'">
-          <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
-          <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
+      <!-- Cột giữa (wireframe D11): đo chỗ trống thật, chọn cách xếp Rộng / Vừa / Hẹp để luôn vừa,
+           không cuộn, không cắt. Menu tốc độ / Nghỉ được tràn ra ngoài cột (không overflow). -->
+      <div v-else ref="midEl" data-fit-check="mid" class="relative flex-1 min-h-0 flex flex-col items-center justify-center py-2">
+        <template v-if="fit === 'wide'">
+          <div class="aspect-[3/4] rounded-xl shadow-2xl overflow-hidden shrink-0" :class="bookHasLyrics ? 'w-36' : 'w-44'">
+            <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
+            <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
+          </div>
+          <h2 class="mt-4 text-lg font-semibold text-center max-w-md line-clamp-2">{{ player.detail.title }}</h2>
+          <p v-if="player.detail.author || player.detail.voice" class="text-sm text-muted-foreground flex items-center gap-1">
+            {{ player.detail.author }}<template v-if="player.detail.author && player.detail.voice"> ·</template>
+            <span v-if="player.detail.voice" class="inline-flex items-center gap-1"><Mic class="w-3.5 h-3.5" /> Giọng {{ player.detail.voice }}</span>
+          </p>
+          <p class="text-sm text-muted-foreground max-w-md truncate" :title="track?.title">{{ track?.title }}</p>
+        </template>
+        <div v-else class="w-full max-w-md flex items-center gap-4 shrink-0">
+          <div v-if="fit === 'medium'" class="w-20 aspect-[3/4] rounded-lg shadow-lg overflow-hidden shrink-0">
+            <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
+            <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold truncate" :title="player.detail.title">{{ player.detail.title }}</h2>
+            <p v-if="player.detail.author || player.detail.voice" class="text-sm text-muted-foreground flex items-center gap-1 min-w-0">
+              <span class="truncate">{{ player.detail.author }}</span><template v-if="player.detail.author && player.detail.voice"> ·</template>
+              <span v-if="player.detail.voice" class="inline-flex items-center gap-1 shrink-0"><Mic class="w-3.5 h-3.5" /> Giọng {{ player.detail.voice }}</span>
+            </p>
+            <p class="text-sm text-muted-foreground truncate" :title="track?.title">{{ track?.title }}</p>
+          </div>
         </div>
-        <h2 class="mt-5 text-lg font-semibold">{{ player.detail.title }}</h2>
-        <p v-if="player.detail.author || player.detail.voice" class="text-sm text-muted-foreground flex items-center gap-1">
-          {{ player.detail.author }}<template v-if="player.detail.author && player.detail.voice"> ·</template>
-          <span v-if="player.detail.voice" class="inline-flex items-center gap-1"><Mic class="w-3.5 h-3.5" /> Giọng {{ player.detail.voice }}</span>
-        </p>
-        <p class="text-sm text-muted-foreground max-w-md truncate" :title="track?.title">{{ track?.title }}</p>
-        <!-- Chiều cao cố định (2 dòng câu đang đọc + 1 dòng câu kế) để không đẩy nút phía dưới. -->
-        <button v-if="bookHasLyrics" class="group mt-4 w-full max-w-md rounded-lg border border-border bg-muted/30 hover:bg-muted/60 px-4 py-3 text-left disabled:cursor-default disabled:hover:bg-muted/30"
+        <!-- Chiều cao cố định để không đẩy nút phía dưới; cách xếp Hẹp chỉ 1 dòng. -->
+        <button v-if="bookHasLyrics" class="group mt-4 w-full max-w-md shrink-0 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 px-4 py-3 text-left disabled:cursor-default disabled:hover:bg-muted/30"
           :disabled="!lyrics" @click="lyricsOpen = true">
           <span class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Lời đọc <span v-if="lyrics" class="normal-case font-normal tracking-normal text-primary opacity-0 group-hover:opacity-100">Xem cả lời →</span>
           </span>
           <template v-if="lyrics">
-            <span class="mt-1 block h-[2.75em] text-sm font-medium leading-snug line-clamp-2">{{ lyrics.sentences[lyricIndex]?.text }}</span>
-            <span class="mt-0.5 block h-[1.375em] text-sm text-muted-foreground leading-snug line-clamp-1">{{ lyrics.sentences[lyricIndex + 1]?.text }}</span>
+            <span class="mt-1 text-sm font-medium leading-snug" :class="fit === 'narrow' ? 'h-[1.375em] line-clamp-1' : 'h-[2.75em] line-clamp-2'">{{ lyrics.sentences[lyricIndex]?.text }}</span>
+            <span v-if="fit !== 'narrow'" class="mt-0.5 block h-[1.375em] text-sm text-muted-foreground leading-snug line-clamp-1">{{ lyrics.sentences[lyricIndex + 1]?.text }}</span>
           </template>
           <template v-else>
-            <span class="mt-1 block h-[2.75em] text-sm text-muted-foreground leading-snug">Tiểu mục này không có chữ để hiện.</span>
-            <span class="mt-0.5 block h-[1.375em]"></span>
+            <span class="mt-1 block text-sm text-muted-foreground leading-snug" :class="fit === 'narrow' ? 'h-[1.375em] truncate' : 'h-[2.75em]'">Tiểu mục này không có chữ để hiện.</span>
+            <span v-if="fit !== 'narrow'" class="mt-0.5 block h-[1.375em]"></span>
           </template>
         </button>
-        <div class="mt-5 w-full max-w-md">
+        <div class="mt-4 w-full max-w-md shrink-0">
           <div class="h-1.5 rounded-full bg-muted overflow-hidden cursor-pointer" role="slider" aria-label="Vị trí nghe" :aria-valuenow="Math.round(pctTrack)" @click="seekTo">
             <div class="h-full bg-primary rounded-full" :style="{ width: pctTrack + '%' }"></div>
           </div>
           <div class="flex justify-between text-[11px] text-muted-foreground mt-1 tabular-nums"><span>{{ fmtClock(player.time) }}</span><span>-{{ fmtClock(Math.max(0, player.duration - player.time)) }}</span></div>
         </div>
-        <div class="mt-4 flex items-center gap-4">
-          <button aria-label="Tiểu mục trước" class="h-10 w-10 grid place-items-center rounded-full hover:bg-muted" @click="skip(-1)"><SkipBack class="w-5 h-5" /></button>
-          <button aria-label="Lùi 15 giây" class="h-10 w-10 grid place-items-center rounded-full hover:bg-muted" @click="seek(-15)"><RotateCcw class="w-5 h-5" /></button>
-          <button :aria-label="player.playing ? 'Dừng' : 'Phát'" class="h-14 w-14 grid place-items-center rounded-full bg-primary text-primary-foreground shadow" @click="toggle">
-            <Pause v-if="player.playing" class="w-6 h-6" /><Play v-else class="w-6 h-6 ml-0.5" />
-          </button>
-          <button aria-label="Tới 30 giây" class="h-10 w-10 grid place-items-center rounded-full hover:bg-muted" @click="seek(30)"><RotateCw class="w-5 h-5" /></button>
-          <button aria-label="Tiểu mục sau" class="h-10 w-10 grid place-items-center rounded-full hover:bg-muted" @click="skip(1)"><SkipForward class="w-5 h-5" /></button>
-        </div>
-        <div class="mt-4 flex items-center gap-2 text-xs">
+        <!-- Một hàng: tốc độ (trái) · nút phát (giữa) · Nghỉ (phải) -->
+        <div class="mt-3 w-full max-w-md shrink-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
+          <div class="justify-self-start">
           <div class="relative" data-speed-menu>
-            <button class="h-8 px-3 rounded-full border border-border flex items-center gap-1.5 hover:bg-muted" aria-haspopup="listbox" :aria-expanded="speedOpen" @click="speedOpen = !speedOpen">
+            <button class="h-8 px-2.5 rounded-full border border-border flex items-center gap-1 whitespace-nowrap hover:bg-muted" aria-haspopup="listbox" :aria-expanded="speedOpen" @click="speedOpen = !speedOpen">
               <Gauge class="w-3.5 h-3.5" />{{ fmtSpeed(player.speed) }}<ChevronDown class="w-3 h-3 text-muted-foreground" />
             </button>
             <div v-if="speedOpen" role="listbox" aria-label="Tốc độ phát" class="absolute bottom-full left-0 mb-2 w-40 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
@@ -210,12 +240,23 @@ async function act(fn: (slug: string) => Promise<void>) {
               </button>
             </div>
           </div>
+          </div>
+          <div class="flex items-center gap-0.5">
+            <button aria-label="Tiểu mục trước" class="h-9 w-9 grid place-items-center rounded-full hover:bg-muted" @click="skip(-1)"><SkipBack class="w-5 h-5" /></button>
+            <button aria-label="Lùi 15 giây" title="Lùi 15 giây" class="h-9 w-9 grid place-items-center rounded-full hover:bg-muted" @click="seek(-15)"><RotateCcw class="w-5 h-5" /></button>
+            <button :aria-label="player.playing ? 'Dừng' : 'Phát'" class="mx-1 h-12 w-12 grid place-items-center rounded-full bg-primary text-primary-foreground shadow" @click="toggle">
+              <Pause v-if="player.playing" class="w-5 h-5" /><Play v-else class="w-5 h-5 ml-0.5" />
+            </button>
+            <button aria-label="Tới 30 giây" title="Tới 30 giây" class="h-9 w-9 grid place-items-center rounded-full hover:bg-muted" @click="seek(30)"><RotateCw class="w-5 h-5" /></button>
+            <button aria-label="Tiểu mục sau" class="h-9 w-9 grid place-items-center rounded-full hover:bg-muted" @click="skip(1)"><SkipForward class="w-5 h-5" /></button>
+          </div>
+          <div class="justify-self-end">
           <div class="relative" data-pause-menu>
-            <button class="h-8 px-3 rounded-full border flex items-center gap-1.5 hover:bg-muted" aria-haspopup="listbox" :aria-expanded="pauseOpen"
+            <button class="h-8 px-2.5 rounded-full border flex items-center gap-1 whitespace-nowrap hover:bg-muted" aria-haspopup="listbox" :aria-expanded="pauseOpen"
               :class="pauseOpen ? 'border-foreground/40 bg-muted' : 'border-border'" @click="pauseOpen = !pauseOpen">
               <Timer class="w-3.5 h-3.5" />{{ pauseLabel }}<ChevronDown class="w-3 h-3 text-muted-foreground" />
             </button>
-            <div v-if="pauseOpen" role="listbox" aria-label="Quãng nghỉ cho cuốn này" class="absolute bottom-full left-0 mb-2 w-72 max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
+            <div v-if="pauseOpen" role="listbox" aria-label="Quãng nghỉ cho cuốn này" class="absolute bottom-full right-0 mb-2 w-72 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
               <div class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quãng nghỉ cho cuốn này</div>
               <button role="option" :aria-selected="!mine" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted" :class="!mine && 'font-medium'" @click="pickPause('global')">
                 <span class="text-sm">Theo cài đặt chung ({{ levelLabel(pauseState.global.level) }})<span class="block text-[11px] font-normal text-muted-foreground">{{ fmtGap(pauseState.global.section) }} giữa tiểu mục · {{ fmtGap(pauseState.global.chapter) }} sang chương</span></span>
@@ -234,11 +275,14 @@ async function act(fn: (slug: string) => Promise<void>) {
               <div class="mt-1 border-t border-border px-3 pt-2 pb-1.5 text-[11px] text-muted-foreground leading-relaxed">Lưu riêng cho cuốn này, dùng cả khi Xuất M4B. Sách truyện hợp mức Dài, sách kiến thức hợp Vừa hoặc Ngắn.</div>
             </div>
           </div>
-          <span class="text-muted-foreground">Tua −15s / +30s · nhớ vị trí nghe</span>
+          </div>
         </div>
-        <p v-if="pauseMsg" class="mt-3 text-xs text-muted-foreground flex items-center gap-1.5"><Check class="w-3.5 h-3.5" /> {{ pauseMsg }}</p>
-        <p v-if="player.error || actionError" class="mt-3 text-sm text-destructive">{{ player.error || actionError }}</p>
-      </div></div>
+        <p v-if="player.error || actionError" class="mt-2 max-w-md text-sm text-destructive line-clamp-2 shrink-0">{{ player.error || actionError }}</p>
+        <!-- Thông báo nhỏ tự tắt (thay dòng xác nhận cố định) -->
+        <div v-if="pauseMsg" role="status" class="absolute bottom-1 left-1/2 -translate-x-1/2 max-w-[calc(100%-1rem)] rounded-full bg-foreground text-background text-xs px-3 py-1.5 shadow-lg flex items-center gap-1.5 z-10">
+          <Check class="w-3.5 h-3.5 shrink-0" /><span class="truncate">{{ pauseMsg }}</span>
+        </div>
+      </div>
       <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Button size="sm" variant="outline" class="border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" :disabled="!player.detail" title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</Button>
         <M4BProgress v-if="state.playerSlug" :slug="state.playerSlug" />
