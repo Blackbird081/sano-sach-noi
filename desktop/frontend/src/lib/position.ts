@@ -27,6 +27,29 @@ export function savePosition(slug: string, p: Position) {
   }
 }
 
+// Các tiểu mục đã nghe thật (không tính nhảy qua) → dấu ✓ ở mục lục.
+const heardKey = (slug: string) => `sano:heard:${slug}`
+
+/** Tiểu mục đã nghe của một cuốn; null = chưa từng ghi (sách nghe từ bản cũ). */
+export function loadHeard(slug: string): number[] | null {
+  try {
+    const raw = localStorage.getItem(heardKey(slug))
+    if (raw === null) return null
+    const v = JSON.parse(raw)
+    return Array.isArray(v) ? v.filter((n) => Number.isInteger(n) && n >= 0) : []
+  } catch {
+    return null
+  }
+}
+
+export function saveHeard(slug: string, heard: number[]) {
+  try {
+    localStorage.setItem(heardKey(slug), JSON.stringify([...new Set(heard)].sort((a, b) => a - b)))
+  } catch {
+    // bộ nhớ trình duyệt bị chặn: chỉ mất dấu đã nghe
+  }
+}
+
 const histKey = (slug: string) => `sano:hist:${slug}`
 
 /** Một lượt nghe đã xoá khỏi màn hình, cất lại cho thống kê sau này. */
@@ -44,7 +67,7 @@ export function loadHistory(slug: string): ClearedPosition[] {
   }
 }
 
-/** Xoá lịch sử nghe khỏi màn hình: mọi cuốn về "Chưa nghe", nghe lại từ đầu. Vị trí
+/** Xoá lịch sử nghe khỏi màn hình: mọi cuốn về "Chưa nghe", nghe lại từ đầu, bỏ dấu ✓. Vị trí
  *  cũ (tiến độ, lúc nghe) KHÔNG mất mà cất sang sano:hist:<slug> để làm thống kê.
  *  Trả số cuốn đã xoá. */
 export function clearPositions(): number {
@@ -57,6 +80,7 @@ export function clearPositions(): number {
       if (pos) localStorage.setItem(histKey(slug), JSON.stringify([...loadHistory(slug), { ...pos, clearedAt: now }]))
       localStorage.removeItem(k)
     }
+    for (const k of Object.keys(localStorage).filter((k) => k.startsWith('sano:heard:'))) localStorage.removeItem(k)
     return keys.length
   } catch {
     return 0

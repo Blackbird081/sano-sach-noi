@@ -4,7 +4,7 @@
 import { computed, reactive, shallowRef, watch } from 'vue'
 import { book, bookTexts, errText, type BookDetail, type SectionText } from './backend'
 import { beforeClipPlay, clearAudioSource, setAudioSource } from './audio'
-import { loadPosition, savePosition } from './position'
+import { loadHeard, loadPosition, saveHeard, savePosition } from './position'
 import { flushListening, listenFinished, listenStop, listenTick } from './listenlog'
 import { buildLyrics, findSilences, sentenceAt, snapToSilences, type Lyrics } from './lyrics'
 import { state } from './store'
@@ -32,7 +32,18 @@ export const player = reactive({
   time: 0,
   duration: 0,
   speed: loadSpeed(),
+  heard: [] as number[], // tiểu mục đã nghe thật (≥ HEARD_FRAC hoặc nghe tới hết) → dấu ✓
 })
+
+// Tiểu mục tính là "đã nghe" khi nghe thật ≥ 85% thời lượng; nhảy / tua qua không tính.
+const HEARD_FRAC = 0.85
+let trackHeard = 0 // số giây nội dung đã nghe ở tiểu mục đang phát
+let lastHeardAt = -1
+function markHeard(i: number) {
+  if (!player.slug || player.heard.includes(i)) return
+  player.heard = [...player.heard, i]
+  saveHeard(player.slug, player.heard)
+}
 
 const audio = new Audio()
 audio.preload = 'auto'
@@ -112,6 +123,7 @@ async function open(slug: string, autoplay: boolean) {
   player.playing = false
   player.detail = null
   player.error = ''
+  player.heard = []
   player.slug = slug
   played = false
   if (!slug) {
@@ -124,6 +136,13 @@ async function open(slug: string, autoplay: boolean) {
     player.detail = d
     void loadTexts(slug)
     const pos = loadPosition(slug)
+    // Sách nghe từ bản cũ (chưa có dấu đã nghe): coi các tiểu mục trước vị trí là đã nghe.
+    let heard = loadHeard(slug)
+    if (heard === null) {
+      heard = Array.from({ length: pos?.track ?? 0 }, (_, i) => i)
+      if (heard.length) saveHeard(slug, heard)
+    }
+    player.heard = heard
     load(Math.min(pos?.track ?? 0, Math.max(0, tracks.value.length - 1)), pos?.time ?? 0)
     if (autoplay) void play()
   } catch (e) {
@@ -157,6 +176,8 @@ function load(i: number, at = 0) {
   player.time = at
   player.duration = t.durationSec
   pendingSeek = at
+  trackHeard = 0
+  lastHeardAt = -1
   const seq = ++loadSeq
   // Linux: nạp qua blob (bất đồng bộ, xem lib/audio.ts); play() đợi xong mới phát.
   loading = setAudioSource(audio, t.url)
@@ -283,6 +304,12 @@ audio.addEventListener('pause', () => {
 let lastSave = 0
 audio.addEventListener('timeupdate', () => {
   player.time = audio.currentTime
+  if (!audio.paused && player.slug) {
+    const d = audio.currentTime - lastHeardAt
+    if (lastHeardAt >= 0 && d > 0 && d < 2 * Math.max(audio.playbackRate, 1)) trackHeard += d
+    lastHeardAt = audio.currentTime
+    if (player.duration && trackHeard >= player.duration * HEARD_FRAC) markHeard(player.current)
+  } else lastHeardAt = -1
   if (!audio.paused && player.slug) listenTick(player.slug, player.current, audio.currentTime, audio.playbackRate)
   if (Date.now() - lastSave > 5000) {
     lastSave = Date.now()
@@ -290,6 +317,7 @@ audio.addEventListener('timeupdate', () => {
   }
 })
 audio.addEventListener('ended', () => {
+  if (trackHeard >= player.duration * 0.5) markHeard(player.current) // nghe tới hết (tiểu mục ngắn, timeupdate thưa)
   if (player.current < tracks.value.length - 1) {
     load(player.current + 1)
     void play()
