@@ -27,8 +27,9 @@ type App struct {
 	ctx context.Context
 	lib *library.Library
 
-	mu     sync.Mutex // bảo vệ job, voices, setup, m4b, importCancel, uninstalling, ttsUsers, ttsChecks
+	mu     sync.Mutex // bảo vệ job, edit, voices, setup, m4b, importCancel, uninstalling, ttsUsers, ttsChecks
 	job    *renderJob
+	edit   *editJob // lượt sửa sách (đọc lại mục, đổi giọng), xem rework.go
 	voices []bookmaker.Voice
 	setup  *setupJob
 	m4b    *m4bJob
@@ -61,6 +62,11 @@ func (a *App) startup(ctx context.Context) {
 	}
 	// Thư mục render / nhập dở do app bị tắt đột ngột (có thể vài GB).
 	a.lib.CleanStaleWork(6 * time.Hour)
+	// Đổi giọng dở dang lần trước: đọc tiếp khi app đã lên (không chặn lúc mở).
+	go func() {
+		time.Sleep(3 * time.Second)
+		a.resumeVoiceJobs()
+	}()
 }
 
 // searchRoots — nơi bắt đầu tìm VERSION và scripts/tts: thư mục hiện tại và

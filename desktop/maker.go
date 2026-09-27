@@ -198,6 +198,9 @@ func (a *App) PreviewClips(s BookSettings, stems []string) ([]Clip, error) {
 	if a.Rendering() {
 		return nil, errors.New("đang render cả cuốn — nghe thử lại sau khi render xong")
 	}
+	if err := a.editBusyErr(); err != nil {
+		return nil, err
+	}
 	release, err := a.beginTTSUse()
 	if err != nil {
 		return nil, err
@@ -228,6 +231,9 @@ func (a *App) PreviewClips(s BookSettings, stems []string) ([]Clip, error) {
 
 // SpeakSample đọc câu mẫu bằng một giọng, trả URL phát.
 func (a *App) SpeakSample(voice, text string) (string, error) {
+	if err := a.editBusyErr(); err != nil {
+		return "", err
+	}
 	release, err := a.beginTTSUse()
 	if err != nil {
 		return "", err
@@ -259,6 +265,8 @@ func (a *App) renderBusyLocked() error {
 		return errors.New("đang cài bộ đọc — đợi cài xong rồi thử lại")
 	case a.job != nil && a.job.status.Running:
 		return errors.New("đang render một cuốn khác")
+	case a.edit != nil && a.edit.status.Running:
+		return errors.New("đang sửa sách (đọc lại / đổi giọng), đợi xong rồi thử lại")
 	}
 	return nil
 }
@@ -428,6 +436,9 @@ func (a *App) context() context.Context {
 // beforeClose: đang render thì hỏi có dừng không (render dài hàng giờ, đóng
 // nhầm là mất công). Trả true = giữ cửa sổ.
 func (a *App) beforeClose(ctx context.Context) bool {
+	if st := a.editing(); st != nil && !a.Rendering() {
+		return a.confirmCloseWhileEditing(ctx, st)
+	}
 	if !a.Rendering() {
 		return false
 	}
@@ -444,6 +455,28 @@ func (a *App) beforeClose(ctx context.Context) bool {
 		return true
 	}
 	a.CancelRender()
+	return false
+}
+
+// confirmCloseWhileEditing: đang đọc lại / đổi giọng thì hỏi trước khi thoát.
+// Đổi giọng giữ phần đã đọc, lần mở sau đọc tiếp; đọc lại mục thì mục chưa xong
+// vẫn là bản đã sửa chờ đọc lại.
+func (a *App) confirmCloseWhileEditing(ctx context.Context, st *EditStatus) bool {
+	const quit, keep = "Thoát", "Ở lại"
+	msg := "Các mục chưa đọc xong vẫn giữ bản đã sửa, mở lại Sano rồi bấm Đọc lại."
+	title := "Sano đang đọc lại sách"
+	if st.Kind == editKindVoice {
+		title = "Sano đang đổi giọng " + st.BookTitle
+		msg = fmt.Sprintf("Đã đọc %d/%d mục. Thoát bây giờ thì lần mở sau Sano đọc tiếp phần còn lại.", st.Finished, st.Total)
+	}
+	choice, err := wruntime.MessageDialog(ctx, wruntime.MessageDialogOptions{
+		Type: wruntime.QuestionDialog, Title: title, Message: msg,
+		Buttons: []string{quit, keep}, DefaultButton: keep, CancelButton: keep,
+	})
+	if err != nil || choice != quit {
+		return true
+	}
+	a.CancelEdit(false)
 	return false
 }
 

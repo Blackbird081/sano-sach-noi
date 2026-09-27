@@ -71,7 +71,7 @@ func (a *App) Book(slug string) (*BookDetail, error) {
 	dir, _ := a.lib.Dir(slug)
 	out := &BookDetail{BookView: a.bookView(d.Book), Dir: dir, Tracks: make([]TrackView, 0, len(d.Tracks))}
 	for _, t := range d.Tracks {
-		out.Tracks = append(out.Tracks, TrackView{Track: t, URL: mediaPrefix + t.File})
+		out.Tracks = append(out.Tracks, TrackView{Track: t, URL: a.mediaURLStamp(t.File)})
 	}
 	return out, nil
 }
@@ -85,7 +85,7 @@ func (a *App) BookTexts(slug string) ([]library.SectionText, error) {
 func (a *App) bookView(b library.Book) BookView {
 	v := BookView{Book: b}
 	if b.Cover != "" {
-		v.CoverURL = mediaPrefix + b.Cover
+		v.CoverURL = a.mediaURLStamp(b.Cover) // kèm giờ sửa: đổi bìa là hiện ngay
 	}
 	return v
 }
