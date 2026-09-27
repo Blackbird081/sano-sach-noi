@@ -5,7 +5,7 @@
 ### Tính năng
 - **Bước Cách đọc 3 cấp** khi tạo sách nói: **Đọc nguyên văn** (mặc định), **Làm mượt** (nhờ AI đổi bảng, hình, danh sách, chữ viết tắt thành lời, giữ nguyên ý) hoặc **Viết lại thành văn sách nói** (nhờ AI viết lại như người kể: chuyện trước, lý thuyết sau, chương ngắn, cuối chương có ba ý cần nhớ). Mỗi cấp có nút **Nghe mẫu**. Sano nhớ cấp bạn chọn
 - **Nhờ AI theo 3 bước:** chọn Claude, ChatGPT hoặc Gemini, Sano đưa đúng prompt. Claude, ChatGPT trả file Word có sẵn chương, mục để nạp thẳng. Gemini bản miễn phí không tạo được file nên trả văn bản, dán vào ô **Dán văn bản AI trả về** ở bước Nạp file
-- **Nạp skill cho AI** một lần, lần sau chỉ cần gửi file: Claude (mọi gói) và ChatGPT có mục Skills dùng file `sano-sach-noi.zip`; ChatGPT chưa có mục Skills dùng Dự án kèm file hướng dẫn. Trang [Ba cách đọc](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu) có đủ prompt và cách làm
+- **Nạp skill cho AI** một lần, lần sau chỉ cần gửi file và gõ câu có sẵn, ví dụ "Làm file sách nói dùng skill sano-sach-noi (cấp độ 3)": Claude (mọi gói) và ChatGPT có mục Skills dùng file `sano-sach-noi.zip`; ChatGPT chưa có mục Skills dùng Dự án kèm file hướng dẫn. Trang [Ba cách đọc](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu) có đủ prompt và cách làm
 - **Hành trình nghe:** thời gian nghe thật mỗi ngày, chuỗi ngày nghe, sách nghe xong, giờ hay nghe, lịch nghe 6 tháng, mục tiêu nghe mỗi ngày. Xem theo tuần, tháng, năm. Số liệu chỉ lưu trên máy (`~/Sano/.nghe.json`), xoá được ở **Cài đặt** → **Dữ liệu nghe**
 - **Thư viện dạng danh sách:** nút cạnh **Sắp xếp** đổi giữa lưới bìa và danh sách, Sano nhớ cách xem
 - **Xoá lịch sử nghe** ở hàng Nghe tiếp: bỏ vị trí nghe dở và dấu đã nghe, giữ số liệu Hành trình nghe
