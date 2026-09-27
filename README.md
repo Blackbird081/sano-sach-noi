@@ -27,6 +27,8 @@
 - **Tạo sách nói** từ tài liệu Word của chính bạn: tự đọc mục lục theo Heading, tự chuẩn hoá số, chữ viết tắt, ký hiệu thành lời đọc tự nhiên
 - **Ba cách đọc**: đọc nguyên văn, hoặc nhờ AI làm mượt, viết lại thành văn sách nói cho nghe cuốn hơn (xem bên dưới)
 - **Nghe trên máy tính** ngay trong phần mềm: nhớ chỗ nghe dở, chữ chạy theo lời đọc, đổi tốc độ, nghe tiếp ở thanh nghe nhỏ khi làm việc khác
+- **Sửa sách đã tạo**: sửa chữ từng mục rồi đọc lại riêng mục đó, đổi tên (bìa và lời giới thiệu tự làm lại), đổi giọng cả cuốn
+- **Từ điển cách đọc**: dạy Sano đọc đúng tên riêng, chữ viết tắt cho một cuốn hoặc mọi sách, chữ hiện khi nghe vẫn giữ nguyên
 - **Thư viện gọn gàng**: danh mục, bộ sách nhiều tập (nghe hết tập này tự sang tập sau), xem dạng lưới hoặc danh sách, tự sắp xếp, tìm theo tên, tác giả, giọng đọc
 - **Hành trình nghe**: thời gian nghe mỗi ngày, chuỗi ngày nghe, sách đã nghe xong, mục tiêu nghe mỗi ngày. Số liệu chỉ lưu trên máy
 - **Chia sẻ sách**: gửi gói zip cho người dùng Sano khác nhập vào thư viện
@@ -93,9 +95,9 @@ Một file M4B có mục lục chương, tên sách, bìa, khoảng 29 MB cho m�
 
 | Máy | Tải | Ghi chú |
 |---|---|---|
-| **Windows** 10/11 | [Bộ cài .exe](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-windows-amd64-setup.exe) · [Bản portable .zip](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-windows-amd64-portable.zip) | không cần quyền admin |
-| **macOS** 14+ (Intel: 13+) | [Sano .dmg](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-macos-universal.dmg) | Apple Silicon và Intel |
-| **Linux** x86_64 | [Sano .AppImage](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-linux-amd64.AppImage) | cần WebKitGTK 4.1 |
+| **Windows** 10/11 | [Bộ cài .exe](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.17/Sano-0.1.17-windows-amd64-setup.exe) · [Bản portable .zip](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.17/Sano-0.1.17-windows-amd64-portable.zip) | không cần quyền admin |
+| **macOS** 14+ (Intel: 13+) | [Sano .dmg](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.17/Sano-0.1.17-macos-universal.dmg) | Apple Silicon và Intel |
+| **Linux** x86_64 | [Sano .AppImage](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.17/Sano-0.1.17-linux-amd64.AppImage) | cần WebKitGTK 4.1 |
 
 Lần mở đầu, Sano tự tải bộ đọc giọng Việt về máy (khoảng 1 GB, chỉ một lần). App chưa ký số nên lần đầu mở: macOS → Cài đặt hệ thống → Quyền riêng tư & Bảo mật → **Vẫn mở**; Windows → **Thông tin thêm** → **Vẫn chạy** ([chi tiết](https://tanviet12.github.io/sano-sach-noi/mo-app-lan-dau)). Kiểm file bằng `SHA256SUMS` trong [bản phát hành](https://github.com/tanviet12/sano-sach-noi/releases/latest); mọi bản cài build trên GitHub Actions từ thẻ phiên bản. Tất cả phiên bản: [Releases](https://github.com/tanviet12/sano-sach-noi/releases).
 

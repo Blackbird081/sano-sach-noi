@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.1.17 (27/09/2026)
+
+### Tính năng
+- **Sửa sách:** sửa chữ từng mục rồi Lưu & đọc lại, không phải xoá tạo lại. Đổi tên thì bìa và lời giới thiệu tự làm lại. Đổi giọng cả cuốn chạy nền
+- **Từ điển cách đọc:** dạy Sano đọc đúng tên riêng, viết tắt (vd Nielsen → Niu-sen), cho một cuốn hoặc mọi sách
+- **Phím tắt khi nghe:** Space dừng / nghe tiếp, ← → sang tiểu mục trước / sau
+
+### Sửa lỗi
+- Dấu ":" nghỉ rõ, không đọc liền; đổi giọng ở Nghe thử không mất chỗ đã sửa
+- Bìa trong Thư viện không còn lúc hiện lúc trắng
+
 ## v0.1.16 (27/09/2026)
 
 ### Tính năng
