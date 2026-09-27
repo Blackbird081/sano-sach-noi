@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.12 (27/09/2026)
+
+### Sửa lỗi
+- **Mac Intel cài được bộ đọc:** trước đây bước cài báo lỗi `onnxruntime ... doesn't have a source distribution or wheel for the current platform` vì onnxruntime 1.24 bỏ bản cho Mac Intel. Mac Intel giờ dùng onnxruntime 1.23.2. Apple Silicon, Windows, Linux không đổi
+- **Báo rõ khi macOS quá cũ:** bộ đọc cần macOS 14 trở lên trên Apple Silicon, macOS 13 trở lên trên Mac Intel. Máy cũ hơn thấy thông báo cần cập nhật macOS ngay ở màn cài, thay cho lỗi khó hiểu
+
+### Lưu ý khi nâng cấp
+- Từ **0.1.2 – 0.1.11**: bấm **Cập nhật ngay** trong app. Từ **0.1.0 / 0.1.1**: tải bản 0.1.12 và cài đè một lần
+- Mac Intel từng cài lỗi: cập nhật xong bấm **Thử lại** ở màn cài bộ đọc
+
 ## v0.1.11 (26/09/2026)
 
 ### Tính năng
