@@ -46,6 +46,7 @@ export const theme: Config['theme'] = {
         foreground: 'hsl(var(--card-foreground))',
       },
       // RAG semantic — nếu project không cần status RAG, có thể xoá block này.
+      chart: 'hsl(var(--chart))',
       rag: {
         green: 'hsl(142 71% 45%)',
         amber: 'hsl(38 92% 50%)',

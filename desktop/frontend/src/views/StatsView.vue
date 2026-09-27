@@ -72,11 +72,11 @@ const tiles = computed(() => {
   const speed = s.listen > 0 ? s.audio / s.listen : 1
   const lastDone = finished.value[0]
   return [
-    { icon: Clock, label: 'Thời gian nghe', value: fmtDur(s.listen), sub: timeSub },
-    { icon: Flame, label: 'Chuỗi ngày nghe', value: `${streak.value.current} ngày`, sub: streak.value.best > streak.value.current ? `kỷ lục ${streak.value.best} ngày` : streak.value.current ? 'đang là kỷ lục' : 'nghe hôm nay để bắt đầu' },
-    { icon: BookCheck, label: 'Sách nghe xong', value: `${finished.value.length} cuốn`, sub: lastDone ? titleOf(lastDone.slug) : 'chưa có cuốn nào' },
+    { icon: Clock, tint: 'bg-chart/10 text-chart', label: 'Thời gian nghe', value: fmtDur(s.listen), sub: timeSub },
+    { icon: Flame, tint: 'bg-rag-amber/15 text-rag-amber', label: 'Chuỗi ngày nghe', value: `${streak.value.current} ngày`, sub: streak.value.best > streak.value.current ? `kỷ lục ${streak.value.best} ngày` : streak.value.current ? 'đang là kỷ lục' : 'nghe hôm nay để bắt đầu' },
+    { icon: BookCheck, tint: 'bg-rag-green/15 text-rag-green', label: 'Sách nghe xong', value: `${finished.value.length} cuốn`, sub: lastDone ? titleOf(lastDone.slug) : 'chưa có cuốn nào' },
     {
-      icon: Gauge, label: 'Tiết kiệm nhờ nghe nhanh', value: fmtDur(Math.max(0, saved)),
+      icon: Gauge, tint: 'bg-chart/10 text-chart', label: 'Tiết kiệm nhờ nghe nhanh', value: fmtDur(Math.max(0, saved)),
       sub: saved >= 60 ? `nghe trung bình ở tốc độ ${speed.toFixed(1).replace('.', ',')}×` : 'nghe tốc độ bình thường',
     },
   ]
@@ -108,15 +108,15 @@ function saveGoalDraft(v: number) {
 // ── Lịch nghe, giờ hay nghe, nghe nhiều nhất, nghe xong gần đây ──
 const heat = computed(() => heatmap(L.value, today.value, 26))
 const heatMonths = computed(() => heatmapMonths(heat.value))
-// Một sắc xám nhạt → đậm (đỏ để dành cho hành động chính và "hôm nay")
-const heatClass = (v: number) => ['bg-muted', 'bg-slate-300 dark:bg-slate-700', 'bg-slate-400 dark:bg-slate-500', 'bg-slate-500 dark:bg-slate-400', 'bg-slate-700 dark:bg-slate-200'][v] ?? 'bg-transparent'
+// Một sắc xanh ngọc (--chart) nhạt → đậm; đỏ để dành cho hành động chính
+const heatClass = (v: number) => ['bg-muted', 'bg-chart/25', 'bg-chart/50', 'bg-chart/75', 'bg-chart'][v] ?? 'bg-transparent'
 const HEAT_TEXT = ['Không nghe', 'Dưới 15 phút', '15–30 phút', '30–60 phút', 'Trên 1 giờ']
-const barIdle = 'bg-slate-400 dark:bg-slate-500'
-const barHover = 'bg-slate-600 dark:bg-slate-300'
+const barIdle = 'bg-chart/55'
 const hourList = computed(() => makeHours(L.value, bounds.value.from, bounds.value.to))
 const maxHour = computed(() => Math.max(1, ...hourList.value))
+const peaks = computed(() => peakHours(hourList.value))
 const peakText = computed(() => {
-  const p = peakHours(hourList.value)
+  const p = peaks.value
   if (!p.length) return 'Chưa có số liệu trong khoảng này'
   const part = (h: number) => (h < 11 ? 'sáng' : h < 14 ? 'trưa' : h < 18 ? 'chiều' : 'tối')
   return `Bạn nghe nhiều nhất lúc ${p.map((h) => `${h}–${h + 1} giờ ${part(h)}`).join(' và ')}`
@@ -170,8 +170,10 @@ const empty = computed(() => !!log.value && !first.value)
       <!-- 4 ô số -->
       <div class="mt-4 grid grid-cols-4 gap-3">
         <div v-for="t in tiles" :key="t.label" class="rounded-lg border border-border p-3 min-w-0">
-          <p class="text-xs text-muted-foreground flex items-center gap-1.5"><component :is="t.icon" class="w-3.5 h-3.5" /> {{ t.label }}</p>
-          <p class="mt-1 text-xl font-semibold tracking-tight tabular-nums">{{ t.value }}</p>
+          <p class="text-xs text-muted-foreground flex items-center gap-2">
+            <span class="h-6 w-6 grid place-items-center rounded-md shrink-0" :class="t.tint"><component :is="t.icon" class="w-3.5 h-3.5" /></span> {{ t.label }}
+          </p>
+          <p class="mt-1.5 text-xl font-semibold tracking-tight tabular-nums">{{ t.value }}</p>
           <p class="text-[11px] text-muted-foreground truncate" :title="t.sub">{{ t.sub }}</p>
         </div>
       </div>
@@ -189,7 +191,7 @@ const empty = computed(() => !!log.value && !first.value)
             <div class="absolute inset-0 flex items-end" :class="chart.length > 12 ? 'gap-[2px]' : 'gap-3'">
               <div v-for="(b, i) in chart" :key="i" class="relative flex-1 h-full flex items-end justify-center" @mouseenter="hover = i" @mouseleave="hover = null">
                 <div class="w-full rounded-t-[4px] transition-colors"
-                  :class="[b.future ? 'bg-transparent' : b.min < 0.5 ? 'bg-muted' : b.today ? 'bg-primary' : hover === i ? barHover : barIdle, chart.length <= 7 && 'max-w-10']"
+                  :class="[b.future ? 'bg-transparent' : b.min < 0.5 ? 'bg-muted' : b.today || hover === i ? 'bg-chart' : barIdle, chart.length <= 7 && 'max-w-10']"
                   :style="{ height: b.min < 0.5 ? '2px' : `${(b.min / maxMin) * 100}%` }"></div>
                 <div v-if="hover === i && !b.future" class="absolute mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover text-popover-foreground shadow-md px-2 py-1 text-[11px] z-20 pointer-events-none"
                   :style="{ bottom: `calc(${Math.max(b.min, 0) / maxMin * 100}% + 4px)` }">
@@ -212,7 +214,7 @@ const empty = computed(() => !!log.value && !first.value)
           <div v-if="goal" class="flex-1 flex items-center gap-4 mt-2">
             <svg viewBox="0 0 64 64" class="h-24 w-24 -rotate-90 shrink-0" aria-hidden="true">
               <circle cx="32" cy="32" r="26" fill="none" stroke-width="7" class="stroke-muted" />
-              <circle v-if="todayMin > 0" cx="32" cy="32" r="26" fill="none" stroke-width="7" stroke-linecap="round" class="stroke-primary"
+              <circle v-if="todayMin > 0" cx="32" cy="32" r="26" fill="none" stroke-width="7" stroke-linecap="round" class="stroke-chart"
                 :stroke-dasharray="`${Math.min(1, todayMin / goal) * ringLen} ${ringLen}`" />
             </svg>
             <div>
@@ -262,7 +264,7 @@ const empty = computed(() => !!log.value && !first.value)
           <h2 class="text-sm font-medium">Giờ hay nghe</h2>
           <p class="text-xs text-muted-foreground">{{ peakText }}</p>
           <div class="mt-3 h-16 flex items-end gap-[2px]">
-            <div v-for="(h, i) in hourList" :key="i" class="flex-1 rounded-t-[2px]" :class="h < 0.5 ? 'bg-muted' : barIdle"
+            <div v-for="(h, i) in hourList" :key="i" class="flex-1 rounded-t-[2px]" :class="h < 0.5 ? 'bg-muted' : peaks.includes(i) ? 'bg-chart' : barIdle"
               :style="{ height: h < 0.5 ? '2px' : `${(h / maxHour) * 100}%` }" :title="`${i} giờ: ${fmtMin(h)}`"></div>
           </div>
           <div class="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
@@ -296,7 +298,7 @@ const empty = computed(() => !!log.value && !first.value)
           <p v-if="!recentDone.length" class="mt-2 text-sm text-muted-foreground">Nghe hết một cuốn, cuốn đó sẽ hiện ở đây.</p>
           <div v-else class="mt-2 divide-y divide-border">
             <div v-for="b in recentDone" :key="b.slug" class="flex items-center gap-3 py-2">
-              <span class="h-6 w-6 grid place-items-center rounded-full bg-muted text-muted-foreground shrink-0"><Check class="w-3.5 h-3.5" /></span>
+              <span class="h-6 w-6 grid place-items-center rounded-full bg-rag-green/15 text-rag-green shrink-0"><Check class="w-3.5 h-3.5" /></span>
               <span class="flex-1 text-sm truncate" :class="!bookBySlug.get(b.slug) && 'text-muted-foreground italic'">{{ titleOf(b.slug) }}</span>
               <span class="text-xs text-muted-foreground shrink-0">{{ fmtRecent(b.day, today) }}</span>
             </div>

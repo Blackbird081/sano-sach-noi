@@ -24,6 +24,9 @@
     --primary: 0 94% 40%;
     --primary-foreground: 0 0% 100%;
 
+    /* Màu số liệu (biểu đồ Hành trình nghe): xanh ngọc, đậm nhạt theo độ lớn. Đỏ để dành cho hành động chính. */
+    --chart: 174 72% 33%;
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
@@ -55,6 +58,8 @@
 
     --primary: 0 80% 55%;
     --primary-foreground: 0 0% 100%;
+
+    --chart: 172 66% 50%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
