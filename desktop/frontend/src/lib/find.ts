@@ -88,6 +88,26 @@ export function saveSort(k: SortKey) {
   }
 }
 
+// Kiểu xem kệ sách: lưới bìa hoặc danh sách (wireframe D6). Nhớ lựa chọn như kiểu sắp xếp.
+export type ShelfView = 'grid' | 'list'
+const VIEW_KEY = 'sano.libraryView'
+
+export function loadView(): ShelfView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
+
+export function saveView(v: ShelfView) {
+  try {
+    localStorage.setItem(VIEW_KEY, v)
+  } catch {
+    // bộ nhớ trình duyệt bị chặn: chỉ mất tính năng nhớ lựa chọn
+  }
+}
+
 export interface ShelfBook extends LibraryBook {
   progress: number // % đã nghe (0–100)
   listenedAt: number // lúc nghe gần nhất (ms), 0 = chưa nghe / không rõ

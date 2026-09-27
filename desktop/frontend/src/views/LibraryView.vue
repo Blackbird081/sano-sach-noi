@@ -4,10 +4,11 @@
 // mục (chỉ hiện khi có từ 2 danh mục), hàng "Nghe tiếp", menu ⋯ trên bìa.
 // Wireframe D5: bộ sách gom các tập thành một thẻ (bấm mở trang bộ sách), "Tự sắp xếp"
 // kéo thả thẻ để đổi chỗ, nút "Quản lý" đổi tên / xoá danh mục và bộ sách.
+// Wireframe D6: xem dạng lưới hoặc danh sách (nút cạnh "Sắp xếp", nhớ lựa chọn).
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   Check, ChevronDown, ChevronLeft, FileArchive, FilePlus2, FolderOpen, GripVertical, Layers, Mic, MoreHorizontal, Pencil, Play, Search,
-  Settings2, Trash2, Upload, X, ArrowUpDown,
+  Settings2, Trash2, Upload, X, ArrowUpDown, LayoutGrid, List,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -15,8 +16,8 @@ import {
   chooseBookZip, deleteBook, errText, libraryOrder, onFileDrop, openBookFolder, openLibraryFolder, setLibraryOrder, type LibraryBook,
 } from '../lib/backend'
 import {
-  ago, categoryCounts, isListening, loadSort, matches, mergeCategory, moveItem, saveSort, seriesKey, shelfItems, sortShelf, SORTS,
-  type ShelfBook, type ShelfItem, type SortKey,
+  ago, categoryCounts, isListening, loadSort, loadView, saveView, matches, mergeCategory, moveItem, saveSort, seriesKey, shelfItems, sortShelf, SORTS,
+  type ShelfBook, type ShelfItem, type ShelfView, type SortKey,
 } from '../lib/find'
 import { fmtLong, loadPosition } from '../lib/position'
 import { go, openBook, refreshLibrary, state } from '../lib/store'
@@ -71,6 +72,19 @@ const filter = ref<string>('all') // 'all' | 'listening' | '__none' | <danh mụ
 const sort = ref<SortKey>(loadSort())
 const sortOpen = ref(false)
 const sortLabel = computed(() => SORTS.find((s) => s.key === sort.value)?.label ?? '')
+
+const view = ref<ShelfView>(loadView())
+function setView(v: ShelfView) {
+  view.value = v
+  saveView(v)
+  menuFor.value = null
+}
+// Cuốn / bộ đang mở ở trình phát: hàng trong danh sách luôn hiện nút nghe đỏ.
+const isPlaying = (i: ShelfItem) => !!state.playerSlug && (i.kind === 'book' ? i.book.slug === state.playerSlug : i.vols.some((v) => v.slug === state.playerSlug))
+function playItem(i: ShelfItem) {
+  if (Date.now() - dragEndedAt < 400) return
+  openBook(i.kind === 'book' ? i.book.slug : i.current.slug, true)
+}
 
 function setSort(k: SortKey) {
   if (k === 'manual') return startArrange()
@@ -459,7 +473,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
         <!-- Dải nhắc khi đang tự sắp xếp -->
         <div v-if="arranging" class="mt-3 flex items-center gap-3 rounded-lg bg-primary/5 border border-primary/20 pl-3 pr-2 py-1.5 text-sm">
           <GripVertical class="w-4 h-4 text-primary shrink-0" />
-          <span class="flex-1">Kéo bìa sách để đổi chỗ. Thứ tự được lưu lại, lần sau mở vẫn giữ nguyên.</span>
+          <span class="flex-1">{{ view === 'list' ? 'Kéo hàng lên xuống để đổi chỗ.' : 'Kéo bìa sách để đổi chỗ.' }} Thứ tự được lưu lại, lần sau mở vẫn giữ nguyên.</span>
           <button v-if="canRestore" class="text-xs text-muted-foreground hover:text-foreground" @click="restoreOrder">Về thứ tự cũ</button>
           <Button size="sm" @click="doneArrange"><Check class="w-4 h-4" /> Xong</Button>
         </div>
@@ -500,12 +514,20 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
         </div>
         <div class="flex items-center justify-between" :class="showContinue ? 'mt-6' : 'mt-4'">
           <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tất cả sách</h2>
+          <div class="flex items-center gap-2">
           <button v-if="shown.length > 1 && !arranging" class="h-7 px-2.5 rounded-md text-xs flex items-center gap-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Kéo bìa sách để sắp xếp theo ý bạn" @click="startArrange"><ArrowUpDown class="w-3.5 h-3.5" /> Sắp xếp</button>
+            title="Kéo sách để sắp xếp theo ý bạn" @click="startArrange"><ArrowUpDown class="w-3.5 h-3.5" /> Sắp xếp</button>
+            <div class="flex rounded-md border border-border p-0.5" role="radiogroup" aria-label="Kiểu xem">
+              <button role="radio" :aria-checked="view === 'grid'" title="Xem dạng lưới" aria-label="Xem dạng lưới" class="h-6 w-7 grid place-items-center rounded"
+                :class="view === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'" @click="setView('grid')"><LayoutGrid class="w-3.5 h-3.5" /></button>
+              <button role="radio" :aria-checked="view === 'list'" title="Xem dạng danh sách" aria-label="Xem dạng danh sách" class="h-6 w-7 grid place-items-center rounded"
+                :class="view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'" @click="setView('list')"><List class="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
         </div>
 
         <!-- Lưới sách: sách lẻ + thẻ bộ sách -->
-        <div v-if="shown.length" class="mt-6 grid grid-cols-5 gap-x-5 gap-y-7 pr-3">
+        <div v-if="shown.length && view === 'grid'" class="mt-6 grid grid-cols-5 gap-x-5 gap-y-7 pr-3">
           <div v-for="it in shown" :key="it.key" class="text-left group relative rounded-lg"
             :class="[
               it.kind === 'book' && imported?.slug === it.book.slug && 'ring-2 ring-primary ring-offset-4 ring-offset-background',
@@ -556,6 +578,93 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
               <div class="mt-1.5 h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: it.progress + '%' }"></div></div>
               <p class="mt-1 text-[11px] text-muted-foreground truncate">{{ it.progress >= 99 ? 'Đã nghe hết bộ' : isListening(it.current) ? `Đang nghe tập ${it.current.volume}` : it.progress === 0 ? 'Chưa nghe' : `Nghe tiếp tập ${it.current.volume}` }}</p>
             </template>
+          </div>
+        </div>
+
+        <!-- Danh sách: mỗi sách / bộ sách một hàng -->
+        <div v-else-if="shown.length" class="mt-3 mr-3 rounded-lg border border-border">
+          <div class="flex items-center gap-4 px-3 h-8 text-[11px] font-medium uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/30 rounded-t-lg">
+            <span v-if="arranging" class="w-4"></span>
+            <span class="w-9"></span>
+            <span class="flex-1">Tên sách</span>
+            <span class="w-28">Danh mục</span>
+            <span class="w-28 text-right">Thời lượng</span>
+            <span class="w-36">Tiến độ</span>
+            <span class="w-[68px]"></span>
+          </div>
+          <div v-for="(it, i) in shown" :key="it.key" class="group relative flex items-center gap-4 px-3 py-2 bg-background hover:bg-muted/40"
+            :class="[
+              i < shown.length - 1 && 'border-b border-border', i === shown.length - 1 && 'rounded-b-lg',
+              !arranging && 'cursor-pointer', arranging && 'cursor-grab select-none touch-none', dragKey === it.key && 'opacity-90 shadow-2xl cursor-grabbing',
+              overKey === it.key && dragKey !== it.key && 'bg-primary/5 shadow-[inset_0_2px_0_hsl(var(--primary))]',
+              it.kind === 'book' && imported?.slug === it.book.slug && 'bg-primary/5',
+            ]"
+            :data-shelf-key="it.key" :draggable="false"
+            :style="dragKey === it.key ? { transform: `translateY(${dragDelta.y}px)`, zIndex: 40, pointerEvents: 'none' } : undefined"
+            @pointerdown="onPointerDown($event, it.key)" @dragstart.prevent @click="!arranging && openItem(it)">
+            <GripVertical v-if="arranging" class="w-4 h-4 text-muted-foreground shrink-0" />
+            <div class="relative h-12 w-9 shrink-0">
+              <template v-if="it.kind === 'series'">
+                <div class="absolute inset-0 translate-x-[4px] -translate-y-[4px] rounded bg-slate-400 dark:bg-slate-600 border border-background"></div>
+                <div class="absolute inset-0 translate-x-[2px] -translate-y-[2px] rounded bg-slate-600 dark:bg-slate-400 border border-background"></div>
+              </template>
+              <div class="relative h-full w-full rounded shadow-sm overflow-hidden">
+                <img v-if="it.kind === 'book' ? it.book.coverUrl : it.coverUrl" :src="it.kind === 'book' ? it.book.coverUrl : it.coverUrl" alt="" class="h-full w-full object-cover" draggable="false" />
+                <BookCover v-else :title="it.kind === 'book' ? it.book.title : it.name" :author="it.kind === 'book' ? it.book.author : it.author" class="h-full w-full rounded shadow-none" />
+              </div>
+            </div>
+            <template v-if="it.kind === 'book'">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate" :title="it.book.title">{{ it.book.title }}</p>
+                <p class="text-xs text-muted-foreground truncate flex items-center gap-1">
+                  <template v-if="it.book.author">{{ it.book.author }}<template v-if="it.book.voice"> ·</template></template>
+                  <template v-if="it.book.voice"><Mic class="w-3 h-3 shrink-0" /> {{ it.book.voice }}</template>
+                </p>
+              </div>
+              <span class="w-28 text-xs text-muted-foreground truncate" :title="it.book.category">{{ it.book.category || '—' }}</span>
+              <span class="w-28 text-right text-xs text-muted-foreground tabular-nums">{{ fmtLong(it.book.durationSec) }}</span>
+              <div class="w-36">
+                <div class="h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: it.book.progress + '%' }"></div></div>
+                <p class="mt-1 text-[11px] text-muted-foreground truncate">{{ progressText(it.book.progress) }}</p>
+              </div>
+            </template>
+            <template v-else>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate flex items-center gap-1.5">
+                  <span class="truncate" :title="it.name">{{ it.name }}</span>
+                  <span class="shrink-0 flex items-center gap-1 rounded-full bg-primary/10 text-primary text-[11px] font-semibold px-1.5 py-px"><Layers class="w-3 h-3" /> Bộ {{ it.vols.length }} tập</span>
+                </p>
+                <p class="text-xs text-muted-foreground truncate flex items-center gap-1">
+                  <template v-if="it.author">{{ it.author }}<template v-if="it.current.voice"> ·</template></template>
+                  <template v-if="it.current.voice"><Mic class="w-3 h-3 shrink-0" /> {{ it.current.voice }}</template>
+                </p>
+              </div>
+              <span class="w-28 text-xs text-muted-foreground truncate" :title="it.current.category">{{ it.current.category || '—' }}</span>
+              <span class="w-28 text-right text-xs text-muted-foreground tabular-nums">{{ fmtLong(it.durationSec) }}</span>
+              <div class="w-36">
+                <div class="h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: it.progress + '%' }"></div></div>
+                <p class="mt-1 text-[11px] text-muted-foreground truncate">{{ it.progress >= 99 ? 'Đã nghe hết bộ' : isListening(it.current) ? `Đang nghe tập ${it.current.volume}` : it.progress === 0 ? 'Chưa nghe' : `Nghe tiếp tập ${it.current.volume}` }}</p>
+              </div>
+            </template>
+            <div class="w-[68px] flex items-center justify-end gap-1">
+              <template v-if="!arranging">
+                <button class="h-8 w-8 grid place-items-center rounded-full focus-visible:opacity-100"
+                  :class="isPlaying(it) ? 'bg-primary text-primary-foreground' : 'border border-border bg-background text-foreground hover:bg-muted opacity-0 group-hover:opacity-100'"
+                  :aria-label="it.kind === 'book' ? `Nghe ${it.book.title}` : `Nghe tiếp bộ ${it.name}`" @click.stop="playItem(it)"><Play class="w-4 h-4 ml-0.5" /></button>
+                <div v-if="it.kind === 'book'" data-book-menu @click.stop>
+                  <button class="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:opacity-100"
+                    :class="menuFor === it.book.slug ? 'bg-muted text-foreground' : 'opacity-0 group-hover:opacity-100'"
+                    aria-label="Thao tác với sách" aria-haspopup="menu" :aria-expanded="menuFor === it.book.slug"
+                    @click="menuFor = menuFor === it.book.slug ? null : it.book.slug"><MoreHorizontal class="w-4 h-4" /></button>
+                  <div v-if="menuFor === it.book.slug" role="menu" class="absolute top-11 right-3 w-48 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20 text-sm">
+                    <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(it.book)"><Pencil class="w-4 h-4" /> Sửa thông tin</button>
+                    <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="openFolder(it.book)"><FolderOpen class="w-4 h-4" /> Mở thư mục</button>
+                    <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" @click="trash(it.book)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
+                  </div>
+                </div>
+                <span v-else class="w-7"></span>
+              </template>
+            </div>
           </div>
         </div>
 
