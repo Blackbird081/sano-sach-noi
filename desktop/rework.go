@@ -96,10 +96,10 @@ func (a *App) mediaURLStamp(rel string) string {
 	return u
 }
 
-// normFor dựng bộ chuẩn hóa khớp lúc tạo sách: đoán có đọc số mục không từ lời
-// đọc cũ của chính tiểu mục đó.
-func normFor(sec library.EditSection) *bookmaker.Normalizer {
-	n, err := bookmaker.NewNormalizer("", bookmaker.KeepsHeadingNumbers(sec.Title, sec.Script))
+// normFor dựng bộ chuẩn hóa khớp lúc tạo sách (đoán có đọc số mục không từ lời
+// đọc cũ của chính tiểu mục đó) + từ điển chung + từ điển của cuốn.
+func (a *App) normFor(sec library.EditSection, book map[string]string) *bookmaker.Normalizer {
+	n, err := a.normalizerFor(bookmaker.KeepsHeadingNumbers(sec.Title, sec.Script), book)
 	if err != nil {
 		return nil
 	}
@@ -107,11 +107,11 @@ func normFor(sec library.EditSection) *bookmaker.Normalizer {
 }
 
 // scriptFor dựng lời đọc mới của một tiểu mục đã sửa.
-func scriptFor(sec library.EditSection, title, text string) string {
+func (a *App) scriptFor(sec library.EditSection, book map[string]string, title, text string) string {
 	if sec.Intro {
-		return bookmaker.IntroScript(nil, text)
+		return bookmaker.IntroScript(a.normFor(sec, book), text)
 	}
-	return bookmaker.SectionScript(normFor(sec), title, text)
+	return bookmaker.SectionScript(a.normFor(sec, book), title, text)
 }
 
 // editBusyLocked — lý do không bắt đầu lượt sửa lúc này (đang giữ a.mu).
@@ -153,6 +153,10 @@ func (a *App) StartReread(slug string, edits []SectionEdit) (*EditStatus, error)
 		title, text, script string
 		stem                string
 	}
+	bookDict, err := a.lib.BookDict(slug)
+	if err != nil {
+		return nil, err
+	}
 	var items []prepared
 	seen := map[int]bool{}
 	for _, e := range edits {
@@ -169,7 +173,7 @@ func (a *App) StartReread(slug string, edits []SectionEdit) (*EditStatus, error)
 		if text == "" && !sec.Intro {
 			return nil, fmt.Errorf("mục %q chưa có chữ để đọc", title)
 		}
-		script := scriptFor(sec, title, text)
+		script := a.scriptFor(sec, bookDict, title, text)
 		if strings.TrimSpace(script) == "" {
 			return nil, fmt.Errorf("mục %q chưa có chữ để đọc", title)
 		}
@@ -315,7 +319,8 @@ func (a *App) StartVoiceChange(slug, voice string) (*EditStatus, error) {
 		}
 		script := s.Script
 		if strings.TrimSpace(script) == "" { // sách cũ thiếu lời đọc: dựng lại từ chữ
-			script = scriptFor(s, s.Title, s.Text)
+			bookDict, _ := a.lib.BookDict(slug)
+			script = a.scriptFor(s, bookDict, s.Title, s.Text)
 		}
 		jobs = append(jobs, bookmaker.ScriptJob{Stem: s.Stem, Text: script})
 	}

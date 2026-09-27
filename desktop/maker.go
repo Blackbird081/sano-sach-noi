@@ -51,6 +51,8 @@ type BookSettings struct {
 	DropStems          []string                         `json:"dropStems"`
 	CoverPath          string                           `json:"coverPath"`
 	ReadingEdits       map[string]bookmaker.ReadingEdit `json:"readingEdits"`
+	// Pronunciations — từ điển cách đọc riêng của cuốn (D12), chồng lên từ điển chung.
+	Pronunciations map[string]string `json:"pronunciations"`
 	// RightsConfirmedAt — lúc người dùng tick "có quyền dùng tài liệu này" (RFC 3339); bắt buộc để render.
 	RightsConfirmedAt string `json:"rightsConfirmedAt"`
 }
@@ -127,11 +129,12 @@ func (t toolPaths) ttsConfig(voice string) bookmaker.TTSConfig {
 }
 
 // options dựng bookmaker.Options từ lựa chọn của người dùng.
-func (s BookSettings) options(t toolPaths, outDir string) (bookmaker.Options, error) {
+// global — từ điển chung của người dùng (nil = chỉ bộ chuẩn).
+func (s BookSettings) options(t toolPaths, outDir string, global map[string]string) (bookmaker.Options, error) {
 	if !strings.EqualFold(filepath.Ext(s.Path), ".docx") {
 		return bookmaker.Options{}, ErrNotDocx
 	}
-	norm, err := bookmaker.NewNormalizer("", s.KeepHeadingNumbers)
+	norm, err := bookmaker.NewNormalizerWith(s.KeepHeadingNumbers, global, s.Pronunciations)
 	if err != nil {
 		return bookmaker.Options{}, err
 	}
@@ -140,18 +143,19 @@ func (s BookSettings) options(t toolPaths, outDir string) (bookmaker.Options, er
 		drop[st] = true
 	}
 	return bookmaker.Options{
-		InputDocx:         s.Path,
-		OutputDir:         outDir,
-		Title:             strings.TrimSpace(s.Title),
-		Author:            strings.TrimSpace(s.Author),
-		IntroText:         strings.TrimSpace(s.IntroText),
-		Visibility:        "private",
-		TTS:               t.ttsConfig(s.Voice),
-		Norm:              norm,
-		DropStems:         drop,
-		CoverPath:         strings.TrimSpace(s.CoverPath),
-		ReadingEdits:      s.ReadingEdits,
-		RightsConfirmedAt: strings.TrimSpace(s.RightsConfirmedAt),
+		InputDocx:          s.Path,
+		OutputDir:          outDir,
+		Title:              strings.TrimSpace(s.Title),
+		Author:             strings.TrimSpace(s.Author),
+		IntroText:          strings.TrimSpace(s.IntroText),
+		Visibility:         "private",
+		TTS:                t.ttsConfig(s.Voice),
+		Norm:               norm,
+		DropStems:          drop,
+		CoverPath:          strings.TrimSpace(s.CoverPath),
+		ReadingEdits:       s.ReadingEdits,
+		RightsConfirmedAt:  strings.TrimSpace(s.RightsConfirmedAt),
+		BookPronunciations: s.Pronunciations,
 	}, nil
 }
 
@@ -160,7 +164,8 @@ func (a *App) InspectDocx(path string, keepHeadingNumbers bool) (*bookmaker.Outl
 	if _, err := describeDocx(path); err != nil {
 		return nil, err
 	}
-	return bookmaker.Inspect(path, bookmaker.InspectOptions{KeepHeadingNumbers: keepHeadingNumbers})
+	// Từ trong từ điển chung đã có cách đọc: không cảnh báo nữa.
+	return bookmaker.Inspect(path, bookmaker.InspectOptions{KeepHeadingNumbers: keepHeadingNumbers, Pronunciations: []map[string]string{a.globalDict()}})
 }
 
 // Voices trả danh sách giọng của bộ đọc (hỏi bộ đọc lần đầu rồi nhớ lại).
@@ -214,7 +219,7 @@ func (a *App) PreviewClips(s BookSettings, stems []string) ([]Clip, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts, err := s.options(t, dir)
+	opts, err := s.options(t, dir, a.globalDict())
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +314,7 @@ func (a *App) StartRender(s BookSettings) (*RenderStatus, error) {
 		a.mu.Unlock()
 		return nil, err
 	}
-	opts, err := s.options(t, work)
+	opts, err := s.options(t, work, a.globalDict())
 	if err != nil {
 		a.mu.Unlock()
 		_ = os.RemoveAll(work)

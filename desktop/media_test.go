@@ -58,7 +58,7 @@ func TestBookSettingsOptions(t *testing.T) {
 		Path: "/tmp/sach.docx", Title: "  Sách  ", Voice: "", IntroText: " Xin chào. ",
 		DropStems: []string{"ch01-sec01"}, ReadingEdits: map[string]bookmaker.ReadingEdit{"ch02-sec01": {From: "a", To: "b"}},
 	}
-	o, err := s.options(toolPaths{python: "py", script: "/x/audio_gen_batch.py", ffmpeg: "ff"}, "/out")
+	o, err := s.options(toolPaths{python: "py", script: "/x/audio_gen_batch.py", ffmpeg: "ff"}, "/out", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestBookSettingsOptions(t *testing.T) {
 	if o.TTS.Voice != bookmaker.DefaultVoice || !o.TTS.KeepTxt || o.TTS.ScriptDir != "/x" || o.TTS.Mode != bookmaker.TTSModeVieNeu {
 		t.Errorf("TTS sai: %+v", o.TTS)
 	}
-	if _, err := (BookSettings{Path: "/tmp/a.pdf"}).options(toolPaths{}, "/out"); err == nil {
+	if _, err := (BookSettings{Path: "/tmp/a.pdf"}).options(toolPaths{}, "/out", nil); err == nil {
 		t.Error("file không phải .docx phải lỗi")
 	}
 }
