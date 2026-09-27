@@ -73,8 +73,9 @@ func TestExportM4BVaoThuMuc(t *testing.T) {
 	if st.Path != want || !fileExists(want) {
 		t.Fatalf("file = %q, muốn %q", st.Path, want)
 	}
-	if st.DurationSec < 2.9 || st.DurationSec > 3.1 {
-		t.Errorf("thời lượng = %.2f, muốn ≈ 3", st.DurationSec)
+	// 3 giây âm thanh + nghỉ 1,5 giây trước tiểu mục 2 + nghỉ 2 giây trước chương 2.
+	if st.DurationSec < 6.4 || st.DurationSec > 6.6 {
+		t.Errorf("thời lượng = %.2f, muốn ≈ 6,5", st.DurationSec)
 	}
 }
 
