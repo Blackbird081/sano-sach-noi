@@ -5,11 +5,15 @@
 // - Bỏ nút "prompt soát lại" (prompt chính đã dặn AI tự soát; soát lại vẫn có trong skill + trang hướng dẫn).
 // - Mỗi bước một dòng + một nút; mẹo gom thành một dòng nhỏ; "Nạp skill" là một dòng cuối, không bị chân trang che.
 // - Nút ghi tên AI ("Sao chép prompt cho Gemini", "Mở Gemini"); Gemini đổi bước 3 + nút chân thành "dán văn bản".
+// - Hộp nạp skill mở theo AI đã chọn (không tab): Claude tải zip SKILL.md; ChatGPT đường chính là
+//   Dự án + file hướng dẫn (ai cũng dùng được), dòng phụ cho gói Business/Enterprise tải zip như Claude
+//   (ChatGPT Skills dùng cùng định dạng SKILL.md). Gemini: không hướng dẫn tạo Gem (tin rò rỉ Google bỏ
+//   Gem từ 13/10/2026, Skills của Gemini chỉ gói trả phí) → dòng cuối ghi "mỗi lần dán prompt, không cần skill".
 // Wireframe tĩnh: dữ liệu giả, KHÔNG gọi API. Nút ngoài khung để chuyển trạng thái duyệt.
 import { computed, ref } from 'vue'
 import {
   Library, FilePlus2, BarChart3, Settings, Info, LifeBuoy, ExternalLink, Check, ChevronRight, ChevronLeft,
-  Copy, FileText, ClipboardPaste, Sparkles, Lightbulb, Moon, Sun,
+  Copy, FileText, ClipboardPaste, Sparkles, Lightbulb, Moon, Sun, Download, X, CheckCircle2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
@@ -19,6 +23,8 @@ const tool = ref<Tool>((q.get('ai') as Tool | null) || '')
 const level = ref(Number(q.get('level')) === 2 ? 2 : 3)
 const dark = ref(false)
 const copied = ref(false)
+const skill = ref(q.get('skill') === '1')
+const saved = ref(false)
 
 const tools = [
   { k: 'claude' as const, name: 'Claude', gives: 'Trả về file Word', icon: FileText },
@@ -49,6 +55,7 @@ const nav = [
         class="h-8 px-3 rounded-full border text-xs"
         :class="tool === m[0] ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground'"
         @click="tool = m[0]">{{ m[1] }}</button>
+      <button class="h-8 px-3 rounded-full border text-xs" :class="skill ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground'" @click="skill = !skill; if (!tool || tool === 'gemini') tool = 'claude'">5. Hộp nạp skill</button>
       <button class="h-8 px-3 rounded-full border border-border bg-background text-xs text-foreground" @click="level = level === 3 ? 2 : 3">Cấp {{ level }} (đổi)</button>
       <button class="h-8 px-3 rounded-full border border-border bg-background text-xs flex items-center gap-1.5 text-foreground" @click="dark = !dark">
         <component :is="dark ? Sun : Moon" class="w-3.5 h-3.5" /> {{ dark ? 'Sáng' : 'Tối' }}
@@ -87,7 +94,7 @@ const nav = [
             <div class="max-w-3xl">
               <button class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"><ChevronLeft class="w-4 h-4" /> Đổi cách làm</button>
               <h1 class="mt-2 text-xl font-semibold tracking-tight">Nhờ AI {{ level === 3 ? 'viết lại thành văn sách nói' : 'làm mượt tài liệu' }}</h1>
-              <p class="text-sm text-muted-foreground">Bản miễn phí cũng được. {{ level === 3 ? 'Mất khoảng 10–15 phút.' : 'Mất khoảng 5 phút.' }}</p>
+              <p class="text-sm text-muted-foreground">AI bản miễn phí cũng được. {{ level === 3 ? 'Mất khoảng 10–15 phút.' : 'Mất khoảng 5 phút.' }}</p>
 
               <!-- Chọn AI: không chọn sẵn -->
               <p class="mt-5 text-sm font-medium">Bạn dùng AI nào?</p>
@@ -134,11 +141,14 @@ const nav = [
                   <Lightbulb class="w-3.5 h-3.5 mt-px text-rag-amber shrink-0" />
                   <span>Tài liệu dài thì gõ "tiếp" để AI làm phần sau. AI từ chối hoặc dừng giữa chừng thì bấm tạo lại câu trả lời. Đọc lại bản AI viết, nhất là số liệu, tên riêng.</span>
                 </p>
-                <div class="mt-5 flex items-center gap-2 text-sm">
+                <div v-if="!gemini" class="mt-5 flex items-center gap-2 text-sm">
                   <Sparkles class="w-4 h-4 text-chart shrink-0" />
                   <span class="text-muted-foreground">Làm sách thường xuyên?</span>
-                  <button class="text-primary hover:underline">Nạp skill cho {{ t.name }} một lần, lần sau chỉ cần gửi file</button>
+                  <button class="text-primary hover:underline" @click="skill = true; saved = false">Nạp skill cho {{ t.name }} một lần, lần sau chỉ cần gửi file</button>
                 </div>
+                <p v-else class="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles class="w-4 h-4 text-chart shrink-0" /> Với Gemini, mỗi lần làm sách chỉ cần dán prompt, không cần nạp skill.
+                </p>
               </template>
             </div>
           </div>
@@ -151,6 +161,46 @@ const nav = [
             </div>
           </div>
         </section>
+      </div>
+
+      <!-- ═══ Hộp nạp skill: theo AI đã chọn ═══ -->
+      <div v-if="skill && t && !gemini" class="absolute inset-0 bg-black/40 grid place-items-center z-30" @click.self="skill = false">
+        <div class="w-[520px] rounded-xl border border-border bg-background shadow-2xl">
+          <div class="flex items-start justify-between p-5 pb-0">
+            <div>
+              <h2 class="font-semibold">Nạp skill làm sách nói cho {{ t.name }}</h2>
+              <p class="text-xs text-muted-foreground mt-0.5">Làm một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2").</p>
+            </div>
+            <button class="text-muted-foreground" @click="skill = false"><X class="w-4 h-4" /></button>
+          </div>
+          <div class="p-5">
+            <ol class="space-y-2.5 text-sm">
+              <template v-if="tool === 'claude'">
+                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">1</span><span>Tải file <span class="font-mono">sano-sach-noi.zip</span> về, không cần giải nén.</span></li>
+                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">2</span><span>Mở claude.ai → Cài đặt → Capabilities → Skills → Tải lên, chọn file vừa tải.</span></li>
+              </template>
+              <template v-else>
+                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">1</span><span>Tải file <span class="font-mono">sano-huong-dan-ai.txt</span> về.</span></li>
+                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">2</span><span>Mở ChatGPT → tạo Dự án (Project) tên "Sano – sách nói", thêm file vừa tải vào phần Tệp của dự án.</span></li>
+                <li class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">3</span><span>Dán câu dưới đây vào ô Hướng dẫn (Instructions) của dự án. Từ nay làm sách trong dự án đó.</span></li>
+              </template>
+            </ol>
+            <div class="mt-4 flex items-center gap-3 rounded-lg bg-muted/40 p-3">
+              <FileText class="w-5 h-5 text-muted-foreground shrink-0" />
+              <span class="flex-1 text-sm font-mono">{{ tool === 'claude' ? 'sano-sach-noi.zip' : 'sano-huong-dan-ai.txt' }}</span>
+              <Button size="sm" @click="saved = true"><Download class="w-4 h-4" /> Tải về</Button>
+            </div>
+            <p v-if="saved" class="mt-2 text-xs text-muted-foreground flex items-center gap-1.5"><CheckCircle2 class="w-3.5 h-3.5 text-rag-green" /> Đã lưu vào Downloads/{{ tool === 'claude' ? 'sano-sach-noi.zip' : 'sano-huong-dan-ai.txt' }}</p>
+            <div v-if="tool === 'chatgpt'" class="mt-3 rounded-lg border border-border p-3 text-sm">
+              <p class="text-muted-foreground">Mỗi khi tôi gửi tài liệu để làm sách nói, làm đúng theo file sano-huong-dan-ai.txt đã đính kèm. Mặc định làm việc A, cấp 3 viết lại thành văn sách nói. Tôi ghi "cấp 2" thì làm việc B, làm mượt.</p>
+              <button class="mt-2 h-7 px-2.5 rounded-md border border-border text-xs flex items-center gap-1 hover:bg-muted"><Copy class="w-3.5 h-3.5" /> Sao chép câu này</button>
+            </div>
+            <p class="mt-3 text-xs text-muted-foreground">
+              <template v-if="tool === 'claude'">Cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution).</template>
+              <template v-else>Dùng ChatGPT Business hoặc Enterprise? Mục Skills nhận luôn file skill của Claude: <button class="text-primary hover:underline">tải sano-sach-noi.zip</button>, rồi Skills → Tạo → Tải lên.</template>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
