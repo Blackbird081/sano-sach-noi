@@ -80,8 +80,7 @@ function cycleSpeed() {
   <section class="flex-1 min-w-0 min-h-0 flex flex-col bg-gradient-to-b from-primary/5 to-background">
     <div class="shrink-0 h-16 flex items-center gap-3 px-6 border-b border-border/60">
       <span class="h-11 w-8 shrink-0 rounded overflow-hidden shadow">
-        <img v-if="player.detail?.coverUrl" :src="player.detail.coverUrl" alt="" class="h-full w-full object-cover" />
-        <BookCover v-else :title="player.detail?.title ?? ''" class="h-full w-full rounded shadow-none" />
+        <BookCover :cover-image="player.detail?.thumbUrl || player.detail?.coverUrl" :title="player.detail?.title ?? ''" class="h-full w-full rounded shadow-none" />
       </span>
       <div class="min-w-0 flex-1">
         <p class="text-sm font-medium truncate">{{ track?.title }}</p>

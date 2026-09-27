@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -53,6 +54,12 @@ func serveMedia(lib *library.Library, w http.ResponseWriter, r *http.Request) {
 	if err != nil || !fileExists(full) {
 		http.NotFound(w, r)
 		return
+	}
+	// ?w=480: bìa thu nhỏ cho Thư viện (xem thumb.go). Lỗi thì trả ảnh gốc.
+	if strings.HasPrefix(ctype, "image/") && r.URL.Query().Get("w") == strconv.Itoa(thumbWidth) {
+		if t, err := thumbnail(filepath.Join(lib.Root(), ".tam", "bia"), full, thumbWidth); err == nil {
+			full, ctype = t, "image/jpeg"
+		}
 	}
 	w.Header().Set("Content-Type", ctype)
 	w.Header().Set("Cache-Control", "no-cache")

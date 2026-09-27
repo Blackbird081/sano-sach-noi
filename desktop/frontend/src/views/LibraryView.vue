@@ -381,8 +381,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
           <div class="absolute inset-0 translate-x-3 -translate-y-2 rounded-lg bg-muted-foreground/25"></div>
           <div class="absolute inset-0 translate-x-1.5 -translate-y-1 rounded-lg bg-muted-foreground/40"></div>
           <div class="relative aspect-[3/4] rounded-lg shadow-lg overflow-hidden">
-            <img v-if="seriesItem.coverUrl" :src="seriesItem.coverUrl" alt="" class="h-full w-full object-cover" />
-            <BookCover v-else :title="seriesItem.name" :author="seriesItem.author" class="h-full w-full shadow-none" />
+            <BookCover :cover-image="seriesItem.thumbUrl || seriesItem.coverUrl" :title="seriesItem.name" :author="seriesItem.author" class="h-full w-full shadow-none" />
           </div>
         </div>
         <div class="flex-1 min-w-0">
@@ -399,8 +398,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
         <div v-for="v in seriesItem.vols" :key="v.slug" class="relative flex items-center gap-4 px-4 py-3 hover:bg-muted/40">
           <span class="w-14 text-sm font-semibold text-muted-foreground shrink-0">Tập {{ v.volume }}</span>
           <div class="h-12 w-9 shrink-0 rounded shadow-sm overflow-hidden">
-            <img v-if="v.coverUrl" :src="v.coverUrl" alt="" class="h-full w-full object-cover" />
-            <BookCover v-else :title="v.title" :author="v.author" class="h-full w-full rounded shadow-none" />
+            <BookCover :cover-image="v.thumbUrl || v.coverUrl" :title="v.title" :author="v.author" class="h-full w-full rounded shadow-none" />
           </div>
           <button class="flex-1 min-w-0 text-left" @click="openBook(v.slug)">
             <p class="text-sm font-medium truncate">{{ v.title }}</p>
@@ -515,8 +513,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
             <button v-for="b in continueList" :key="b.slug" class="flex items-center gap-3 rounded-lg border border-border p-2.5 text-left hover:bg-muted/50"
               :aria-label="`Nghe tiếp ${b.title}`" @click="openBook(b.slug, true)">
               <div class="h-14 w-[42px] shrink-0 rounded shadow-sm overflow-hidden">
-                <img v-if="b.coverUrl" :src="b.coverUrl" alt="" class="h-full w-full object-cover" />
-                <BookCover v-else :title="b.title" :author="b.author" class="h-full w-full rounded shadow-none" />
+                <BookCover :cover-image="b.thumbUrl || b.coverUrl" :title="b.title" :author="b.author" class="h-full w-full rounded shadow-none" />
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium truncate">{{ b.title }}</p>
@@ -560,8 +557,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
               </template>
               <button class="relative block w-full aspect-[3/4] rounded-lg shadow-md group-hover:shadow-xl transition overflow-hidden"
                 :class="!arranging && 'group-hover:-translate-y-0.5'" :aria-label="it.kind === 'book' ? `Nghe ${it.book.title}` : `Mở bộ sách ${it.name}`" @click="openItem(it)">
-                <img v-if="it.kind === 'book' ? it.book.coverUrl : it.coverUrl" :src="it.kind === 'book' ? it.book.coverUrl : it.coverUrl" :alt="it.kind === 'book' ? it.book.title : it.name" class="h-full w-full object-cover" draggable="false" />
-                <BookCover v-else :title="it.kind === 'book' ? it.book.title : it.name" :author="it.kind === 'book' ? it.book.author : it.author" class="h-full w-full shadow-none" />
+                <BookCover :cover-image="it.kind === 'book' ? it.book.thumbUrl || it.book.coverUrl : it.thumbUrl || it.coverUrl" :title="it.kind === 'book' ? it.book.title : it.name" :author="it.kind === 'book' ? it.book.author : it.author" class="h-full w-full shadow-none" />
                 <span v-if="it.kind === 'series'" class="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold px-2 py-0.5 shadow-md"><Layers class="w-3 h-3" /> Bộ {{ it.vols.length }} tập</span>
                 <span v-if="arranging" class="absolute top-1.5 left-1.5 h-7 w-7 grid place-items-center rounded-md bg-black/50 text-white"><GripVertical class="w-4 h-4" /></span>
               </button>
@@ -624,8 +620,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
                 <div class="absolute inset-0 translate-x-[2px] -translate-y-[2px] rounded bg-slate-600 dark:bg-slate-400 border border-background"></div>
               </template>
               <div class="relative h-full w-full rounded shadow-sm overflow-hidden">
-                <img v-if="it.kind === 'book' ? it.book.coverUrl : it.coverUrl" :src="it.kind === 'book' ? it.book.coverUrl : it.coverUrl" alt="" class="h-full w-full object-cover" draggable="false" />
-                <BookCover v-else :title="it.kind === 'book' ? it.book.title : it.name" :author="it.kind === 'book' ? it.book.author : it.author" class="h-full w-full rounded shadow-none" />
+                <BookCover :cover-image="it.kind === 'book' ? it.book.thumbUrl || it.book.coverUrl : it.thumbUrl || it.coverUrl" :title="it.kind === 'book' ? it.book.title : it.name" :author="it.kind === 'book' ? it.book.author : it.author" class="h-full w-full rounded shadow-none" />
               </div>
             </div>
             <template v-if="it.kind === 'book'">

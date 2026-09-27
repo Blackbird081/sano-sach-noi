@@ -171,6 +171,7 @@ export interface LibraryBook {
   volume: number // số tập trong bộ (0 khi là sách lẻ)
   cover: string
   coverUrl: string
+  thumbUrl?: string // bìa thu nhỏ cho kệ sách (trống = dùng coverUrl)
   zip: string
   chapters: number
   sections: number

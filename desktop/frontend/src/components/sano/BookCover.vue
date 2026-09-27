@@ -3,7 +3,9 @@
 // màu chọn cố định theo tên sách, gáy sách, tên chữ có chân, motif sóng âm của logo.
 // Chữ co giãn theo bề rộng bìa (container query) nên dùng được từ mini player 36px tới bìa lớn.
 // Palette dùng class Tailwind cố định (giống avatar palette) — không hex.
-import { computed } from 'vue'
+// Ảnh bìa tải lỗi (WebKit thỉnh thoảng bỏ lượt tải khi nhiều ảnh cùng lúc): thử lại một
+// lần, vẫn lỗi thì hiện bìa mặc định thay cho ô trắng.
+import { computed, ref, watch } from 'vue'
 import { cn } from '@/lib/utils'
 
 const props = withDefaults(
@@ -35,16 +37,30 @@ const palette = computed(() => {
   return palettes[h % palettes.length]
 })
 const bars = [35, 70, 100, 60, 40]
+
+const tries = ref(0)
+watch(() => props.coverImage, () => (tries.value = 0))
+const src = computed(() => {
+  const u = props.coverImage
+  if (!u || tries.value === 0) return u
+  return u + (u.includes('?') ? '&' : '?') + 'thu=' + tries.value
+})
+const failed = computed(() => tries.value > 1)
+function onError() {
+  tries.value++
+}
 </script>
 
 <template>
   <div :class="cn('relative overflow-hidden rounded-lg shadow-sm bg-muted', $props.class)">
     <img
-      v-if="coverImage"
-      :src="coverImage"
+      v-if="coverImage && !failed"
+      :src="src ?? undefined"
       :alt="title"
       class="h-full w-full object-cover"
       loading="lazy"
+      draggable="false"
+      @error="onError"
     />
     <div v-else :class="palette.bg" class="cover relative h-full w-full text-white" role="img" :aria-label="title">
       <!-- Gáy sách + vầng sáng góc -->

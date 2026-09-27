@@ -153,6 +153,7 @@ export type ShelfItem =
       author: string
       vols: ShelfBook[] // theo số tập
       coverUrl: string
+      thumbUrl?: string
       title: string // tập 1 (vẽ bìa mặc định)
       durationSec: number
       progress: number // % đã nghe cả bộ (theo thời lượng)
@@ -185,7 +186,7 @@ export function shelfItems(books: ShelfBook[]): ShelfItem[] {
     const heard = vols.reduce((n, v) => n + (v.durationSec * v.progress) / 100, 0)
     out.push({
       kind: 'series', key: `s:${k}`, name: vols[0].series, author: vols[0].author, vols,
-      coverUrl: vols[0].coverUrl, title: vols[0].title, durationSec: dur,
+      coverUrl: vols[0].coverUrl, thumbUrl: vols[0].thumbUrl, title: vols[0].title, durationSec: dur,
       progress: dur ? Math.round((heard / dur) * 100) : 0,
       listenedAt: Math.max(...vols.map((v) => v.listenedAt)),
       createdAt: vols.map((v) => v.createdAt).sort().pop() ?? '',

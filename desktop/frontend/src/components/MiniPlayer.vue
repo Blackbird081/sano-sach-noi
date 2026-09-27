@@ -15,8 +15,7 @@ import { closePlayer, pctTrack, player, seek, toggle, track } from '../lib/playe
       <template v-if="player.detail">
         <button class="flex items-center gap-3 min-w-0 flex-1 text-left" title="Mở màn nghe" @click="openBook(player.slug)">
           <span class="h-11 w-8 shrink-0 rounded overflow-hidden shadow">
-            <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" alt="" class="h-full w-full object-cover" />
-            <BookCover v-else :title="player.detail.title" class="h-full w-full rounded shadow-none" />
+            <BookCover :cover-image="player.detail.thumbUrl || player.detail.coverUrl" :title="player.detail.title" class="h-full w-full rounded shadow-none" />
           </span>
           <span class="min-w-0">
             <span class="block text-sm font-medium truncate">{{ player.detail.title }}</span>

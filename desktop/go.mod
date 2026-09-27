@@ -9,12 +9,10 @@ go 1.26.8
 require (
 	github.com/ulikunitz/xz v0.5.17
 	github.com/wailsapp/wails/v2 v2.16.0
+	golang.org/x/image v0.46.0
 )
 
-require (
-	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300 // indirect
-	golang.org/x/image v0.46.0 // indirect
-)
+require github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300 // indirect
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect

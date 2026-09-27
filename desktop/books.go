@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 type BookView struct {
 	library.Book
 	CoverURL string `json:"coverUrl"`
+	ThumbURL string `json:"thumbUrl"` // bìa thu nhỏ cho kệ sách / danh sách (thumb.go)
 }
 
 // TrackView — một tiểu mục phát được, kèm URL MP3.
@@ -86,6 +88,11 @@ func (a *App) bookView(b library.Book) BookView {
 	v := BookView{Book: b}
 	if b.Cover != "" {
 		v.CoverURL = a.mediaURLStamp(b.Cover) // kèm giờ sửa: đổi bìa là hiện ngay
+		sep := "?"
+		if strings.Contains(v.CoverURL, "?") {
+			sep = "&"
+		}
+		v.ThumbURL = v.CoverURL + sep + "w=" + strconv.Itoa(thumbWidth)
 	}
 	return v
 }

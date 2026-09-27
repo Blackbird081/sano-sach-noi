@@ -281,8 +281,7 @@ const empty = computed(() => !!log.value && !first.value)
               :disabled="!bookBySlug.get(b.slug)" @click="openBook(b.slug)">
               <span class="w-4 text-xs text-muted-foreground tabular-nums">{{ i + 1 }}</span>
               <div class="h-10 w-[30px] shrink-0 rounded overflow-hidden shadow-sm bg-muted">
-                <img v-if="bookBySlug.get(b.slug)?.coverUrl" :src="bookBySlug.get(b.slug)!.coverUrl" alt="" class="h-full w-full object-cover" />
-                <BookCover v-else-if="bookBySlug.get(b.slug)" :title="bookBySlug.get(b.slug)!.title" :author="bookBySlug.get(b.slug)!.author" class="h-full w-full rounded shadow-none" />
+                <BookCover v-if="bookBySlug.get(b.slug)" :cover-image="bookBySlug.get(b.slug)!.thumbUrl || bookBySlug.get(b.slug)!.coverUrl" :title="bookBySlug.get(b.slug)!.title" :author="bookBySlug.get(b.slug)!.author" class="h-full w-full rounded shadow-none" />
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm truncate" :class="!bookBySlug.get(b.slug) && 'text-muted-foreground italic'">{{ titleOf(b.slug) }}</p>

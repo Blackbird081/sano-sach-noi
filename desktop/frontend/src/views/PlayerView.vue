@@ -212,8 +212,7 @@ async function act(fn: (slug: string) => Promise<void>) {
       <div v-else ref="midEl" data-fit-check="mid" class="relative flex-1 min-h-0 flex flex-col items-center justify-center py-2">
         <template v-if="fit === 'wide'">
           <div data-cover class="rounded-xl shadow-2xl overflow-hidden shrink-0" :style="{ height: coverH + 'px', width: Math.round(coverH * 0.75) + 'px' }">
-            <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
-            <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
+            <BookCover :cover-image="player.detail.coverUrl" :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
           </div>
           <h2 class="mt-4 text-lg font-semibold text-center max-w-md line-clamp-2">{{ player.detail.title }}</h2>
           <p v-if="player.detail.author || player.detail.voice" class="text-sm text-muted-foreground flex items-center gap-1">
@@ -224,8 +223,7 @@ async function act(fn: (slug: string) => Promise<void>) {
         </template>
         <div v-else class="w-full max-w-md flex items-center gap-4 shrink-0">
           <div v-if="fit === 'medium'" class="rounded-lg shadow-lg overflow-hidden shrink-0" :style="{ height: sideCoverH + 'px', width: Math.round(sideCoverH * 0.75) + 'px' }">
-            <img v-if="player.detail.coverUrl" :src="player.detail.coverUrl" :alt="player.detail.title" class="h-full w-full object-cover" />
-            <BookCover v-else :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
+            <BookCover :cover-image="player.detail.coverUrl" :title="player.detail.title" :author="player.detail.author" class="h-full w-full rounded-xl shadow-none" />
           </div>
           <div class="min-w-0">
             <h2 class="text-lg font-semibold truncate" :title="player.detail.title">{{ player.detail.title }}</h2>
