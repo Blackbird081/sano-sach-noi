@@ -1,6 +1,9 @@
 package library
 
 import (
+	"bytes"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -187,5 +190,25 @@ func TestVoiceJob_ResumeFinishCancel(t *testing.T) {
 	}
 	if e, _ := lib.Edit("sach-thu"); e.VoiceJob != nil || e.Voice != "Mỹ Duyên" {
 		t.Error("huỷ phải giữ giọng cũ")
+	}
+}
+
+func TestSetCoverImage_ShrinksBigPhoto(t *testing.T) {
+	lib, dir := makeReworkBook(t)
+	var b bytes.Buffer
+	_ = png.Encode(&b, image.NewNRGBA(image.Rect(0, 0, 3000, 4000)))
+	src := filepath.Join(t.TempDir(), "anh.png")
+	_ = os.WriteFile(src, b.Bytes(), 0o644)
+	if err := lib.SetCoverImage("sach-thu", src); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(filepath.Join(dir, "cover.jpg"))
+	if err != nil {
+		t.Fatal("ảnh lớn phải lưu thành cover.jpg đã thu nhỏ")
+	}
+	cfg, _, _ := image.DecodeConfig(f)
+	_ = f.Close()
+	if cfg.Width != 1200 || cfg.Height != 1600 || fileExists(filepath.Join(dir, "cover.png")) {
+		t.Errorf("bìa %dx%d", cfg.Width, cfg.Height)
 	}
 }

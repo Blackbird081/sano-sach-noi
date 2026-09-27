@@ -448,6 +448,9 @@ func (o Options) writeCover(first *SectionImage, title string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("đọc ảnh bìa %q: %w", o.CoverPath, err)
 		}
+		if data, ext, err = FitCover(data, ext); err != nil { // ảnh chụp lớn → thu về 1200×1600
+			return "", err
+		}
 		name := "cover" + ext
 		if err := os.WriteFile(filepath.Join(o.OutputDir, name), data, 0o644); err != nil {
 			return "", fmt.Errorf("ghi bìa: %w", err)

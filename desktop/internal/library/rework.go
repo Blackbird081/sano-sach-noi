@@ -352,6 +352,9 @@ func (l *Library) SetCoverImage(slug, src string) error {
 	if err != nil {
 		return fmt.Errorf("đọc ảnh bìa: %w", err)
 	}
+	if data, ext, err = bookmaker.FitCover(data, ext); err != nil { // ảnh chụp lớn → thu về 1200×1600
+		return err
+	}
 	bookFilesMu.Lock()
 	defer bookFilesMu.Unlock()
 	rb, err := readRawBook(dir)
