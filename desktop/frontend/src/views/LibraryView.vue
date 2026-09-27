@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   Check, ChevronDown, ChevronLeft, FileArchive, FilePlus2, FolderOpen, GripVertical, Layers, Mic, MoreHorizontal, Pencil, Play, Search,
-  Settings2, Trash2, Upload, X, ArrowUpDown, LayoutGrid, List,
+  Settings2, Trash2, Upload, X, ArrowUpDown, LayoutGrid, List, History,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -19,7 +19,7 @@ import {
   ago, categoryCounts, isListening, loadSort, loadView, saveView, matches, mergeCategory, moveItem, saveSort, seriesKey, shelfItems, sortShelf, SORTS,
   type ShelfBook, type ShelfItem, type ShelfView, type SortKey,
 } from '../lib/find'
-import { fmtLong, loadPosition } from '../lib/position'
+import { clearPositions, fmtLong, loadPosition } from '../lib/position'
 import { go, openBook, refreshLibrary, state } from '../lib/store'
 import { forgetBook } from '../lib/player'
 import EditBookDialog from '../components/EditBookDialog.vue'
@@ -29,8 +29,10 @@ import ManageShelfDialog from '../components/ManageShelfDialog.vue'
 onMounted(() => void refreshLibrary())
 
 const categories = computed(() => categoryCounts(state.library?.books ?? []))
+// Tăng sau khi xoá lịch sử nghe: vị trí nghe đọc từ bộ nhớ trình duyệt, không tự báo đổi.
+const historyTick = ref(0)
 const books = computed<ShelfBook[]>(() =>
-  (state.library?.books ?? []).map((b) => {
+  (void historyTick.value, state.library?.books ?? []).map((b) => {
     const pos = loadPosition(b.slug)
     // cách viết danh mục khác hoa thường → hiện theo cách viết chung
     const category = mergeCategory(b.category ?? '', categories.value.map(([c]) => c))
@@ -234,6 +236,16 @@ function openItem(i: ShelfItem) {
 }
 const continueList = computed(() => [...listening.value].sort((a, b) => b.listenedAt - a.listenedAt).slice(0, 3))
 const showContinue = computed(() => filter.value === 'all' && !query.value.trim() && continueList.value.length > 0)
+
+// Xoá lịch sử nghe: mọi cuốn về "Chưa nghe", hàng "Nghe tiếp" trống. Sách giữ nguyên.
+const confirmClear = ref(false)
+const listenedCount = computed(() => books.value.filter((b) => b.progress > 0 || b.listenedAt > 0).length)
+function clearHistory() {
+  clearPositions()
+  historyTick.value++
+  confirmClear.value = false
+  if (filter.value === 'listening') filter.value = 'all'
+}
 
 function clearSearch() {
   query.value = ''
@@ -495,7 +507,17 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
       <template v-else-if="books.length">
         <!-- Nghe tiếp -->
         <div v-if="showContinue" class="mt-5">
-          <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nghe tiếp</h2>
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nghe tiếp</h2>
+            <button v-if="!confirmClear" class="h-7 px-2.5 rounded-md text-xs flex items-center gap-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Xoá vị trí nghe của mọi cuốn" @click="confirmClear = true"><History class="w-3.5 h-3.5" /> Xoá lịch sử nghe</button>
+          </div>
+          <div v-if="confirmClear" role="alertdialog" aria-label="Xoá lịch sử nghe" class="mt-2 flex items-center gap-3 rounded-lg border border-border bg-muted/40 pl-3 pr-2 py-2 text-sm">
+            <History class="w-4 h-4 text-muted-foreground shrink-0" />
+            <span class="flex-1">Xoá lịch sử nghe của {{ listenedCount }} cuốn? Tiến độ về 0, lần sau nghe lại từ đầu. Sách không bị xoá.</span>
+            <Button size="sm" variant="outline" @click="confirmClear = false">Huỷ</Button>
+            <Button size="sm" variant="destructive" @click="clearHistory">Xoá lịch sử</Button>
+          </div>
           <div class="mt-2 grid grid-cols-3 gap-3">
             <button v-for="b in continueList" :key="b.slug" class="flex items-center gap-3 rounded-lg border border-border p-2.5 text-left hover:bg-muted/50"
               :aria-label="`Nghe tiếp ${b.title}`" @click="openBook(b.slug, true)">

@@ -27,6 +27,17 @@ export function savePosition(slug: string, p: Position) {
   }
 }
 
+/** Xoá lịch sử nghe: vị trí nghe của mọi cuốn (sách không bị đụng). Trả số cuốn đã xoá. */
+export function clearPositions(): number {
+  try {
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith('sano:pos:'))
+    for (const k of keys) localStorage.removeItem(k)
+    return keys.length
+  } catch {
+    return 0
+  }
+}
+
 /** "1 giờ 12 phút" / "58 phút" / "40 giây". */
 export function fmtLong(sec: number) {
   if (sec < 60) return `${Math.max(0, Math.round(sec))} giây`
