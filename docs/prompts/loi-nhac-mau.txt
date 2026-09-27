@@ -11,7 +11,7 @@ Giữ nguyên nội dung:
 6. Bỏ những câu chỉ có nghĩa khi nhìn trang giấy, như "xem hình bên dưới", "như bảng trên", số trang, chú thích cuối trang.
 7. Danh sách gạch đầu dòng: nối thành đoạn văn. Danh sách có thứ tự: dùng "thứ nhất", "thứ hai"...
 8. Từ viết tắt ít gặp, ký hiệu lạ, từ tiếng nước ngoài khó đọc: lần đầu xuất hiện thì viết ra cách đọc đầy đủ. Viết tắt quen thuộc như CEO, KPI, AI thì giữ nguyên.
-9. Ký hiệu toán và dấu nối số viết thành chữ, ví dụ "3+2" thành "ba cộng hai", "5-3-1" thành "năm ba một", "50/30/20" thành "năm mươi, ba mươi, hai mươi".
+9. Ký hiệu toán và dấu nối số viết thành chữ, ví dụ "1/3" thành "một phần ba", "50/30/20" thành "năm mươi, ba mươi, hai mươi".
 10. Câu quá dài: tách thành câu ngắn hơn, không đổi ý.
 11. Sửa lỗi chính tả và lỗi gõ phím.
 

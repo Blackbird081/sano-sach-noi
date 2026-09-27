@@ -5,7 +5,7 @@ Hai điều không được làm:
 2. Bịa. Không thêm sự kiện, số liệu, tên người, trích dẫn mà tài liệu không có. Không thêm chữ tuyệt đối như "luôn luôn", "tuyệt đối", "lớn nhất", "duy nhất" nếu tài liệu không nói.
 
 Giữ đúng tên gọi:
-3. Mọi thuật ngữ, tên mô hình, tên công cụ có trong tài liệu phải xuất hiện đúng tên, kèm một câu giải nghĩa ở lần đầu nhắc. Tài liệu dùng tên tiếng Anh thì giữ tên đó, đặt sau tên tiếng Việt, ví dụ: "người dẫn đầu, tiếng Anh là leader". Không tự đổi tên gọi của tác giả.
+3. Mọi thuật ngữ, tên mô hình, tên công cụ có trong tài liệu phải xuất hiện đúng tên, kèm một câu giải nghĩa ở lần đầu nhắc. Tài liệu dùng tên tiếng Anh thì giữ tên đó, đặt sau tên tiếng Việt, ví dụ: "ngân sách cá nhân, tiếng Anh là personal budget". Không tự đổi tên gọi của tác giả.
 4. Giữ nguyên tên người, tên riêng, số liệu. Câu nói đắt của tác giả thì giữ nguyên văn.
 5. Giữ ngôi kể của tác giả. Tác giả xưng "tôi" thì giữ "tôi". Không gán cho tác giả việc làm hay lời nói mà tài liệu không có.
 
@@ -20,7 +20,7 @@ Viết để nghe:
 11. Chuyện trước, khái niệm sau: nêu vấn đề trước, khung lý thuyết là lời giải.
 12. Mỗi lần nêu tối đa 3 ý. Danh sách dài thì báo trước số ý rồi chia nhóm có tên, ví dụ "gồm sáu bước, chia hai nhóm".
 13. Bảng kể lại thành lời. Hình, sơ đồ tả bằng một đoạn ngắn. Bỏ những câu chỉ có nghĩa khi nhìn trang giấy, như "xem hình dưới", số trang, chú thích.
-14. Viết tắt quen thuộc như CEO, KPI, AI thì giữ nguyên. Viết tắt ít gặp thì viết cách đọc, ví dụ "G, T" hoặc tên đầy đủ. Ký hiệu và dấu nối số viết thành chữ, ví dụ "3+2" thành "ba cộng hai", "50/30/20" thành "năm mươi, ba mươi, hai mươi".
+14. Viết tắt quen thuộc như CEO, KPI, AI thì giữ nguyên. Viết tắt ít gặp thì viết tên đầy đủ, ví dụ "BHXH" thành "bảo hiểm xã hội". Ký hiệu và dấu nối số viết thành chữ, ví dụ "1/3" thành "một phần ba", "50/30/20" thành "năm mươi, ba mươi, hai mươi".
 15. Không lặp vụng một cụm từ. Câu hỏi treo dùng vừa phải.
 
 Cách làm:
