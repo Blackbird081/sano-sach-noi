@@ -52,8 +52,8 @@ let loadSeq = 0
 let loading: Promise<void> = Promise.resolve()
 let played = false // chỉ mở rồi thoát, chưa phát → không tính là "nghe gần đây"
 // Nghỉ trước khi phát tiểu mục kế: cộng với ~0,5 giây lặng sẵn trong MP3 và
-// lúc nạp file, nghe ra khoảng 1 giây.
-const TRACK_GAP_MS = 500
+// lúc nạp file, nghe ra khoảng 1,5 giây.
+const TRACK_GAP_MS = 1000
 let gapTimer = 0
 
 function cancelGap() {
