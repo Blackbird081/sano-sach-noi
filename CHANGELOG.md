@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.15 (27/09/2026)
+
+### Sửa lỗi
+- **M4B có quãng nghỉ giữa các phần:** trước đây nghe trên điện thoại đọc liền sang chương sau. Nay nghỉ 2 giây khi sang chương, 1,5 giây giữa các tiểu mục
+- **Nghe trong Sano:** nghỉ khoảng 1,5 giây giữa các tiểu mục, bằng với file M4B
+
+### Lưu ý khi nâng cấp
+- Từ **0.1.2 – 0.1.14**: bấm **Cập nhật ngay**. Từ 0.1.0 / 0.1.1: tải bản 0.1.15 và cài đè một lần
+- File M4B đã xuất trước đây: xuất lại để có quãng nghỉ
+
 ## v0.1.14 (27/09/2026)
 
 ### Tính năng

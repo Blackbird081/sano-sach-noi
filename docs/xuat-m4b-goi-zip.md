@@ -20,6 +20,8 @@ M4B là định dạng sách nói chuẩn: **một file duy nhất** chứa cả
 
 Dung lượng khoảng **29 MB cho mỗi giờ nghe** (AAC 64 kbps mono, đủ rõ cho giọng đọc). Mỗi lúc xuất một cuốn.
 
+Giữa các phần có quãng nghỉ như khi nghe trong Sano: **2 giây** khi sang chương mới, **1,5 giây** giữa các tiểu mục trong một chương (từ 0.1.15). File M4B xuất bằng bản cũ hơn đọc liền sang chương sau; muốn có quãng nghỉ thì xuất lại và chép đè lên điện thoại.
+
 Tiếp theo: [chép file M4B sang điện thoại](./nghe-tren-dien-thoai).
 
 ::: tip File M4B mẫu
