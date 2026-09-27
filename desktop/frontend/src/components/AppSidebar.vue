@@ -13,7 +13,7 @@ const nav = [
   { key: 'about' as View, label: 'Giới thiệu', icon: Info },
 ]
 
-// Tài trợ bởi (nhỏ, cuối thanh bên). utm để biết lượt ghé đến từ app.
+// Phần mềm miễn phí, tài trợ phát triển (nhỏ, cuối thanh bên). utm để biết lượt ghé đến từ app.
 const utm = '?utm_source=sano&utm_medium=app-sidebar&utm_campaign=tai-tro'
 const sponsors = [
   { name: 'SePay', logo: sepayLogo, url: 'https://sepay.vn' + utm },
@@ -58,7 +58,7 @@ const sponsors = [
       <template v-else><ArrowUpCircle class="w-4 h-4" /> Có bản mới {{ state.updateInfo.version }}</template>
     </button>
     <div class="px-4 pb-3">
-      <p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">Tài trợ bởi</p>
+      <p class="text-[10px] font-medium uppercase tracking-wider leading-snug text-muted-foreground/80">Phần mềm miễn phí,<br />tài trợ phát triển</p>
       <div class="mt-1.5 grid grid-cols-2 gap-1.5">
         <a v-for="sp in sponsors" :key="sp.name" :href="sp.url" target="_blank" rel="noopener" :title="sp.name" :aria-label="`Nhà tài trợ ${sp.name}`"
           class="h-8 rounded-md bg-white border border-border grid place-items-center px-2 opacity-80 hover:opacity-100 hover:border-primary/40 transition">
