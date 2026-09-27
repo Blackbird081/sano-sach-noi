@@ -68,7 +68,7 @@ description: Biên tập tài liệu thành bản đọc cho sách nói Sano. L�
 ` + guideBody()
 }
 
-// SkillZip — file zip nạp vào claude.ai → Cài đặt → Customize → Skills.
+// SkillZip — file zip nạp vào claude.ai → Customize → Skills → Upload a skill.
 func SkillZip() ([]byte, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)

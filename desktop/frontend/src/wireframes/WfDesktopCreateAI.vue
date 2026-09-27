@@ -35,7 +35,7 @@ type DStep = { text: string; act?: 'file' | 'open' | 'copy'; file?: string; labe
 const dlgSteps = computed<DStep[]>(() => {
   if (tool.value === 'claude') return [
     { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: 'sano-sach-noi.zip' },
-    { text: 'Mở Cài đặt → Customize → Skills → nút + → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Cài đặt Claude' },
+    { text: 'Mở Customize → Skills → nút + → Create skill → Upload a skill, chọn file vừa tải.', act: 'open', label: 'Mở Skills của Claude' },
   ]
   if (plan.value === 'skills') return [
     { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: 'sano-sach-noi.zip' },
@@ -222,7 +222,7 @@ const nav = [
             </ol>
             <p v-if="tool === 'chatgpt' && plan === 'project'" class="mt-2 text-xs text-muted-foreground">Câu dán: "Mỗi khi tôi gửi tài liệu để làm sách nói, làm đúng theo file sano-huong-dan-ai.txt đã đính kèm…"</p>
             <p class="mt-3 text-xs text-muted-foreground">
-              <template v-if="tool === 'claude'">Cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution).</template>
+              <template v-if="tool === 'claude'">Mọi gói Claude, kể cả miễn phí, đều nạp được skill.</template>
               <template v-else-if="plan === 'skills'">Mục Skills của ChatGPT dùng cùng định dạng skill với Claude, nên dùng chung một file.</template>
               <template v-else-if="plan === 'project'">Ô Hướng dẫn của Dự án tối đa 8.000 ký tự, nên hướng dẫn đầy đủ nằm trong file đính kèm.</template>
             </p>

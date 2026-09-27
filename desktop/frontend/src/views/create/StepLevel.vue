@@ -233,7 +233,7 @@ async function download(kind: 'claude' | 'chatgpt') {
           <p v-if="saveError" class="mt-2 text-xs text-destructive">{{ saveError }}</p>
           <p v-if="plan === 'project'" class="mt-2 text-xs text-muted-foreground">Câu dán: "{{ shortInstruction() }}"</p>
           <p class="mt-3 text-xs text-muted-foreground">
-            <template v-if="state.aiTool === 'claude'">Cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution). Skill cũng dùng được trong Claude Code.</template>
+            <template v-if="state.aiTool === 'claude'">Mọi gói Claude, kể cả miễn phí, đều nạp được skill. Skill cũng dùng được trong Claude Code.</template>
             <template v-else-if="plan === 'skills'">Mục Skills của ChatGPT dùng cùng định dạng skill với Claude, nên dùng chung một file.</template>
             <template v-else-if="plan === 'project'">Ô Hướng dẫn của Dự án tối đa 8.000 ký tự, nên hướng dẫn đầy đủ nằm trong file đính kèm.</template>
           </p>
