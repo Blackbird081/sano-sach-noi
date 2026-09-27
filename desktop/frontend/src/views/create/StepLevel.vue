@@ -3,10 +3,10 @@
 // nhờ AI theo 3 bước. Chọn AI đang dùng: Gemini bản miễn phí không tạo được file
 // Word nên prompt của Gemini đòi khối mã để dán vào Sano (đã thử 27/09).
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { Check, ChevronLeft, Clock, Copy, ExternalLink, Lightbulb, Pause, Play, ShieldCheck } from 'lucide-vue-next'
+import { Check, CheckCircle2, ChevronLeft, Clock, Copy, Download, ExternalLink, FileText, Lightbulb, Pause, Play, ShieldCheck, Sparkles, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { copyText, openURL } from '../../lib/backend'
-import { AI_TOOLS, promptFor, reviewPromptFor } from '../../lib/prompt'
+import { copyText, errText, openURL, saveAIGuide } from '../../lib/backend'
+import { AI_TOOLS, SKILL_STEPS, promptFor, reviewPromptFor, shortInstruction, type AITool } from '../../lib/prompt'
 import { saveAITool, saveLevel, state } from '../../lib/store'
 
 const options = [
@@ -20,6 +20,19 @@ const options = [
 const samples = import.meta.glob<string>('../../assets/levels/cap-*.mp3', { eager: true, import: 'default', query: '?url' })
 const sampleFor = (n: number) => samples[`../../assets/levels/cap-${n}.mp3`]
 const playing = ref(0)
+// Thời lượng từng đoạn đọc từ chính file (render lại mẫu không phải sửa số).
+const durs = ref<Record<number, string>>({})
+for (const n of [1, 2, 3]) {
+  const src = sampleFor(n)
+  if (!src) continue
+  const a = new Audio()
+  a.preload = 'metadata'
+  a.onloadedmetadata = () => {
+    const sec = Math.round(a.duration)
+    if (Number.isFinite(sec)) durs.value = { ...durs.value, [n]: `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` }
+  }
+  a.src = src
+}
 let audio: HTMLAudioElement | null = null
 function stop() {
   audio?.pause()
@@ -45,11 +58,33 @@ function pick(n: number) {
 const tool = computed(() => AI_TOOLS.find((a) => a.k === state.aiTool) ?? AI_TOOLS[0])
 const gemini = computed(() => state.aiTool === 'gemini')
 const copied = ref(0)
-async function copy(which: 1 | 2) {
-  const text = which === 1 ? promptFor(state.level, state.aiTool) : reviewPromptFor(state.aiTool)
+async function copy(which: 1 | 2 | 3) {
+  const text = which === 1 ? promptFor(state.level, state.aiTool) : which === 2 ? reviewPromptFor(state.aiTool) : shortInstruction(skillTab.value)
   if (await copyText(text)) {
     copied.value = which
     setTimeout(() => (copied.value = 0), 1500)
+  }
+}
+
+// Hộp "Nạp skill cho AI": mở theo AI đang chọn, đổi tab được.
+const skillOpen = ref(false)
+const skillTab = ref<AITool>(state.aiTool)
+const skill = computed(() => SKILL_STEPS[skillTab.value])
+const saved = ref('')
+const saveError = ref('')
+function openSkill() {
+  skillTab.value = state.aiTool
+  saved.value = ''
+  saveError.value = ''
+  skillOpen.value = true
+}
+async function download() {
+  saveError.value = ''
+  try {
+    const p = await saveAIGuide(skillTab.value)
+    if (p) saved.value = p.split(/[\\/]/).slice(-2).join('/')
+  } catch (e) {
+    saveError.value = errText(e)
   }
 }
 </script>
@@ -81,7 +116,7 @@ async function copy(which: 1 | 2) {
         <button v-if="sampleFor(o.n)" class="shrink-0 h-8 pl-2.5 pr-3 rounded-full border text-xs flex items-center gap-1.5"
           :class="playing === o.n ? 'border-chart bg-chart text-white' : 'border-border bg-background hover:bg-muted'"
           @click.stop="toggle(o.n)">
-          <component :is="playing === o.n ? Pause : Play" class="w-3.5 h-3.5" /> {{ playing === o.n ? 'Dừng' : 'Nghe mẫu' }}
+          <component :is="playing === o.n ? Pause : Play" class="w-3.5 h-3.5" /> {{ playing === o.n ? 'Dừng' : 'Nghe mẫu' }} <span v-if="durs[o.n]" :class="playing === o.n ? 'opacity-80' : 'text-muted-foreground'">· {{ durs[o.n] }}</span>
         </button>
       </div>
     </div>
@@ -138,9 +173,48 @@ async function copy(which: 1 | 2) {
       </li>
     </ol>
 
-    <p class="mt-4 text-xs text-muted-foreground flex items-start gap-1.5">
+    <div class="mt-4 flex items-center gap-3 rounded-lg bg-muted/50 px-4 py-3 text-sm">
+      <Sparkles class="w-4 h-4 text-chart shrink-0" />
+      <span class="flex-1">Làm sách thường xuyên? Nạp skill Sano cho AI một lần, lần sau chỉ cần gửi file.</span>
+      <Button size="sm" variant="outline" @click="openSkill">Nạp skill cho AI</Button>
+    </div>
+    <p class="mt-3 text-xs text-muted-foreground flex items-start gap-1.5">
       <ShieldCheck class="w-3.5 h-3.5 mt-px shrink-0" />
       <span>Đọc lại bản AI viết, nhất là số liệu, tên riêng.{{ state.level === 3 ? ' Bản viết lại hợp với tài liệu của bạn hoặc để nghe riêng, không để phát hành lại sách của người khác.' : '' }} Tài liệu nhạy cảm thì cân nhắc trước khi gửi lên AI trên mạng.</span>
     </p>
+
+    <!-- ═══ Nạp skill cho AI ═══ -->
+    <div v-if="skillOpen" class="fixed inset-0 bg-black/40 grid place-items-center z-50" @click.self="skillOpen = false">
+      <div class="w-[540px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-auto rounded-xl border border-border bg-background shadow-2xl" role="dialog" aria-modal="true" aria-label="Nạp skill làm sách nói cho AI">
+        <div class="flex items-start justify-between p-5 pb-0">
+          <div>
+            <h2 class="font-semibold">Nạp skill làm sách nói cho AI</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Làm một lần, dùng mãi. Skill gồm cả cấp 2 (làm mượt) và cấp 3 (viết lại thành văn sách nói).</p>
+          </div>
+          <button class="text-muted-foreground hover:text-foreground" aria-label="Đóng" @click="skillOpen = false"><X class="w-4 h-4" /></button>
+        </div>
+        <div class="px-5 mt-4 flex gap-1 border-b border-border" role="tablist">
+          <button v-for="a in AI_TOOLS" :key="a.k" role="tab" :aria-selected="skillTab === a.k" class="h-9 px-3 text-sm -mb-px border-b-2"
+            :class="skillTab === a.k ? 'border-primary font-medium' : 'border-transparent text-muted-foreground'" @click="skillTab = a.k; saved = ''">{{ a.name }}</button>
+        </div>
+        <div class="p-5">
+          <ol class="space-y-2.5 text-sm">
+            <li v-for="(st, i) in skill.steps" :key="i" class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">{{ i + 1 }}</span><span>{{ st }}</span></li>
+          </ol>
+          <div class="mt-4 flex items-center gap-3 rounded-lg bg-muted/40 p-3">
+            <FileText class="w-5 h-5 text-muted-foreground shrink-0" />
+            <span class="flex-1 text-sm font-mono">{{ skill.file }}</span>
+            <Button size="sm" @click="download"><Download class="w-4 h-4" /> Tải về</Button>
+          </div>
+          <p v-if="saved" class="mt-2 text-xs text-muted-foreground flex items-center gap-1.5"><CheckCircle2 class="w-3.5 h-3.5 text-rag-green" /> Đã lưu vào {{ saved }}</p>
+          <p v-if="saveError" class="mt-2 text-xs text-destructive">{{ saveError }}</p>
+          <div v-if="skillTab !== 'claude'" class="mt-3 rounded-lg border border-border p-3 text-sm">
+            <p class="text-muted-foreground">{{ shortInstruction(skillTab) }}</p>
+            <button class="mt-2 h-7 px-2.5 rounded-md border border-border text-xs flex items-center gap-1 hover:bg-muted" @click="copy(3)"><component :is="copied === 3 ? Check : Copy" class="w-3.5 h-3.5" /> {{ copied === 3 ? 'Đã sao chép' : 'Sao chép câu này' }}</button>
+          </div>
+          <p class="mt-3 text-xs text-muted-foreground">{{ skill.note }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

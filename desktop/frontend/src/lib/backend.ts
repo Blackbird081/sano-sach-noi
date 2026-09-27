@@ -285,6 +285,7 @@ interface GoApp {
   DescribeDocx(path: string): Promise<DocxFile>
   SampleDocx(): Promise<DocxFile>
   PastedText(text: string): Promise<DocxFile>
+  SaveAIGuide(kind: string): Promise<string>
   SaveSampleDocx(): Promise<string>
   InspectDocx(path: string, keepHeadingNumbers: boolean): Promise<Outline>
   Voices(): Promise<Voice[]>
@@ -511,6 +512,13 @@ export async function pastedText(text: string): Promise<DocxFile> {
   const app = goApp()
   if (!app) return { path: '/giả/Van-ban-dan-tu-AI.docx', name: 'Văn bản dán từ AI', size: text.length }
   return app.PastedText(text)
+}
+
+/** Lưu skill Claude (kind "claude" → zip) hoặc file hướng dẫn cho ChatGPT / Gemini. Huỷ → "". */
+export async function saveAIGuide(kind: string): Promise<string> {
+  const app = goApp()
+  if (!app) return kind === 'claude' ? '~/Downloads/sano-sach-noi.zip' : '~/Downloads/sano-huong-dan-ai.txt'
+  return app.SaveAIGuide(kind)
 }
 
 /** Lưu file Word mẫu về máy (hộp lưu file, mặc định thư mục Tải về). Huỷ → "". */
