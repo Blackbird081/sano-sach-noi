@@ -54,9 +54,14 @@ const sponsors = [
       <div class="mt-2 h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary rounded-full" :style="{ width: renderPct + '%' }"></div></div>
       <div class="mt-1 flex justify-between text-[11px] text-muted-foreground tabular-nums"><span>{{ renderPct }}%</span><span>còn ~{{ remainMin }} phút</span></div>
     </button>
-    <button v-if="state.updateInfo" class="mx-3 mb-2 flex items-center gap-2 rounded-md px-2 h-8 text-xs text-primary hover:bg-primary/10" @click="state.update = 'info'">
-      <template v-if="state.upd.applyOnQuit"><RefreshCw class="w-4 h-4" /> Khởi động lại để cập nhật</template>
-      <template v-else><ArrowUpCircle class="w-4 h-4" /> Có bản mới {{ state.updateInfo.version }}</template>
+    <!-- Có bản mới: thẻ nổi bật (hành động chính nên tô màu chính) -->
+    <button v-if="state.updateInfo" class="mx-3 mb-3 rounded-lg bg-primary text-primary-foreground p-3 text-left shadow-md hover:bg-primary/90 transition" @click="state.update = 'info'">
+      <span class="flex items-center gap-2 text-sm font-semibold">
+        <RefreshCw v-if="state.upd.applyOnQuit" class="w-5 h-5 shrink-0" /><ArrowUpCircle v-else class="w-5 h-5 shrink-0" />
+        {{ state.upd.applyOnQuit ? 'Khởi động lại để cập nhật' : `Có bản mới ${state.updateInfo.version}` }}
+        <span v-if="!state.upd.applyOnQuit" class="ml-auto h-2 w-2 rounded-full bg-primary-foreground animate-pulse" aria-hidden="true"></span>
+      </span>
+      <span class="mt-1 block text-xs opacity-90">{{ state.upd.applyOnQuit ? 'Bản mới đã tải xong, mở lại Sano là dùng được' : 'Bấm để xem có gì mới và cập nhật' }}</span>
     </button>
     <div class="px-4 pb-3">
       <p class="text-center text-[10px] font-medium uppercase tracking-wider leading-snug text-muted-foreground/80">Phần mềm miễn phí,<br />tài trợ phát triển bởi</p>

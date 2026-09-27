@@ -1,7 +1,7 @@
 // Trạng thái dùng chung của cửa sổ: màn đang mở, các bước Tạo sách (dữ liệu
 // thật từ phần Go), render nền, thư viện, bộ đọc.
 // Một cuốn render một lúc: đang render thì bấm "Tạo sách nói" mở màn tiến độ.
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import {
   cancelRender as goCancelRender, checkTTS, describeDocx, errText, inspectDocx, library as goLibrary,
   listVoices, onEvent, previewClips, renderStatus, startRender as goStartRender, version as goVersion,
@@ -591,7 +591,7 @@ export async function init() {
   // Chưa có bộ đọc, hoặc bộ đọc cần cập nhật thư viện (bản vá) → màn cài bộ đọc.
   if (!q.get('screen') && state.tts && (!state.tts.ready || state.tts.update)) state.view = 'setup'
   else if (!q.get('screen') && needTerms()) state.view = 'terms'
-  if (state.autoUpdateCheck && !q.get('update')) void checkForUpdate()
+  if (state.autoUpdateCheck && !q.get('update')) void checkForUpdate().then(popupNewVersion)
   const dev = import.meta.env.DEV ? q.get('docx') : null
   if (dev) {
     state.view = 'create'
@@ -678,6 +678,38 @@ export function closeUpdate() {
   state.update = 'closed'
   state.updError = ''
   if (state.upd.phase === 'error') state.upd = { ...state.upd, phase: 'idle', error: '' }
+}
+
+// Tự hiện hộp cập nhật khi lượt kiểm lúc mở app thấy bản mới: mỗi phiên bản một
+// lần (đóng hộp thì lần mở sau không hiện lại, góc dưới thanh bên vẫn báo). Đang
+// ở màn cài bộ đọc / điều khoản thì đợi rời màn đó.
+const POPUP_KEY = 'sano.updatePopupShown'
+function popupNewVersion() {
+  const v = state.updateInfo?.version
+  if (!v || state.upd.applyOnQuit) return
+  try {
+    if (localStorage.getItem(POPUP_KEY) === v) return
+  } catch {
+    // không đọc được thì vẫn hiện
+  }
+  const show = () => {
+    if (state.update !== 'closed') return
+    state.update = 'info'
+    try {
+      localStorage.setItem(POPUP_KEY, v)
+    } catch {
+      // không lưu được: lần mở sau hiện lại
+    }
+  }
+  if (state.view !== 'setup' && state.view !== 'terms') return show()
+  const stop = watch(
+    () => state.view,
+    (view) => {
+      if (view === 'setup' || view === 'terms') return
+      stop()
+      show()
+    },
+  )
 }
 
 /** Hỏi GitHub có bản mới không. Không có mạng / repo chưa công khai → 'error', không làm phiền. */
