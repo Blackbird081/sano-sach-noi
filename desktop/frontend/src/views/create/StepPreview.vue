@@ -46,10 +46,6 @@ async function addMore() {
   await addPreview([stem])
 }
 
-const rightsOk = computed(() => !!state.rightsConfirmedAt)
-function toggleRights(e: Event) {
-  state.rightsConfirmedAt = (e.target as HTMLInputElement).checked ? new Date().toISOString() : ''
-}
 
 // ── Bôi đen trong ô lời đọc ───────────────────────────────────────────────
 const areas = new Map<string, HTMLTextAreaElement>()
@@ -226,15 +222,6 @@ async function say(word: string, reading: string) {
         <Button variant="outline" size="sm" :disabled="!more || state.previewing" @click="addMore">Nghe thử đoạn này</Button>
       </div>
 
-      <!-- Xác nhận quyền dùng tài liệu cho từng cuốn — bắt buộc trước khi render cả cuốn -->
-      <label v-if="state.clips.length" class="mt-6 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-muted/30 p-4 text-sm"
-        :class="rightsOk && 'border-primary/40 bg-primary/5'">
-        <input :checked="rightsOk" type="checkbox" class="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]" @change="toggleRights" />
-        <span>
-          Tôi xác nhận có quyền dùng tài liệu này để làm sách nói
-          <span class="text-muted-foreground">(tài liệu của tôi, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép).</span>
-        </span>
-      </label>
     </div>
 
     <!-- Khung Từ điển của cuốn này -->

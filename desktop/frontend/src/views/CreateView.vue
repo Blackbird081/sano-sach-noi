@@ -15,6 +15,13 @@ import StepIntro from './create/StepIntro.vue'
 import StepPreview from './create/StepPreview.vue'
 import StepRender from './create/StepRender.vue'
 
+// Xác nhận quyền dùng tài liệu: ngay trên thanh dưới cạnh nút render (bắt buộc,
+// không phải cuộn xuống cuối trang Nghe thử mới thấy).
+const rightsOk = computed(() => !!state.rightsConfirmedAt)
+function toggleRights(e: Event) {
+  state.rightsConfirmedAt = (e.target as HTMLInputElement).checked ? new Date().toISOString() : ''
+}
+
 const locked = computed(() => rendering.value || !!state.render?.done)
 const canNext = computed(() => {
   if (state.step === 1) return state.level > 0 && (state.levelScreen === 'choose' || !!state.aiTool)
@@ -93,9 +100,15 @@ function jump(n: number) {
     <div v-if="state.step < 7" class="shrink-0 border-t border-border px-6 h-16 flex items-center justify-between gap-4">
       <Button variant="ghost" :disabled="state.step === 1 && state.levelScreen === 'choose'" @click="back"><ChevronLeft class="w-4 h-4" /> Quay lại</Button>
       <p v-if="state.renderError" class="text-sm text-destructive truncate" :title="state.renderError">{{ state.renderError }}</p>
-      <p v-else-if="state.step === 6 && !state.rightsConfirmedAt" class="text-xs text-muted-foreground">
-        Tick xác nhận quyền dùng tài liệu để mở nút render
-      </p>
+      <label v-else-if="state.step === 6" class="flex-1 min-w-0 flex cursor-pointer items-center justify-end gap-2.5 rounded-md border px-3 py-2 text-sm"
+        :class="rightsOk ? 'border-primary/40 bg-primary/5' : 'border-rag-amber/60 bg-rag-amber/10'"
+        title="Tài liệu của tôi, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép">
+        <input :checked="rightsOk" type="checkbox" class="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" @change="toggleRights" />
+        <span class="min-w-0">
+          Tôi xác nhận có quyền dùng tài liệu này để làm sách nói
+          <span class="block text-xs text-muted-foreground truncate">Tài liệu của tôi, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép.{{ rightsOk ? '' : ' Tick để mở nút render.' }}</span>
+        </span>
+      </label>
       <p v-else-if="state.step === 1 && !state.level" class="text-xs text-muted-foreground">Chọn một cách để tiếp tục</p>
       <p v-else-if="state.step === 1 && state.levelScreen === 'ai' && !state.aiTool" class="text-xs text-muted-foreground">Chọn AI để tiếp tục</p>
       <Button v-if="state.step < 6" :disabled="!canNext" @click="next">{{ nextLabel }} <ChevronRight class="w-4 h-4" /></Button>
