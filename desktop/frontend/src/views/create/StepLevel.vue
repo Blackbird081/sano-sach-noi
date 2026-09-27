@@ -192,10 +192,13 @@ async function download(kind: 'claude' | 'chatgpt') {
         <Lightbulb class="w-3.5 h-3.5 mt-px text-rag-amber shrink-0" />
         <span>Tài liệu dài thì gõ "tiếp" để AI làm phần sau. AI từ chối hoặc dừng giữa chừng thì bấm tạo lại câu trả lời. Đọc lại bản AI viết, nhất là số liệu, tên riêng.</span>
       </p>
-      <div v-if="!gemini" class="mt-5 flex items-center gap-2 text-sm">
-        <Sparkles class="w-4 h-4 text-chart shrink-0" />
-        <span class="text-muted-foreground">Làm sách thường xuyên?</span>
-        <button class="text-primary hover:underline" @click="openSkill">Nạp skill cho {{ tool.name }} một lần, lần sau chỉ cần gửi file</button>
+      <div v-if="!gemini" class="mt-4 flex items-center gap-4 rounded-xl border border-chart/30 bg-chart/10 px-4 py-3.5">
+        <span class="h-9 w-9 rounded-full bg-chart/15 text-chart grid place-items-center shrink-0"><Sparkles class="w-4 h-4" /></span>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium">Làm sách thường xuyên? Nạp skill cho {{ tool.name }}</p>
+          <p class="text-sm text-muted-foreground">Nạp một lần, lần sau chỉ cần gửi file và gõ một câu.</p>
+        </div>
+        <Button variant="outline" class="shrink-0 bg-background" @click="openSkill">Nạp skill cho {{ tool.name }}</Button>
       </div>
       <p v-else class="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
         <Sparkles class="w-4 h-4 text-chart shrink-0" /> Với Gemini, mỗi lần làm sách chỉ cần dán prompt, Gemini chưa hỗ trợ skill.
@@ -241,12 +244,15 @@ async function download(kind: 'claude' | 'chatgpt') {
           <!-- Từ nay làm sách: câu gõ mẫu có tên skill và cấp độ (wireframe D8b) -->
           <div v-if="steps.length" class="mt-4">
             <p class="text-sm font-medium">Từ nay làm sách: mở cuộc trò chuyện mới{{ plan === 'project' ? ' trong dự án "Sano – sách nói"' : '' }}, đính kèm file Word rồi gõ:</p>
-            <ul class="mt-2 space-y-1.5">
-              <li v-for="(ph, i) in usePhrases(plan === 'project')" :key="i" class="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-1.5">
-                <p class="flex-1 min-w-0 text-sm"><span class="font-medium">"{{ ph.say }}"</span> <span class="text-xs text-muted-foreground">· {{ ph.what }}</span></p>
-                <button class="h-7 px-2.5 rounded-md border border-border bg-background text-xs flex items-center gap-1 shrink-0 hover:bg-muted" @click="copySay(i, ph.say)">
-                  <component :is="copiedSay === i ? Check : Copy" class="w-3.5 h-3.5" /> {{ copiedSay === i ? 'Đã sao chép' : 'Sao chép' }}
-                </button>
+            <ul class="mt-2 space-y-2">
+              <li v-for="(ph, i) in usePhrases(plan === 'project')" :key="i" class="rounded-lg border border-border px-3 py-2.5">
+                <p class="text-xs font-medium text-muted-foreground">{{ ph.what }}</p>
+                <div class="mt-1.5 flex items-center gap-2">
+                  <span class="block flex-1 min-w-0 rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground">{{ ph.say }}</span>
+                  <button class="h-8 px-2.5 rounded-md border border-border bg-background text-xs flex items-center gap-1 shrink-0 hover:bg-muted" @click="copySay(i, ph.say)">
+                    <component :is="copiedSay === i ? Check : Copy" class="w-3.5 h-3.5" /> {{ copiedSay === i ? 'Đã sao chép' : 'Sao chép' }}
+                  </button>
+                </div>
               </li>
             </ul>
           </div>

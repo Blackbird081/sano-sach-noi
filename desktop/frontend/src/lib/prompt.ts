@@ -87,8 +87,8 @@ export const SKILL_STEPS: Record<'claude' | ChatGPTPlan, SkillStep[]> = {
 export function usePhrases(project: boolean): { say: string; what: string }[] {
   const via = project ? `theo file ${GUIDE_TXT}` : 'dùng skill sano-sach-noi'
   return [
-    { say: `Làm file sách nói ${via} (cấp độ 3)`, what: 'Viết lại thành văn sách nói' },
-    { say: `Làm file sách nói ${via} (cấp độ 2)`, what: 'Làm mượt, giữ nguyên ý' },
-    { say: `Soát lại file sách nói ${via}`, what: 'Gửi kèm bản gốc và bản đã viết lại' },
+    { say: `Làm file sách nói ${via} (cấp độ 3)`, what: 'Cấp độ 3 · Viết lại thành văn sách nói' },
+    { say: `Làm file sách nói ${via} (cấp độ 2)`, what: 'Cấp độ 2 · Làm mượt, giữ nguyên ý' },
+    { say: `Soát lại file sách nói ${via}`, what: 'Soát lại · gửi kèm bản gốc và bản đã viết lại' },
   ]
 }
