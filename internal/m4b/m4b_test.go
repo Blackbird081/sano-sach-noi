@@ -102,9 +102,25 @@ func TestFileName(t *testing.T) {
 
 func TestBuildChapters(t *testing.T) {
 	tracks := []Track{{Title: "A"}, {Title: "Rỗng"}, {Title: ""}, {Title: "C"}}
-	chs, total := buildChapters(tracks, []int64{44100, 0, 22050, 88200})
+	chs, total := buildChapters(tracks, []int64{44100, 0, 22050, 88200}, make([]int64, 4))
 	want := []Chapter{{"A", 0, 1000}, {"Phần 2", 1000, 1500}, {"C", 1500, 3500}}
 	if total != 3500 || len(chs) != len(want) {
+		t.Fatalf("chapters = %+v, total = %d", chs, total)
+	}
+	for i := range want {
+		if chs[i] != want[i] {
+			t.Errorf("chapter %d = %+v, muốn %+v", i, chs[i], want[i])
+		}
+	}
+}
+
+// Khoảng lặng trước một tiểu mục tính vào cuối mốc trước; mốc sau bắt đầu
+// đúng chỗ giọng đọc.
+func TestBuildChaptersKhoangLang(t *testing.T) {
+	tracks := []Track{{Title: "A"}, {Title: "B"}, {Title: "C"}}
+	chs, total := buildChapters(tracks, []int64{44100, 22050, 44100}, []int64{0, 88200, 44100})
+	want := []Chapter{{"A", 0, 3000}, {"B", 3000, 4500}, {"C", 4500, 5500}}
+	if total != 5500 || len(chs) != len(want) {
 		t.Fatalf("chapters = %+v, total = %d", chs, total)
 	}
 	for i := range want {
@@ -185,8 +201,9 @@ func TestExportThat(t *testing.T) {
 	if last.Phase != PhaseDone || last.Percent != 100 || calls < 4 {
 		t.Errorf("tiến độ cuối = %+v (%d lần gọi)", last, calls)
 	}
-	if d := res.DurationSec; d < 4.7 || d > 4.8 {
-		t.Errorf("thời lượng = %.3f, muốn ≈ 4.75", d)
+	// 4,75 giây âm thanh + 2 khoảng lặng 2 giây trước chương 2 và 3.
+	if d := res.DurationSec; d < 8.7 || d > 8.8 {
+		t.Errorf("thời lượng = %.3f, muốn ≈ 8.75", d)
 	}
 	entries, _ := os.ReadDir(outDir)
 	if len(entries) != 1 {
@@ -230,7 +247,7 @@ func TestExportThat(t *testing.T) {
 	if err := json.Unmarshal(out, &probe); err != nil {
 		t.Fatal(err)
 	}
-	wantStart := []float64{0, 1.5, 3.75}
+	wantStart := []float64{0, 3.5, 7.75}
 	if len(probe.Chapters) != 3 {
 		t.Fatalf("ffprobe thấy %d chương", len(probe.Chapters))
 	}

@@ -13,10 +13,12 @@ import (
 )
 
 // Track — một file MP3 (một tiểu mục) trong sách, theo thứ tự nghe. Title là
-// tên mốc mục lục trong file M4B.
+// tên mốc mục lục trong file M4B. NewChapter — tiểu mục đầu của một chương
+// (nghỉ dài hơn trước nó).
 type Track struct {
-	Title string
-	File  string
+	Title      string
+	File       string
+	NewChapter bool
 }
 
 // Book — dữ liệu để xuất một file M4B.
@@ -67,7 +69,7 @@ func FromDir(dir string) (Book, error) {
 		}
 	}
 	for _, ch := range m.Chapters {
-		for _, sec := range ch.Sections {
+		for j, sec := range ch.Sections {
 			if !safepath.IsPlainName(sec.File) {
 				return Book{}, fmt.Errorf("tên file tiểu mục không hợp lệ: %q", sec.File)
 			}
@@ -75,8 +77,9 @@ func FromDir(dir string) (Book, error) {
 				return Book{}, fmt.Errorf("file tiểu mục %q: %w", sec.File, safepath.ErrNotRegular)
 			}
 			b.Tracks = append(b.Tracks, Track{
-				Title: ChapterTitle(ch.Title, sec.Title, len(ch.Sections)),
-				File:  filepath.Join(dir, sec.File),
+				Title:      ChapterTitle(ch.Title, sec.Title, len(ch.Sections)),
+				File:       filepath.Join(dir, sec.File),
+				NewChapter: j == 0,
 			})
 		}
 	}

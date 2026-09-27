@@ -8,6 +8,8 @@
 //  1. Giải mã lần lượt từng MP3 ra PCM (s16le mono 44,1 kHz) và dồn vào một
 //     tiến trình ffmpeg mã hoá AAC. Đếm số mẫu của từng file nên mốc chương
 //     khớp tuyệt đối với âm thanh (không lệch dồn qua hàng trăm tiểu mục).
+//     Giữa hai tiểu mục chèn khoảng lặng (MP3 chỉ có ~0,1 giây lặng mỗi đầu,
+//     nối thẳng thì nghe như đọc liền sang chương sau).
 //  2. Ghép AAC + file ffmetadata (thẻ + mục lục) + ảnh bìa thành MP4 brand
 //     "M4B " (-c copy, -movflags +faststart), ghi file tạm rồi đổi tên.
 package m4b
@@ -37,6 +39,11 @@ const (
 	bytesPerSample = 2 // s16le mono
 	DefaultBitrate = "64k"
 	coverSize      = 1400 // bìa vuông tự vẽ khi sách không có bìa
+
+	// Khoảng lặng chèn trước một tiểu mục: sang chương mới nghỉ lâu hơn sang
+	// tiểu mục kế trong cùng chương.
+	chapterGapSamples = 2 * sampleRate
+	sectionGapSamples = sampleRate
 )
 
 // Các giai đoạn báo trong Progress.Phase.
@@ -115,12 +122,12 @@ func Export(ctx context.Context, b Book, out string, opt Options) (*Result, erro
 
 	rep := newReporter(opt.Progress, len(b.Tracks), estimateSec(b.Tracks))
 	audio := filepath.Join(work, "audio.m4a")
-	counts, err := encode(ctx, opt, b.Tracks, audio, rep)
+	counts, gaps, err := encode(ctx, opt, b.Tracks, audio, rep)
 	if err != nil {
 		return nil, err
 	}
 
-	chapters, totalMs := buildChapters(b.Tracks, counts)
+	chapters, totalMs := buildChapters(b.Tracks, counts, gaps)
 	metaPath := filepath.Join(work, "chapters.txt")
 	if err := os.WriteFile(metaPath, []byte(FFMetadata(b.Meta, chapters)), 0o644); err != nil {
 		return nil, fmt.Errorf("ghi mục lục: %w", err)
@@ -165,9 +172,10 @@ func Export(ctx context.Context, b Book, out string, opt Options) (*Result, erro
 	return res, nil
 }
 
-// encode giải mã từng MP3 ra PCM, dồn vào một ffmpeg mã hoá AAC. Trả số mẫu
-// PCM của từng tiểu mục.
-func encode(ctx context.Context, opt Options, tracks []Track, audio string, rep *reporter) ([]int64, error) {
+// encode giải mã từng MP3 ra PCM, dồn vào một ffmpeg mã hoá AAC, chèn khoảng
+// lặng giữa các tiểu mục. Trả số mẫu PCM của từng tiểu mục và số mẫu lặng đã
+// chèn trước nó.
+func encode(ctx context.Context, opt Options, tracks []Track, audio string, rep *reporter) ([]int64, []int64, error) {
 	enc := exec.CommandContext(ctx, opt.FFmpeg,
 		"-nostdin", "-hide_banner", "-loglevel", "error", "-y",
 		"-f", "s16le", "-ar", fmt.Sprint(sampleRate), "-ac", "1", "-i", "pipe:0",
@@ -179,46 +187,71 @@ func encode(ctx context.Context, opt Options, tracks []Track, audio string, rep 
 	enc.Stderr = &encErr
 	stdin, err := enc.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("chạy ffmpeg: %w", err)
+		return nil, nil, fmt.Errorf("chạy ffmpeg: %w", err)
 	}
 	enc.WaitDelay = 3 * time.Second
 	if err := enc.Start(); err != nil {
-		return nil, fmt.Errorf("chạy ffmpeg: %w", err)
+		return nil, nil, fmt.Errorf("chạy ffmpeg: %w", err)
 	}
-	fail := func(err error) ([]int64, error) {
+	fail := func(err error) ([]int64, []int64, error) {
 		_ = stdin.Close()
 		_ = enc.Wait()
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		}
 		if s := encErr.String(); s != "" {
-			return nil, fmt.Errorf("%w\n%s", err, s)
+			return nil, nil, fmt.Errorf("%w\n%s", err, s)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
 	counts := make([]int64, len(tracks))
+	gaps := make([]int64, len(tracks))
+	var written int64
 	for i, t := range tracks {
 		if ctx.Err() != nil {
 			return fail(ctx.Err())
 		}
 		rep.track(i + 1)
+		if written > 0 {
+			gaps[i] = sectionGapSamples
+			if t.NewChapter {
+				gaps[i] = chapterGapSamples
+			}
+			if err := writeSilence(stdin, gaps[i]); err != nil {
+				return fail(fmt.Errorf("mã hoá AAC: %w", err))
+			}
+		}
 		cw := &countWriter{w: stdin, onWrite: rep.addBytes}
 		if err := decode(ctx, opt.FFmpeg, t.File, cw); err != nil {
 			return fail(fmt.Errorf("đọc %q: %w", filepath.Base(t.File), err))
 		}
 		counts[i] = cw.n / bytesPerSample
+		written += counts[i]
 	}
 	if err := stdin.Close(); err != nil {
 		return fail(fmt.Errorf("mã hoá AAC: %w", err))
 	}
 	if err := enc.Wait(); err != nil {
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		}
-		return nil, fmt.Errorf("mã hoá AAC: %w\n%s", err, encErr.String())
+		return nil, nil, fmt.Errorf("mã hoá AAC: %w\n%s", err, encErr.String())
 	}
-	return counts, nil
+	return counts, gaps, nil
+}
+
+// writeSilence ghi n mẫu PCM lặng (s16le = 0).
+func writeSilence(w io.Writer, n int64) error {
+	buf := make([]byte, 64<<10)
+	for left := n * bytesPerSample; left > 0; {
+		k := min(left, int64(len(buf)))
+		if _, err := w.Write(buf[:k]); err != nil {
+			return err
+		}
+		left -= k
+	}
+	return nil
 }
 
 // decode giải mã một MP3 ra PCM s16le mono 44,1 kHz vào w. File có thể nằm
@@ -253,11 +286,17 @@ func decode(ctx context.Context, ffmpeg, file string, w io.Writer) error {
 }
 
 // buildChapters đổi số mẫu từng tiểu mục thành mốc chương (ms). Tiểu mục rỗng
-// (0 mẫu) bỏ khỏi mục lục — mốc dài 0 làm vài app nghe hiển thị sai.
-func buildChapters(tracks []Track, counts []int64) ([]Chapter, int64) {
+// (0 mẫu) bỏ khỏi mục lục — mốc dài 0 làm vài app nghe hiển thị sai. Khoảng
+// lặng trước một tiểu mục tính vào cuối mốc trước, để bấm sang chương là nghe
+// giọng đọc ngay.
+func buildChapters(tracks []Track, counts, gaps []int64) ([]Chapter, int64) {
 	var out []Chapter
 	var pos int64
 	for i, t := range tracks {
+		pos += gaps[i]
+		if len(out) > 0 {
+			out[len(out)-1].EndMs = samplesToMs(pos)
+		}
 		start := pos
 		pos += counts[i]
 		if counts[i] == 0 {
