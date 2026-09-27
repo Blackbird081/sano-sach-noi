@@ -134,6 +134,8 @@ func (l *Library) writeFields(slug string, f fields) error {
 	if err != nil {
 		return err
 	}
+	bookFilesMu.Lock()
+	defer bookFilesMu.Unlock()
 	mtime := dirModTime(dir)
 
 	metaPath := filepath.Join(dir, "metadata.json")
