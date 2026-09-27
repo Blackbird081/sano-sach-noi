@@ -2,15 +2,17 @@
 // Màn nghe: mục lục tiểu mục, tua −15s/+30s, đổi tốc độ, nhớ vị trí nghe; xuất M4B
 // (tiến độ ngay dưới hàng nút), xuất gói zip, xoá vào Thùng rác. Việc phát nằm ở
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   Check, ChevronDown, ChevronLeft, Download, FolderOpen, Gauge, Loader2, Mic, Package, Pause, Play, RotateCcw, RotateCw,
-  SkipBack, SkipForward, Trash2, Volume2,
+  SkipBack, SkipForward, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
 import M4BProgress from '../components/M4BProgress.vue'
 import LyricsPanel from '../components/LyricsPanel.vue'
+import PauseCustomInputs from '../components/PauseCustomInputs.vue'
+import { PAUSE_PRESETS, bookPause, fmtGap, levelLabel, makeSetting, pauseState, setBookPause, type Gaps, type PauseLevel } from '../lib/pause'
 import { deleteBook, errText, openBookFolder, revealBookZip } from '../lib/backend'
 import { fmtClock, fmtLong } from '../lib/position'
 import { go, state } from '../lib/store'
@@ -40,6 +42,39 @@ watch(() => player.detail?.slug, () => scrollToCurrent(false))
 watch(lyricsOpen, (open) => !open && scrollToCurrent(false))
 const speedOpen = ref(false)
 
+// Quãng nghỉ riêng cuốn đang nghe (wireframe D9); null = theo cài đặt chung.
+const pauseOpen = ref(false)
+const pauseMsg = ref('')
+const mine = computed(() => (state.playerSlug ? bookPause(state.playerSlug) : null))
+const custom = ref(false) // đang mở ô Tuỳ chỉnh
+const pauseLabel = computed(() => {
+  const m = mine.value
+  if (!m) return 'Nghỉ: theo chung'
+  return m.level === 'custom' ? `Nghỉ: ${fmtGap(m.section)}` : `Nghỉ: ${levelLabel(m.level)}`
+})
+const customValue = computed<Gaps>(() => mine.value ?? pauseState.global)
+watch(() => state.playerSlug, () => {
+  pauseOpen.value = false
+  pauseMsg.value = ''
+})
+watch(pauseOpen, (open) => (custom.value = open && mine.value?.level === 'custom'))
+
+function savePause(v: ReturnType<typeof makeSetting> | null) {
+  setBookPause(state.playerSlug, v)
+  pauseMsg.value = v
+    ? `Cuốn này nghỉ ${fmtGap(v.section)} giữa tiểu mục, ${fmtGap(v.chapter)} sang chương. Áp dụng từ tiểu mục kế tiếp.`
+    : 'Cuốn này theo cài đặt chung. Áp dụng từ tiểu mục kế tiếp.'
+}
+function pickPause(level: PauseLevel | 'global') {
+  if (level === 'custom') {
+    custom.value = true
+    savePause(makeSetting('custom', customValue.value))
+    return
+  }
+  savePause(level === 'global' ? null : makeSetting(level))
+  pauseOpen.value = false
+}
+
 function seekTo(e: MouseEvent) {
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
   seekFrac((e.clientX - r.left) / r.width)
@@ -50,9 +85,11 @@ function setSpeed(v: number) {
   speedOpen.value = false
 }
 
-// Đóng menu tốc độ khi bấm ra ngoài hoặc nhấn Esc.
+// Đóng menu tốc độ / quãng nghỉ khi bấm ra ngoài hoặc nhấn Esc.
 function closeSpeed(e: Event) {
-  if (e instanceof KeyboardEvent ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-speed-menu]')) speedOpen.value = false
+  const esc = e instanceof KeyboardEvent
+  if (esc ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-speed-menu]')) speedOpen.value = false
+  if (esc ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-pause-menu]')) pauseOpen.value = false
 }
 document.addEventListener('mousedown', closeSpeed)
 document.addEventListener('keydown', closeSpeed)
@@ -151,8 +188,33 @@ async function act(fn: (slug: string) => Promise<void>) {
               </button>
             </div>
           </div>
-          <span class="text-muted-foreground">Tua −15s / +30s · nhớ vị trí nghe · rời màn này vẫn nghe tiếp</span>
+          <div class="relative" data-pause-menu>
+            <button class="h-8 px-3 rounded-full border flex items-center gap-1.5 hover:bg-muted" aria-haspopup="listbox" :aria-expanded="pauseOpen"
+              :class="pauseOpen ? 'border-foreground/40 bg-muted' : 'border-border'" @click="pauseOpen = !pauseOpen">
+              <Timer class="w-3.5 h-3.5" />{{ pauseLabel }}<ChevronDown class="w-3 h-3 text-muted-foreground" />
+            </button>
+            <div v-if="pauseOpen" role="listbox" aria-label="Quãng nghỉ cho cuốn này" class="absolute bottom-full left-0 mb-2 w-72 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
+              <div class="px-3 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quãng nghỉ cho cuốn này</div>
+              <button role="option" :aria-selected="!mine" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted" :class="!mine && 'font-medium'" @click="pickPause('global')">
+                <span class="text-sm">Theo cài đặt chung ({{ levelLabel(pauseState.global.level) }})<span class="block text-[11px] font-normal text-muted-foreground">{{ fmtGap(pauseState.global.section) }} giữa tiểu mục · {{ fmtGap(pauseState.global.chapter) }} sang chương</span></span>
+                <Check v-if="!mine" class="w-4 h-4 shrink-0" />
+              </button>
+              <button v-for="p in PAUSE_PRESETS" :key="p.level" role="option" :aria-selected="mine?.level === p.level"
+                class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted" :class="mine?.level === p.level && 'font-medium'" @click="pickPause(p.level)">
+                <span class="text-sm">{{ p.label }}<span class="block text-[11px] font-normal text-muted-foreground">{{ fmtGap(p.gaps.section) }} · {{ fmtGap(p.gaps.chapter) }}</span></span>
+                <Check v-if="mine?.level === p.level" class="w-4 h-4 shrink-0" />
+              </button>
+              <button role="option" :aria-selected="mine?.level === 'custom'" class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted" :class="mine?.level === 'custom' && 'font-medium'" @click="pickPause('custom')">
+                <span class="text-sm">Tuỳ chỉnh<span class="block text-[11px] font-normal text-muted-foreground">{{ mine?.level === 'custom' ? `${fmtGap(mine.section)} · ${fmtGap(mine.chapter)}` : 'Tự đặt số giây' }}</span></span>
+                <Check v-if="mine?.level === 'custom'" class="w-4 h-4 shrink-0" />
+              </button>
+              <PauseCustomInputs v-if="custom" compact class="mx-3 mb-1.5 mt-0.5 rounded-md bg-muted/60 p-2.5 text-sm" :value="customValue" @save="(g) => savePause(makeSetting('custom', g))" />
+              <div class="mt-1 border-t border-border px-3 pt-2 pb-1.5 text-[11px] text-muted-foreground leading-relaxed">Lưu riêng cho cuốn này, dùng cả khi Xuất M4B. Sách truyện hợp mức Dài, sách kiến thức hợp Vừa hoặc Ngắn.</div>
+            </div>
+          </div>
+          <span class="text-muted-foreground">Tua −15s / +30s · nhớ vị trí nghe</span>
         </div>
+        <p v-if="pauseMsg" class="mt-3 text-xs text-muted-foreground flex items-center gap-1.5"><Check class="w-3.5 h-3.5" /> {{ pauseMsg }}</p>
         <p v-if="player.error || actionError" class="mt-3 text-sm text-destructive">{{ player.error || actionError }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2 border-t border-border pt-4">

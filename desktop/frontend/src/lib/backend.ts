@@ -187,6 +187,7 @@ export interface Track {
   file: string
   url: string
   durationSec: number
+  chapterStart?: boolean // tiểu mục đầu của một chương
 }
 export interface BookDetail extends LibraryBook {
   dir: string
@@ -319,7 +320,7 @@ interface GoApp {
   RevealBookZip(slug: string): Promise<void>
   OpenLibraryFolder(): Promise<void>
   ChooseCover(): Promise<CoverFile | null>
-  ExportM4B(slug: string): Promise<M4BStatus | null>
+  ExportM4B(slug: string, sectionSec: number, chapterSec: number): Promise<M4BStatus | null>
   CancelM4B(): Promise<void>
   M4BStatus(): Promise<M4BStatus | null>
   RevealM4B(): Promise<void>
@@ -704,9 +705,9 @@ export async function chooseCover(): Promise<CoverFile | null> {
   return need().ChooseCover()
 }
 
-/** Hỏi nơi lưu rồi xuất M4B trong nền (tiến độ qua m4b:progress / m4b:finished). Huỷ hộp lưu → null. */
-export async function exportM4B(slug: string): Promise<M4BStatus | null> {
-  return need().ExportM4B(slug)
+/** Hỏi nơi lưu rồi xuất M4B trong nền (tiến độ qua m4b:progress / m4b:finished), nghỉ theo gaps. Huỷ hộp lưu → null. */
+export async function exportM4B(slug: string, gaps: { section: number; chapter: number }): Promise<M4BStatus | null> {
+  return need().ExportM4B(slug, gaps.section, gaps.chapter)
 }
 
 export async function cancelM4B(): Promise<void> {

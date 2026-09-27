@@ -2,10 +2,24 @@
 import { onMounted, ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Loader2, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { Check, Loader2, RefreshCw, Trash2 } from 'lucide-vue-next'
 import { clearListenLog, errText, isDesktop, librarySize, listenLog, openLibraryFolder } from '../lib/backend'
 import { checkForUpdate, refreshTTS, setAutoUpdateCheck, state } from '../lib/store'
 import TtsSettings from '../components/TtsSettings.vue'
+import PauseCustomInputs from '../components/PauseCustomInputs.vue'
+import { PAUSE_PRESETS, fmtGap, makeSetting, pauseState, setGlobalPause, type Gaps, type PauseLevel } from '../lib/pause'
+
+// Quãng nghỉ chung (wireframe D8): bấm là lưu, báo đã lưu sau lần đổi đầu.
+const pauseSaved = ref(false)
+function pickPause(level: PauseLevel) {
+  const g = pauseState.global
+  setGlobalPause(level === 'custom' ? makeSetting('custom', { section: g.section, chapter: g.chapter }) : makeSetting(level))
+  pauseSaved.value = true
+}
+function saveCustomPause(g: Gaps) {
+  setGlobalPause(makeSetting('custom', g))
+  pauseSaved.value = true
+}
 
 const size = ref<number | null>(null)
 // Số liệu Hành trình nghe: số ngày đã ghi, xoá = chuyển file vào Thùng rác
@@ -62,6 +76,28 @@ const updateLine: Record<string, string> = {
         <div class="rounded-lg border border-border divide-y divide-border text-sm">
           <div class="flex items-center justify-between gap-4 px-4 py-3"><span class="shrink-0">Thư mục lưu sách</span><span class="flex items-center gap-2 text-muted-foreground min-w-0"><span class="truncate">{{ state.library?.dir || '~/Sano/Sach' }}</span> <Button variant="outline" size="sm" @click="openLibraryFolder()">Mở</Button></span></div>
           <div class="flex items-center justify-between px-4 py-3"><span>Dung lượng sách đã tạo</span><span class="text-muted-foreground tabular-nums">{{ size === null ? '—' : humanSize(size) }}</span></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Nghe và xuất M4B</h2>
+        <div class="rounded-lg border border-border divide-y divide-border text-sm">
+          <div class="flex items-center justify-between gap-4 px-4 py-3">
+            <span>Quãng nghỉ giữa các phần
+              <span class="block text-xs text-muted-foreground">Nghỉ {{ fmtGap(pauseState.global.section) }} giữa các tiểu mục, {{ fmtGap(pauseState.global.chapter) }} khi sang chương mới. Mức mặc định cho mọi cuốn, dùng cả khi nghe trong Sano và Xuất M4B. Muốn khác cho từng cuốn: chỉnh ở nút Nghỉ trong màn nghe.</span>
+            </span>
+            <div role="radiogroup" aria-label="Quãng nghỉ giữa các phần" class="shrink-0 inline-flex rounded-md bg-muted p-0.5">
+              <button v-for="p in [...PAUSE_PRESETS, { level: 'custom' as const, label: 'Tuỳ chỉnh' }]" :key="p.level" role="radio" :aria-checked="pauseState.global.level === p.level"
+                class="h-8 px-3 rounded text-sm"
+                :class="pauseState.global.level === p.level ? 'bg-background text-foreground shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'"
+                @click="pickPause(p.level)">{{ p.label }}</button>
+            </div>
+          </div>
+          <PauseCustomInputs v-if="pauseState.global.level === 'custom'" class="px-4 py-3" :value="pauseState.global" @save="saveCustomPause" />
+          <div v-if="pauseSaved" class="px-4 py-2.5 text-xs text-muted-foreground flex items-start gap-2">
+            <Check class="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>Đã lưu. Áp dụng ngay khi nghe trong Sano. Cuốn nào đã chọn riêng ở màn nghe thì giữ mức riêng. File M4B đã xuất trước đây giữ quãng nghỉ cũ, muốn đổi thì xuất lại.</span>
+          </div>
         </div>
       </div>
 

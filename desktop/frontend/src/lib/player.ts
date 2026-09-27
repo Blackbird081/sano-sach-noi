@@ -9,6 +9,7 @@ import { flushListening, listenFinished, listenStop, listenTick } from './listen
 import { buildLyrics, findSilences, sentenceAt, snapToSilences, type Lyrics } from './lyrics'
 import { state } from './store'
 import { seriesKey } from './find'
+import { gapsFor } from './pause'
 
 export const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2]
 const SPEED_KEY = 'sano.speed'
@@ -51,9 +52,9 @@ let pendingSeek = 0
 let loadSeq = 0
 let loading: Promise<void> = Promise.resolve()
 let played = false // chỉ mở rồi thoát, chưa phát → không tính là "nghe gần đây"
-// Nghỉ trước khi phát tiểu mục kế: cộng với ~0,5 giây lặng sẵn trong MP3 và
-// lúc nạp file, nghe ra khoảng 1,5 giây.
-const TRACK_GAP_MS = 1000
+// Nghỉ trước khi phát tiểu mục kế theo mức nghỉ của cuốn (lib/pause.ts). Trừ
+// ~0,5 giây vốn có (lặng sẵn trong MP3 + lúc nạp file) để nghe ra đúng số giây.
+const NATURAL_GAP_MS = 500
 let gapTimer = 0
 
 function cancelGap() {
@@ -340,12 +341,15 @@ audio.addEventListener('timeupdate', () => {
 audio.addEventListener('ended', () => {
   if (trackHeard >= player.duration * 0.5) markHeard(player.current) // nghe tới hết (tiểu mục ngắn, timeupdate thưa)
   if (player.current < tracks.value.length - 1) {
-    load(player.current + 1)
+    const next = player.current + 1
+    const gaps = gapsFor(player.slug)
+    const gapSec = tracks.value[next]?.chapterStart ? gaps.chapter : gaps.section
+    load(next)
     player.playing = true
     gapTimer = window.setTimeout(() => {
       gapTimer = 0
       void play()
-    }, TRACK_GAP_MS)
+    }, Math.max(0, gapSec * 1000 - NATURAL_GAP_MS))
   } else {
     player.time = player.duration
     remember()

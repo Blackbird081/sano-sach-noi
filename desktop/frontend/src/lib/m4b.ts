@@ -2,6 +2,7 @@
 // một cuốn (Go từ chối cuốn thứ hai); tiến độ nhận qua sự kiện m4b:*.
 import { reactive } from 'vue'
 import { cancelM4B as goCancel, errText, exportM4B as goExport, m4bStatus, onEvent, revealM4B, type M4BStatus } from './backend'
+import { gapsFor } from './pause'
 
 export const m4b = reactive({
   status: null as M4BStatus | null,
@@ -36,7 +37,7 @@ export async function startM4B(slug: string) {
   m4b.errorSlug = slug
   m4b.asking = true
   try {
-    const st = await goExport(slug)
+    const st = await goExport(slug, gapsFor(slug))
     if (st) m4b.status = st
   } catch (e) {
     m4b.error = errText(e)
