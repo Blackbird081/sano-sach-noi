@@ -5,6 +5,7 @@ import sepayLogo from '../assets/sponsors/sepay.svg'
 import hostLogo from '../assets/sponsors/123host.svg'
 import { AUTHOR_FB, DOCS } from '../lib/mock'
 import { go, remainMin, renderPct, rendering, state, type View } from '../lib/store'
+import { edit, fmtRemain, openEdit } from '../lib/edit'
 
 const nav = [
   { key: 'library' as View, label: 'Thư viện', icon: Library },
@@ -32,7 +33,7 @@ const sponsors = [
       <button
         v-for="n in nav" :key="n.key"
         class="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-sm"
-        :class="state.view === n.key || (n.key === 'library' && state.view === 'player') ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+        :class="state.view === n.key || (n.key === 'library' && (state.view === 'player' || state.view === 'edit')) ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
         @click="go(n.key)"
       >
         <component :is="n.icon" class="w-4 h-4" /> {{ n.label }}
@@ -53,6 +54,13 @@ const sponsors = [
       <p class="mt-1 text-xs text-muted-foreground truncate">{{ state.render?.title }}</p>
       <div class="mt-2 h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary rounded-full" :style="{ width: renderPct + '%' }"></div></div>
       <div class="mt-1 flex justify-between text-[11px] text-muted-foreground tabular-nums"><span>{{ renderPct }}%</span><span>còn ~{{ remainMin }} phút</span></div>
+    </button>
+    <!-- Thẻ tiến độ sửa sách: đổi giọng / đọc lại chạy nền (wireframe D11) -->
+    <button v-if="edit.status?.running && !(state.view === 'edit' && edit.slug === edit.status.slug)" class="mx-3 mb-3 rounded-lg border border-border bg-background p-2.5 text-left text-xs hover:border-primary/50"
+      @click="openEdit(edit.status.slug, { tab: edit.status.kind === 'voice' ? 'voice' : 'content' })">
+      <div class="flex items-center gap-1.5 font-medium"><Loader2 class="w-3.5 h-3.5 animate-spin text-primary" /> <span class="truncate">{{ edit.status.kind === 'voice' ? 'Đổi giọng' : 'Đọc lại' }} {{ edit.status.bookTitle }}</span></div>
+      <div class="mt-1.5 h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: (edit.status.total ? Math.round((edit.status.finished / edit.status.total) * 100) : 0) + '%' }"></div></div>
+      <div class="mt-1 text-muted-foreground tabular-nums">{{ edit.status.finished }}/{{ edit.status.total }} mục<template v-if="edit.status.remainSec"> · {{ fmtRemain(edit.status.remainSec) }}</template></div>
     </button>
     <!-- Có bản mới: thẻ nổi bật, nền đỏ nhạt -->
     <button v-if="state.updateInfo" class="mx-3 mb-3 rounded-lg border border-primary/30 bg-primary/10 text-primary p-3 text-left hover:bg-primary/15 transition" @click="state.update = 'info'">

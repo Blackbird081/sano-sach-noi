@@ -16,6 +16,8 @@ import SettingsView from './views/SettingsView.vue'
 import AboutView from './views/AboutView.vue'
 import StatsView from './views/StatsView.vue'
 import CreateView from './views/CreateView.vue'
+import EditBookView from './views/EditBookView.vue'
+import { initEdit } from './lib/edit'
 import MiniPlayer from './components/MiniPlayer.vue'
 import { player } from './lib/player'
 
@@ -23,6 +25,7 @@ const os = ref('')
 onMounted(async () => {
   os.value = await platform()
   await init()
+  void initEdit()
 })
 </script>
 
@@ -41,6 +44,7 @@ onMounted(async () => {
         <StatsView v-else-if="state.view === 'stats'" />
         <SettingsView v-else-if="state.view === 'settings'" />
         <AboutView v-else-if="state.view === 'about'" />
+        <EditBookView v-else-if="state.view === 'edit'" />
         <CreateView v-else />
         <MiniPlayer v-if="player.slug && state.view !== 'player'" />
       </main>

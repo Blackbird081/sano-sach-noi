@@ -326,6 +326,15 @@ interface GoApp {
   CancelM4B(): Promise<void>
   M4BStatus(): Promise<M4BStatus | null>
   RevealM4B(): Promise<void>
+  EditBook(slug: string): Promise<EditView>
+  StartReread(slug: string, edits: SectionEdit[]): Promise<EditStatus>
+  StartVoiceChange(slug: string, voice: string): Promise<EditStatus>
+  CancelEdit(discard: boolean): Promise<void>
+  DiscardVoiceChange(slug: string): Promise<void>
+  EditStatus(): Promise<EditStatus | null>
+  SaveBookInfo(slug: string, info: BookInfo): Promise<SaveInfoResult>
+  SetBookCover(slug: string, path: string): Promise<LibraryBook>
+  UseAutoCover(slug: string): Promise<LibraryBook>
 }
 
 interface WailsRuntime {
@@ -787,4 +796,87 @@ export function onFileDrop(cb: (paths: string[]) => void): () => void {
   if (!window.runtime) return () => {}
   window.runtime.OnFileDrop((_x, _y, paths) => cb(paths), false)
   return () => window.runtime?.OnFileDropOff()
+}
+
+// ── Sửa sách (wireframe D11) ───────────────────────────────────────────────
+
+/** Một tiểu mục để sửa — khớp library.EditSection bên Go. */
+export interface EditSection {
+  index: number
+  chapterIndex: number
+  chapter: string
+  title: string
+  text: string // chữ gốc (hiện khi nghe)
+  script: string // lời đọc đang dùng
+  intro: boolean // lời mở đầu "Bạn đang nghe sách nói…"
+  file: string
+  stem: string
+  durationSec: number
+}
+export interface VoiceJob {
+  voice: string
+  done: string[]
+}
+export interface EditView extends Omit<LibraryBook, 'sections'> {
+  coverAuto: boolean
+  sections: EditSection[]
+  voiceJob: VoiceJob | null
+  urls: Record<string, string> // stem → URL MP3
+}
+export interface SectionEdit {
+  index: number
+  title: string
+  text: string
+}
+/** Lượt sửa đang chạy / gần nhất — khớp EditStatus bên Go. */
+export interface EditStatus {
+  running: boolean
+  done: boolean
+  cancelled: boolean
+  error: string
+  kind: 'sections' | 'voice'
+  slug: string
+  bookTitle: string
+  voice: string
+  total: number
+  finished: number
+  current: number
+  doneIdx: number[]
+  queuedIdx: number[] | null
+  startedAt: number
+  remainSec: number
+}
+export interface SaveInfoResult {
+  book: LibraryBook
+  introEdit: SectionEdit | null
+  coverRedrawn: boolean
+}
+
+export async function editBook(slug: string): Promise<EditView> {
+  return need().EditBook(slug)
+}
+export async function startReread(slug: string, edits: SectionEdit[]): Promise<EditStatus> {
+  return need().StartReread(slug, edits)
+}
+export async function startVoiceChange(slug: string, voice: string): Promise<EditStatus> {
+  return need().StartVoiceChange(slug, voice)
+}
+export async function cancelEdit(discard: boolean): Promise<void> {
+  await goApp()?.CancelEdit(discard)
+}
+export async function discardVoiceChange(slug: string): Promise<void> {
+  return need().DiscardVoiceChange(slug)
+}
+export async function editStatus(): Promise<EditStatus | null> {
+  return (await goApp()?.EditStatus()) ?? null
+}
+/** Lưu tên, tác giả, danh mục, bộ sách; bìa tự vẽ thì vẽ lại theo tên mới. */
+export async function saveBookInfo(slug: string, info: BookInfo): Promise<SaveInfoResult> {
+  return need().SaveBookInfo(slug, info)
+}
+export async function setBookCover(slug: string, path: string): Promise<LibraryBook> {
+  return need().SetBookCover(slug, path)
+}
+export async function useAutoCover(slug: string): Promise<LibraryBook> {
+  return need().UseAutoCover(slug)
 }

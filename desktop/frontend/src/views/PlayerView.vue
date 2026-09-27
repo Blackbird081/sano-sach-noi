@@ -5,7 +5,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   Check, ChevronDown, ChevronLeft, Download, FolderOpen, Gauge, Loader2, Mic, Package, Pause, Play, RotateCcw, RotateCw,
-  Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
+  Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -16,6 +16,7 @@ import { PAUSE_PRESETS, bookPause, fmtGap, levelLabel, makeSetting, pauseState, 
 import { deleteBook, errText, openBookFolder, revealBookZip } from '../lib/backend'
 import { fmtClock, fmtLong } from '../lib/position'
 import { go, state } from '../lib/store'
+import { openEdit } from '../lib/edit'
 import { m4bBusy, startM4B, useM4B } from '../lib/m4b'
 import { openPhone } from '../lib/phone'
 import {
@@ -192,6 +193,7 @@ async function act(fn: (slug: string) => Promise<void>) {
           <button class="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" :class="bookMenu && 'bg-muted text-foreground'"
             aria-label="Tuỳ chọn cuốn sách" aria-haspopup="menu" :aria-expanded="bookMenu" @click="bookMenu = !bookMenu"><Settings class="w-4 h-4" /></button>
           <div v-if="bookMenu" role="menu" class="absolute top-full right-0 mt-1 w-64 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-30 text-sm">
+            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" title="Sửa chữ, đọc lại mục đang nghe (wireframe D11)" @click="menuAct(() => openEdit(state.playerSlug, { index: player.current }))"><Pencil class="w-4 h-4" /> Sửa mục đang nghe</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="!player.detail.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="menuAct(() => act(revealBookZip))"><Package class="w-4 h-4" /> Xuất gói zip</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="m4bBusy()" title="Tạo file M4B và tự chọn nơi lưu" @click="menuAct(() => startM4B(state.playerSlug, true))"><Download class="w-4 h-4" /> Lưu file M4B vào chỗ khác…</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="menuAct(() => act(openBookFolder))"><FolderOpen class="w-4 h-4" /> Mở thư mục sách</button>

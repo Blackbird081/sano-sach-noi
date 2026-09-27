@@ -15,7 +15,7 @@ import {
 import { TERMS_VERSION } from './terms'
 import type { AITool } from './prompt'
 
-export type View = 'setup' | 'terms' | 'library' | 'stats' | 'create' | 'player' | 'settings' | 'about'
+export type View = 'setup' | 'terms' | 'library' | 'stats' | 'create' | 'player' | 'settings' | 'about' | 'edit'
 export type UpdateState = 'closed' | 'info'
 /** Kiểm tra bản mới: chưa kiểm / đang kiểm / đang dùng bản mới nhất / có bản mới / lỗi. */
 export type UpdateCheck = 'idle' | 'checking' | 'latest' | 'available' | 'error'

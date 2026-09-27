@@ -22,7 +22,7 @@ import {
 import { clearPositions, fmtLong, loadPosition } from '../lib/position'
 import { go, openBook, refreshLibrary, state } from '../lib/store'
 import { forgetBook } from '../lib/player'
-import EditBookDialog from '../components/EditBookDialog.vue'
+import { openEdit } from '../lib/edit'
 import ImportDialog from '../components/ImportDialog.vue'
 import ManageShelfDialog from '../components/ManageShelfDialog.vue'
 
@@ -46,7 +46,7 @@ const uncategorized = computed(() => books.value.filter((b) => !b.category).leng
 const listening = computed(() => books.value.filter(isListening))
 const showChips = computed(() => categories.value.length >= 2)
 
-// Bộ sách: [tên, số tập]; và số tập đã dùng (trừ cuốn đang sửa) cho hộp Sửa thông tin.
+// Bộ sách: [tên, số tập].
 const seriesGroups = computed<[string, number][]>(() => {
   const m = new Map<string, [string, number]>()
   for (const b of books.value) {
@@ -58,9 +58,6 @@ const seriesGroups = computed<[string, number][]>(() => {
   }
   return [...m.values()].sort((a, b) => a[0].localeCompare(b[0], 'vi'))
 })
-const seriesForEdit = computed<[string, number[]][]>(() =>
-  seriesGroups.value.map(([n]) => [n, books.value.filter((b) => b.series && seriesKey(b.series) === seriesKey(n) && b.slug !== editing.value?.slug).map((b) => b.volume)]),
-)
 const showManage = computed(() => categories.value.length > 0 || seriesGroups.value.length > 0)
 const manageTab = ref<'cat' | 'series' | null>(null)
 async function onShelfChanged() {
@@ -255,17 +252,12 @@ function clearSearch() {
 
 // ── Menu ⋯ trên bìa ───────────────────────────────────────────────────────
 const menuFor = ref<string | null>(null)
-const editing = ref<LibraryBook | null>(null)
 const actionError = ref('')
 
+// "Sửa sách" (wireframe D11): mở màn Sửa sách ở tab Nội dung.
 function edit(b: LibraryBook) {
   menuFor.value = null
-  editing.value = b
-}
-
-async function onSaved() {
-  editing.value = null
-  await refreshLibrary()
+  openEdit(b.slug)
 }
 
 async function openFolder(b: LibraryBook) {
@@ -339,7 +331,7 @@ onMounted(() => {
     dragging.value = false
     dragDepth = 0
     // kéo bìa để sắp xếp cũng bắn sự kiện thả của cửa sổ → bỏ qua
-    if (importPath.value || editing.value || arranging.value || dragKey.value || Date.now() - dragEndedAt < 1500) return
+    if (importPath.value || arranging.value || dragKey.value || Date.now() - dragEndedAt < 1500) return
     const zip = paths.find((p) => /\.zip$/i.test(p))
     if (zip) importPath.value = zip
     else if (paths.length) actionError.value = /\.docx$/i.test(paths[0]) ? 'File Word thì vào Tạo sách nói. Ở đây chỉ nhập gói sách .zip.' : 'Chỉ nhập được gói sách .zip.'
@@ -359,7 +351,7 @@ onBeforeUnmount(() => {
 // Bấm ra ngoài hoặc Esc thì đóng menu ⋯ và menu sắp xếp.
 function closeMenus(e: Event) {
   if (e instanceof KeyboardEvent) {
-    if (e.key !== 'Escape' || editing.value || importPath.value || manageTab.value) return
+    if (e.key !== 'Escape' || importPath.value || manageTab.value) return
     if (arranging.value) doneArrange()
     menuFor.value = null
     sortOpen.value = false
@@ -421,7 +413,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
             <button class="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-muted" aria-label="Thao tác với tập này" aria-haspopup="menu" :aria-expanded="menuFor === v.slug"
               @click="menuFor = menuFor === v.slug ? null : v.slug"><MoreHorizontal class="w-4 h-4" /></button>
             <div v-if="menuFor === v.slug" role="menu" class="absolute top-9 right-0 w-44 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20 text-sm">
-              <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(v)"><Pencil class="w-4 h-4" /> Sửa thông tin</button>
+              <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(v)"><Pencil class="w-4 h-4" /> Sửa sách</button>
               <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="openFolder(v)"><FolderOpen class="w-4 h-4" /> Mở thư mục</button>
               <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" @click="trash(v)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
             </div>
@@ -581,7 +573,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
                   :class="menuFor === it.book.slug && 'opacity-100'" aria-label="Thao tác với sách" aria-haspopup="menu" :aria-expanded="menuFor === it.book.slug"
                   @click="menuFor = menuFor === it.book.slug ? null : it.book.slug"><MoreHorizontal class="w-4 h-4" /></button>
                 <div v-if="menuFor === it.book.slug" role="menu" class="absolute top-10 right-1.5 w-44 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20 text-sm">
-                  <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(it.book)"><Pencil class="w-4 h-4" /> Sửa thông tin</button>
+                  <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(it.book)"><Pencil class="w-4 h-4" /> Sửa sách</button>
                   <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="openFolder(it.book)"><FolderOpen class="w-4 h-4" /> Mở thư mục</button>
                   <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" @click="trash(it.book)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
                 </div>
@@ -680,7 +672,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
                     aria-label="Thao tác với sách" aria-haspopup="menu" :aria-expanded="menuFor === it.book.slug"
                     @click="menuFor = menuFor === it.book.slug ? null : it.book.slug"><MoreHorizontal class="w-4 h-4" /></button>
                   <div v-if="menuFor === it.book.slug" role="menu" class="absolute top-11 right-3 w-48 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20 text-sm">
-                    <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(it.book)"><Pencil class="w-4 h-4" /> Sửa thông tin</button>
+                    <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="edit(it.book)"><Pencil class="w-4 h-4" /> Sửa sách</button>
                     <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="openFolder(it.book)"><FolderOpen class="w-4 h-4" /> Mở thư mục</button>
                     <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" @click="trash(it.book)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
                   </div>
@@ -703,7 +695,6 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
 
     </template>
 
-    <EditBookDialog v-if="editing" :book="editing" :categories="categories" :series="seriesForEdit" @close="editing = null" @saved="onSaved" />
     <ManageShelfDialog v-if="manageTab" :categories="categories" :series="seriesGroups" :tab="manageTab" @close="manageTab = null" @changed="onShelfChanged" />
     <ImportDialog v-if="importPath" :path="importPath" @close="importPath = ''" @imported="onImported" />
 

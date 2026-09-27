@@ -297,6 +297,28 @@ export async function refreshInfo(slug: string) {
   }
 }
 
+/** Cuốn `slug` vừa sửa (đọc lại mục, đổi giọng, đổi tên): đang nạp thì lấy lại danh
+ *  sách tiểu mục + chữ. Tiểu mục đang mở có file mới thì nạp lại từ đầu mục. */
+export async function reloadBook(slug: string) {
+  if (!slug || slug !== player.slug || !player.detail) return
+  try {
+    const d = await book(slug)
+    if (player.slug !== slug) return
+    const oldUrl = track.value?.url
+    player.detail = d
+    void loadTexts(slug)
+    const t = tracks.value[player.current]
+    if (t && t.url !== oldUrl) {
+      const wasPlaying = player.playing
+      audio.pause()
+      load(player.current, 0)
+      if (wasPlaying) void play()
+    }
+  } catch {
+    // giữ bản cũ
+  }
+}
+
 function remember() {
   const slug = player.slug
   if (!slug || !tracks.value.length || !played) return
@@ -376,7 +398,7 @@ window.addEventListener('beforeunload', () => {
 
 // Phím tắt ở màn nghe lẫn khi đang có thanh nghe nhỏ: Space dừng / nghe tiếp,
 // ← / → sang tiểu mục trước / sau (như nút ⏮ ⏭). Bỏ qua khi đang gõ chữ, khi có
-// hộp thoại mở, và ở Tạo sách (màn đó có nút nghe thử riêng).
+// hộp thoại mở, ở Tạo sách và Sửa sách (hai màn đó có nút nghe thử riêng).
 const KEY_ACTIONS: Record<string, () => void> = {
   Space: () => toggle(),
   ArrowLeft: () => skip(-1),
@@ -390,7 +412,7 @@ let keyHandled = ''
 window.addEventListener('keydown', (e) => {
   const act = KEY_ACTIONS[e.code]
   if (!act || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
-  if (!player.slug || state.view === 'create' || typingTarget(e.target)) return
+  if (!player.slug || state.view === 'create' || state.view === 'edit' || typingTarget(e.target)) return
   if (document.querySelector('[aria-modal="true"]')) return
   // preventDefault: không để Space bấm luôn nút đang focus (vd nút Phát → bật rồi tắt ngay) hay cuộn trang.
   e.preventDefault()
