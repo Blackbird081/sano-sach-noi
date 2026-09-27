@@ -1,0 +1,13 @@
+Tôi gửi kèm hai file: tài liệu gốc và bản viết lại thành văn sách nói. Hãy soát bản viết lại, đối chiếu với TOÀN BỘ tài liệu gốc.
+
+Soát bốn việc:
+1. Mất ý: ý kiến thức, định nghĩa, nguyên tắc, điều kiện hoặc ngoại lệ nào có trong gốc mà bản viết lại không có. Chia ba mức: nghiêm trọng, nên bổ sung, chấp nhận được.
+2. Mất tên: thuật ngữ, tên mô hình, tên công cụ nào trong gốc mà bản viết lại chỉ có ý, không nêu đúng tên, hoặc thiếu hẳn.
+3. Bịa hoặc sai lệch: sự kiện, số liệu, tên người, trích dẫn, chữ tuyệt đối nào không có trong gốc, hoặc nói khác gốc.
+4. Lỗi nghe: câu dài quá khoảng 35 chữ, danh sách dồn quá 3 ý mà không chia nhóm, cụm từ lặp vụng, bảng hoặc gạch đầu dòng còn sót.
+
+Báo ngắn danh sách lỗi theo bốn việc trên. Rồi sửa: bổ sung hết ý nghiêm trọng và hết tên còn thiếu, sửa hết chỗ bịa và sai lệch, sửa lỗi nghe. Chèn vào đúng chỗ, giữ giọng văn, không làm gãy câu.
+
+Cách trả kết quả:
+- Trả về MỘT file Word (.docx) đã sửa, giữ nguyên cách đặt kiểu: tên sách kiểu Title, chương kiểu Heading 1, mục kiểu Heading 2, còn lại là đoạn văn thường.
+- Chỉ khi bạn không tạo được file Word: trả văn bản, dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ".
