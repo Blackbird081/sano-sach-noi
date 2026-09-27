@@ -17,7 +17,7 @@ document.addEventListener('click', (e) => {
   openURL(a.href)
 })
 
-// Bản dev: ?wireframe=desktop|library|terms|listen|lyrics|import|shelf|listview|stats|levels mở wireframe đã duyệt thay cho app
+// Bản dev: ?wireframe=desktop|library|terms|listen|lyrics|import|shelf|listview|stats|levels|ai mở wireframe đã duyệt thay cho app
 // (đối chiếu giao diện); ?wireframe=landing|docs|demo|download là wireframe trang tài liệu (VitePress).
 // Cả nhánh này bị loại khỏi bản build production.
 async function mount() {
@@ -33,6 +33,7 @@ async function mount() {
       listview: () => import('./wireframes/WfDesktopListView.vue'),
       stats: () => import('./wireframes/WfDesktopStats.vue'),
       levels: () => import('./wireframes/WfDesktopCreateLevels.vue'),
+      ai: () => import('./wireframes/WfDesktopCreateAI.vue'),
       landing: () => import('./wireframes/WfLanding.vue'),
       docs: () => import('./wireframes/WfDocsPage.vue'),
       demo: () => import('./wireframes/WfDemo.vue'),
