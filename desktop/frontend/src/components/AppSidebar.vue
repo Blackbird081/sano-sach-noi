@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Library, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw } from 'lucide-vue-next'
 import faviconUrl from '@/assets/favicon.svg'
+import sepayLogo from '../assets/sponsors/sepay.svg'
+import hostLogo from '../assets/sponsors/123host.svg'
 import { AUTHOR_FB, DOCS } from '../lib/mock'
 import { go, remainMin, renderPct, rendering, state, type View } from '../lib/store'
 
@@ -9,6 +11,13 @@ const nav = [
   { key: 'create' as View, label: 'Tạo sách mới', icon: FilePlus2 },
   { key: 'settings' as View, label: 'Cài đặt', icon: Settings },
   { key: 'about' as View, label: 'Giới thiệu', icon: Info },
+]
+
+// Tài trợ bởi (nhỏ, cuối thanh bên). utm để biết lượt ghé đến từ app.
+const utm = '?utm_source=sano&utm_medium=app-sidebar&utm_campaign=tai-tro'
+const sponsors = [
+  { name: 'SePay', logo: sepayLogo, url: 'https://sepay.vn' + utm },
+  { name: '123HOST', logo: hostLogo, url: 'https://123host.vn' + utm },
 ]
 </script>
 
@@ -48,6 +57,15 @@ const nav = [
       <template v-if="state.upd.applyOnQuit"><RefreshCw class="w-4 h-4" /> Khởi động lại để cập nhật</template>
       <template v-else><ArrowUpCircle class="w-4 h-4" /> Có bản mới {{ state.updateInfo.version }}</template>
     </button>
+    <div class="px-4 pb-3">
+      <p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">Tài trợ bởi</p>
+      <div class="mt-1.5 grid grid-cols-2 gap-1.5">
+        <a v-for="sp in sponsors" :key="sp.name" :href="sp.url" target="_blank" rel="noopener" :title="sp.name" :aria-label="`Nhà tài trợ ${sp.name}`"
+          class="h-8 rounded-md bg-white border border-border grid place-items-center px-2 opacity-80 hover:opacity-100 hover:border-primary/40 transition">
+          <img :src="sp.logo" :alt="sp.name" class="max-h-5 max-w-full object-contain" />
+        </a>
+      </div>
+    </div>
     <div class="px-4 pb-3 text-[11px] text-muted-foreground leading-relaxed">
       Phiên bản {{ state.version || '…' }} · mã nguồn mở<br />
       Tác giả <a :href="AUTHOR_FB" target="_blank" rel="noopener" class="hover:text-foreground underline-offset-2 hover:underline">Bùi Tấn Việt</a>
