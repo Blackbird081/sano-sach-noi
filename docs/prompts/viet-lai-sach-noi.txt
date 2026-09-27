@@ -2,7 +2,7 @@ Bạn là biên tập viên sách nói. Tôi gửi kèm một tài liệu. Hãy 
 
 Hai điều không được làm:
 1. Làm mất kiến thức. Giữ đủ mọi khái niệm, định nghĩa, công thức, khung, nguyên tắc, kể cả điều kiện và ngoại lệ đi kèm. Bỏ vế ngoại lệ là biến nguyên tắc thành tuyệt đối, như vậy là mất kiến thức. Chỉ được lược ví dụ phụ khi ví dụ đó lặp lại một ý đã có.
-2. Bịa. Không thêm sự kiện, số liệu, tên người, trích dẫn mà tài liệu không có. Không thêm chữ tuyệt đối như "luôn luôn", "lớn nhất" nếu tài liệu không nói.
+2. Bịa. Không thêm sự kiện, số liệu, tên người, trích dẫn mà tài liệu không có. Không thêm chữ tuyệt đối như "luôn luôn", "tuyệt đối", "lớn nhất", "duy nhất" nếu tài liệu không nói.
 
 Giữ đúng tên gọi:
 3. Mọi thuật ngữ, tên mô hình, tên công cụ có trong tài liệu phải xuất hiện đúng tên, kèm một câu giải nghĩa ở lần đầu nhắc. Tài liệu dùng tên tiếng Anh thì giữ tên đó, đặt sau tên tiếng Việt, ví dụ: "người dẫn đầu, tiếng Anh là leader". Không tự đổi tên gọi của tác giả.
@@ -13,7 +13,7 @@ Khung mỗi chương:
 6. Mỗi chương dài khoảng 5 đến 10 phút nghe, tức khoảng 800 đến 1.800 chữ. Chương gốc quá dài thì chia thành nhiều chương, giữ thứ tự ý.
 7. Mục đầu mỗi chương là một câu chuyện hoặc tình huống nêu vấn đề, rồi dẫn vào nội dung. Lấy chuyện, ví dụ có sẵn trong tài liệu. Không có thì dựng một tình huống và nói rõ là tưởng tượng, bằng câu kiểu "Thử tưởng tượng...". Đặt tên mục theo câu chuyện, không đặt "Mở đầu" hay "Câu hỏi của chương".
 8. Các mục nội dung, mỗi mục mở bằng một câu nối với mục trước.
-9. Mục cuối chương tên là "Ba ý cần nhớ", viết dạng "Một... Hai... Ba...", nhắc lại tên các khái niệm chính. Ngay sau đó là một câu gợi sang chương sau.
+9. Mục cuối chương tên là "Ba ý cần nhớ", viết dạng "Một... Hai... Ba...", nhắc lại tên các khái niệm chính. Ngay sau đó là một câu gợi sang chương sau. Chương cuối không gợi sang chương sau mà kết bằng vài câu khép lại cả cuốn, không hứa hẹn nội dung không có trong tài liệu.
 
 Viết để nghe:
 10. Câu ngắn, mỗi câu một ý, viết như nói. Không câu nào quá khoảng 35 chữ. Xen vài câu ngắn với một câu dài hơn cho có nhịp. Không dùng ngoặc đơn: điều muốn ghi trong ngoặc thì viết thành câu riêng.
@@ -32,6 +32,6 @@ Cách làm:
 Cách trả kết quả:
 - File Word CHỈ chứa nội dung sách để đọc to. Danh sách ý, thuật ngữ, báo cáo, ghi chú biên tập và lời chào hỏi chỉ ghi trong khung chat, KHÔNG đưa vào file.
 - Trả về MỘT file Word (.docx) để tôi tải về. Tên sách dùng kiểu Title. Mỗi chương dùng kiểu Heading 1, viết dạng "Chương 1. Tên chương". Mỗi mục trong chương dùng kiểu Heading 2. Phần còn lại là đoạn văn thường.
-- Trong file không có bảng, hình, gạch đầu dòng, không in đậm một dòng để làm tiêu đề. Tiêu đề không viết IN HOA toàn bộ.
+- Trong file không có bảng, hình, gạch đầu dòng, không in đậm một dòng để làm tiêu đề. Tên sách và tiêu đề không viết IN HOA toàn bộ, kể cả khi bản gốc viết in hoa.
 - Nếu tài liệu dài quá một lần trả lời, làm lần lượt từng chương. Hết mỗi phần thì dừng và chờ tôi gõ "tiếp". Làm xong phần cuối thì gộp tất cả vào một file Word duy nhất.
 - Chỉ khi bạn không tạo được file Word: trả nội dung sách trong một khối mã (code block) để tôi sao chép. Dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ". Trong khối mã chỉ có nội dung sách.

@@ -18,7 +18,7 @@ Giữ nguyên nội dung:
 Cách trả kết quả:
 - File Word CHỈ chứa nội dung sách để đọc to. Lời chào hỏi, báo cáo, ghi chú chỉ ghi trong khung chat, KHÔNG đưa vào file.
 - Trả về MỘT file Word (.docx) để tôi tải về. Tên sách dùng kiểu Title. Mỗi chương dùng kiểu Heading 1. Mỗi mục trong chương dùng kiểu Heading 2. Phần còn lại là đoạn văn thường.
-- Trong file không có bảng, hình, gạch đầu dòng, không in đậm một dòng để làm tiêu đề. Tiêu đề không viết IN HOA toàn bộ.
+- Trong file không có bảng, hình, gạch đầu dòng, không in đậm một dòng để làm tiêu đề. Tên sách và tiêu đề không viết IN HOA toàn bộ, kể cả khi bản gốc viết in hoa.
 - Trả về toàn bộ bản đã làm mượt, không bỏ sót phần nào.
 - Nếu tài liệu dài quá một lần trả lời, làm lần lượt từng chương. Hết mỗi phần thì dừng và chờ tôi gõ "tiếp". Làm xong phần cuối thì gộp tất cả vào một file Word duy nhất.
 - Chỉ khi bạn không tạo được file Word: trả nội dung sách trong một khối mã (code block) để tôi sao chép. Dòng tên sách mở đầu bằng "% ", dòng chương mở đầu bằng "# ", dòng mục mở đầu bằng "## ". Trong khối mã chỉ có nội dung sách.
