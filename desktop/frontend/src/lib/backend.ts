@@ -57,6 +57,8 @@ export interface SetupInfo {
   usedBytes: number
   enough: boolean
   supported: boolean
+  blocked: boolean
+  osVersion: string
   note: string
 }
 
@@ -417,7 +419,7 @@ const mockSetupInfo: SetupInfo = {
   os: 'macOS', arch: 'arm64', cpu: 'Apple M2', cores: 8, ramBytes: 16 * 2 ** 30,
   freeBytes: 120 * 2 ** 30, needBytes: 1500 * 2 ** 20, requiredFree: 2500 * 2 ** 20,
   downloadBytes: 1000 * 2 ** 20, dataDir: '~/Library/Application Support/Sano/tts',
-  usedBytes: 0, enough: true, supported: true, note: '',
+  usedBytes: 0, enough: true, supported: true, blocked: false, osVersion: '', note: '',
 }
 
 export function mockSetupStatus(): SetupStatus {

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	"sano/desktop/internal/tts"
 )
@@ -14,6 +15,7 @@ const minRAM = 4 << 30
 // Info — thông tin hiện trên màn cài trước khi bấm Cài.
 type Info struct {
 	OS            string `json:"os"`
+	OSVersion     string `json:"osVersion"`
 	Arch          string `json:"arch"`
 	CPU           string `json:"cpu"`
 	Cores         int    `json:"cores"`
@@ -26,6 +28,7 @@ type Info struct {
 	UsedBytes     int64  `json:"usedBytes"` // thư mục bộ đọc app đang chiếm
 	Enough        bool   `json:"enough"`
 	Supported     bool   `json:"supported"`
+	Blocked       bool   `json:"blocked"` // hệ điều hành quá cũ: không cài được
 	Note          string `json:"note"`
 }
 
@@ -33,6 +36,7 @@ type Info struct {
 func MachineInfo(l tts.Layout, goos, goarch string) Info {
 	inf := Info{
 		OS:            osName(goos),
+		OSVersion:     osVersion(goos),
 		Arch:          goarch,
 		CPU:           cpuName(goos),
 		Cores:         runtime.NumCPU(),
@@ -52,7 +56,11 @@ func MachineInfo(l tts.Layout, goos, goarch string) Info {
 		need = minFreeBytes
 	}
 	inf.Enough = inf.FreeBytes == 0 || inf.FreeBytes >= need
+	osErr := checkOS(goos, goarch, inf.OSVersion)
+	inf.Blocked = osErr != nil
 	switch {
+	case inf.Blocked:
+		inf.Note = "Bộ đọc cần macOS " + strconv.Itoa(minMacOS(goarch)) + " trở lên, máy đang chạy macOS " + inf.OSVersion + " — cập nhật macOS rồi mở lại Sano"
 	case !inf.Enough:
 		inf.Note = "Ổ đĩa còn trống " + humanGB(inf.FreeBytes) + ", cần khoảng " + humanGB(need)
 	case inf.RAMBytes > 0 && inf.RAMBytes < minRAM:

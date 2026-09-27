@@ -191,6 +191,9 @@ func (in *Installer) prepare() error {
 		in.log = log.New(f, "", log.LstdFlags)
 		in.log.Printf("===== cài bộ đọc (%s/%s) vào %s", in.cfg.GOOS, in.cfg.GOARCH, l.Root)
 	}
+	if err := checkOS(in.cfg.GOOS, in.cfg.GOARCH, osVersion(in.cfg.GOOS)); err != nil {
+		return err
+	}
 	free, err := freeBytes(l.Root)
 	if err != nil {
 		return nil // không đo được thì bỏ qua, không chặn cài
@@ -254,6 +257,8 @@ func (in *Installer) cleanupPartial() {
 func hintFor(err error) string {
 	msg := err.Error()
 	switch {
+	case errors.Is(err, ErrOSTooOld):
+		return "Cập nhật macOS (Cài đặt hệ thống → Cập nhật phần mềm) rồi mở lại Sano. Máy không lên được bản mới thì chưa dùng được bộ đọc."
 	case errors.Is(err, ErrChecksum):
 		return "File tải về bị sai (mạng chập chờn hoặc bị can thiệp). Bấm Thử lại; lặp lại nhiều lần thì báo lỗi cho Sano."
 	case strings.Contains(msg, "ổ đĩa") || strings.Contains(msg, "no space left"):

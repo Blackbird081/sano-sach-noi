@@ -39,7 +39,7 @@ const machine = computed(() => {
   if (!i) return '…'
   const cpu = i.cpu ? i.cpu.replace(/\(R\)|\(TM\)|CPU|@.*$/g, '').replace(/\s+/g, ' ').trim() : `${i.os} ${i.arch}`
   const ram = i.ramBytes ? ` · ${Math.round(i.ramBytes / 2 ** 30)} GB RAM` : ''
-  return `${cpu}${ram} · ${i.enough ? 'đủ' : 'thiếu dung lượng'}`
+  return `${cpu}${ram} · ${i.blocked ? 'macOS quá cũ' : i.enough ? 'đủ' : 'thiếu dung lượng'}`
 })
 
 const eta = computed(() => {
@@ -77,7 +77,7 @@ async function recheck() {
       <div v-if="!update" class="mt-6 rounded-lg border border-border divide-y divide-border text-sm" data-testid="setup-info">
         <div class="flex items-center justify-between px-4 py-3"><span class="flex items-center gap-2"><HardDrive class="w-4 h-4 text-muted-foreground" />Dung lượng cần</span><span class="font-medium tabular-nums">~{{ gb(state.setupInfo?.needBytes ?? 1500 * 2 ** 20) }}</span></div>
         <div class="flex items-center justify-between px-4 py-3"><span class="flex items-center gap-2"><Clock class="w-4 h-4 text-muted-foreground" />Thời gian tải (mạng 50 Mbps)</span><span class="font-medium tabular-nums">~{{ minutes }} phút</span></div>
-        <div class="flex items-center justify-between px-4 py-3"><span class="flex items-center gap-2"><Cpu class="w-4 h-4 text-muted-foreground" />Máy của bạn</span><span class="font-medium" :class="state.setupInfo && !state.setupInfo.enough && 'text-destructive'">{{ machine }}</span></div>
+        <div class="flex items-center justify-between px-4 py-3"><span class="flex items-center gap-2"><Cpu class="w-4 h-4 text-muted-foreground" />Máy của bạn</span><span class="font-medium" :class="state.setupInfo && (!state.setupInfo.enough || state.setupInfo.blocked) && 'text-destructive'">{{ machine }}</span></div>
       </div>
       <p v-if="state.setupInfo?.note" class="mt-2 text-xs text-muted-foreground flex items-center gap-1.5"><AlertTriangle class="w-3.5 h-3.5 text-rag-amber shrink-0" />{{ state.setupInfo.note }}</p>
 
@@ -130,7 +130,7 @@ async function recheck() {
           </template>
           <template v-else>
             <Button variant="outline" @click="goLibrary">Bỏ qua</Button>
-            <Button data-testid="setup-start" :disabled="!isDesktop() || (state.setupInfo !== null && !state.setupInfo.enough)" @click="startSetup">
+            <Button data-testid="setup-start" :disabled="!isDesktop() || (state.setupInfo !== null && (!state.setupInfo.enough || state.setupInfo.blocked))" @click="startSetup">
               <template v-if="failed">Thử lại</template>
               <template v-else-if="started">Cài tiếp</template>
               <template v-else-if="update">Cập nhật bộ đọc</template>
