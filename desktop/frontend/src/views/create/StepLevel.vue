@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { Check, CheckCircle2, ChevronLeft, ClipboardPaste, Clock, Copy, Download, ExternalLink, FileText, Lightbulb, Pause, Play, Sparkles, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { copyText, errText, openURL, saveAIGuide } from '../../lib/backend'
-import { AI_TOOLS, CHATGPT_PLANS, SKILL_STEPS, SKILL_ZIP, promptFor, shortInstruction, type ChatGPTPlan } from '../../lib/prompt'
+import { AI_TOOLS, CHATGPT_PLANS, SKILL_STEPS, SKILL_ZIP, promptFor, shortInstruction, usePhrases, type ChatGPTPlan } from '../../lib/prompt'
 import { saveAITool, saveLevel, state } from '../../lib/store'
 
 const options = [
@@ -75,6 +75,13 @@ const plan = ref<'' | ChatGPTPlan>('')
 const saved = ref('')
 const saveError = ref('')
 const steps = computed(() => (state.aiTool === 'claude' ? SKILL_STEPS.claude : plan.value ? SKILL_STEPS[plan.value] : []))
+const copiedSay = ref(-1)
+async function copySay(i: number, text: string) {
+  if (await copyText(text)) {
+    copiedSay.value = i
+    setTimeout(() => (copiedSay.value = -1), 1500)
+  }
+}
 function openSkill() {
   plan.value = ''
   saved.value = ''
@@ -197,11 +204,11 @@ async function download(kind: 'claude' | 'chatgpt') {
 
     <!-- ═══ Hộp nạp skill: theo AI đã chọn, mỗi bước có nút tại dòng ═══ -->
     <div v-if="skillOpen && tool && !gemini" class="fixed inset-0 bg-black/40 grid place-items-center z-50" @click.self="skillOpen = false">
-      <div class="w-[560px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-auto rounded-xl border border-border bg-background shadow-2xl" role="dialog" aria-modal="true" :aria-label="`Nạp skill làm sách nói cho ${tool.name}`">
+      <div class="w-[640px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-auto rounded-xl border border-border bg-background shadow-2xl" role="dialog" aria-modal="true" :aria-label="`Nạp skill làm sách nói cho ${tool.name}`">
         <div class="flex items-start justify-between p-5 pb-0">
           <div>
             <h2 class="font-semibold">Nạp skill làm sách nói cho {{ tool.name }}</h2>
-            <p class="text-xs text-muted-foreground mt-0.5">Làm một lần. Lần sau chỉ cần đính kèm file Word và gõ "cấp 3" (hoặc "cấp 2").</p>
+            <p class="text-xs text-muted-foreground mt-0.5">Nạp một lần. Sau đó mỗi lần làm sách chỉ cần đính kèm file và gõ một câu có sẵn.</p>
           </div>
           <button class="text-muted-foreground hover:text-foreground" aria-label="Đóng" @click="skillOpen = false"><X class="w-4 h-4" /></button>
         </div>
@@ -231,7 +238,18 @@ async function download(kind: 'claude' | 'chatgpt') {
           </ol>
           <p v-if="saved" class="mt-2 text-xs text-muted-foreground">Đã lưu {{ saved }}</p>
           <p v-if="saveError" class="mt-2 text-xs text-destructive">{{ saveError }}</p>
-          <p v-if="plan === 'project'" class="mt-2 text-xs text-muted-foreground">Câu dán: "{{ shortInstruction() }}"</p>
+          <!-- Từ nay làm sách: câu gõ mẫu có tên skill và cấp độ (wireframe D8b) -->
+          <div v-if="steps.length" class="mt-4">
+            <p class="text-sm font-medium">Từ nay làm sách: mở cuộc trò chuyện mới{{ plan === 'project' ? ' trong dự án "Sano – sách nói"' : '' }}, đính kèm file Word rồi gõ:</p>
+            <ul class="mt-2 space-y-1.5">
+              <li v-for="(ph, i) in usePhrases(plan === 'project')" :key="i" class="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-1.5">
+                <p class="flex-1 min-w-0 text-sm"><span class="font-medium">"{{ ph.say }}"</span> <span class="text-xs text-muted-foreground">· {{ ph.what }}</span></p>
+                <button class="h-7 px-2.5 rounded-md border border-border bg-background text-xs flex items-center gap-1 shrink-0 hover:bg-muted" @click="copySay(i, ph.say)">
+                  <component :is="copiedSay === i ? Check : Copy" class="w-3.5 h-3.5" /> {{ copiedSay === i ? 'Đã sao chép' : 'Sao chép' }}
+                </button>
+              </li>
+            </ul>
+          </div>
           <p class="mt-3 text-xs text-muted-foreground">
             <template v-if="state.aiTool === 'claude'">Mọi gói Claude, kể cả miễn phí, đều nạp được skill. Skill cũng dùng được trong Claude Code.</template>
             <template v-else-if="plan === 'skills'">Mục Skills của ChatGPT dùng cùng định dạng skill với Claude, nên dùng chung một file.</template>

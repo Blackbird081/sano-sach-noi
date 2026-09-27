@@ -80,3 +80,15 @@ export const SKILL_STEPS: Record<'claude' | ChatGPTPlan, SkillStep[]> = {
     { text: 'Dán câu Sano đưa vào ô Hướng dẫn (Instructions) của dự án. Từ nay làm sách trong dự án đó.', act: 'copy' },
   ],
 }
+
+// Câu gõ mỗi lần làm sách sau khi đã nạp skill (anh Việt chốt: nêu rõ tên skill và cấp
+// độ để AI chắc chắn dùng skill). Dự án ChatGPT không có skill tên sano-sach-noi nên
+// gọi theo tên file hướng dẫn. Khớp mô tả trong docs/prompts/prompts.go.
+export function usePhrases(project: boolean): { say: string; what: string }[] {
+  const via = project ? `theo file ${GUIDE_TXT}` : 'dùng skill sano-sach-noi'
+  return [
+    { say: `Làm file sách nói ${via} (cấp độ 3)`, what: 'Viết lại thành văn sách nói' },
+    { say: `Làm file sách nói ${via} (cấp độ 2)`, what: 'Làm mượt, giữ nguyên ý' },
+    { say: `Soát lại file sách nói ${via}`, what: 'Gửi kèm bản gốc và bản đã viết lại' },
+  ]
+}

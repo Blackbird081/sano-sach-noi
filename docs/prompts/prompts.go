@@ -32,8 +32,8 @@ const (
 func guideBody() string {
 	var b strings.Builder
 	b.WriteString(`Khi người dùng gửi một tài liệu để làm sách nói bằng Sano, chọn MỘT trong ba việc dưới đây:
-- Mặc định, hoặc khi người dùng nói "cấp 3", "viết lại", "văn sách nói": làm VIỆC A.
-- Khi người dùng nói "cấp 2", "làm mượt", "giữ nguyên văn": làm VIỆC B.
+- Mặc định, hoặc khi người dùng nói "cấp độ 3", "cấp 3", "viết lại", "văn sách nói": làm VIỆC A.
+- Khi người dùng nói "cấp độ 2", "cấp 2", "làm mượt", "giữ nguyên văn": làm VIỆC B.
 - Khi người dùng gửi cả bản gốc lẫn bản đã viết lại và nhờ "soát lại": làm VIỆC C.
 
 Về cách trả kết quả: nếu bạn có công cụ tạo file .docx cho người dùng tải về thì trả file Word như từng việc yêu cầu. Nếu không có công cụ đó, đừng hứa tạo file: trả ngay nội dung sách trong một khối mã (code block), dòng tên sách mở đầu "% ", chương "# ", mục "## ", trong khối mã chỉ có nội dung sách.
@@ -60,7 +60,7 @@ func GuideText() string {
 func SkillMD() string {
 	return `---
 name: sano-sach-noi
-description: Biên tập tài liệu thành bản đọc cho sách nói Sano. Làm mượt (cấp 2) hoặc viết lại thành văn sách nói (cấp 3), rồi trả file Word có Title, Heading 1, Heading 2 để nạp vào Sano. Dùng khi người dùng gửi tài liệu và nói làm sách nói, làm mượt để đọc, viết lại để nghe, hoặc soát lại bản sách nói.
+description: Biên tập tài liệu thành bản đọc cho sách nói Sano. Làm mượt (cấp 2) hoặc viết lại thành văn sách nói (cấp 3), rồi trả file Word có Title, Heading 1, Heading 2 để nạp vào Sano. Dùng khi người dùng gửi tài liệu và nói "làm file sách nói dùng skill sano-sach-noi (cấp độ 3)" hoặc "(cấp độ 2)", "soát lại file sách nói", hay nói làm sách nói, làm mượt để đọc, viết lại để nghe.
 ---
 
 # Làm bản đọc cho sách nói Sano

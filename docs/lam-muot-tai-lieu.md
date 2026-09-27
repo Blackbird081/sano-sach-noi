@@ -47,6 +47,14 @@ Làm sách thường xuyên thì nạp hướng dẫn của Sano cho AI một l�
 - **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm. Dùng ChatGPT Business hoặc Enterprise thì mục **Skills** nhận luôn file `sano-sach-noi.zip` của Claude (cùng định dạng SKILL.md): **Skills** → **Tạo** → **Tải lên**.
 - **Gemini**: chưa cần nạp gì, mỗi lần làm sách dán prompt là được. Gem của Gemini có tin sắp được thay bằng Skills chỉ dành cho gói trả phí, nên Sano chưa hướng dẫn tạo Gem. Khi Google công bố chính thức, trang này sẽ cập nhật.
 
+Nạp xong, mỗi lần làm sách mở cuộc trò chuyện mới (với ChatGPT dùng Dự án thì mở trong dự án "Sano – sách nói"), đính kèm file Word rồi gõ một trong các câu:
+
+| Việc | Claude, ChatGPT có mục Skills | ChatGPT dùng Dự án |
+|---|---|---|
+| Viết lại thành văn sách nói | Làm file sách nói dùng skill sano-sach-noi (cấp độ 3) | Làm file sách nói theo file sano-huong-dan-ai.txt (cấp độ 3) |
+| Làm mượt, giữ nguyên ý | Làm file sách nói dùng skill sano-sach-noi (cấp độ 2) | Làm file sách nói theo file sano-huong-dan-ai.txt (cấp độ 2) |
+| Soát lại (gửi kèm bản gốc và bản viết lại) | Soát lại file sách nói dùng skill sano-sach-noi | Soát lại file sách nói theo file sano-huong-dan-ai.txt |
+
 Tên các mục trong Claude, ChatGPT, Gemini có thể đổi theo phiên bản.
 
 ## Lưu ý
