@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Tạo sách mới: 6 bước, dữ liệu thật từ phần Go (bookmaker).
+// Tạo sách nói: 6 bước, dữ liệu thật từ phần Go (bookmaker).
 // Nghe thử không bắt buộc; chỉ cần xác nhận quyền dùng tài liệu là render được.
 import { computed } from 'vue'
 import { Check, ChevronLeft, ChevronRight } from 'lucide-vue-next'

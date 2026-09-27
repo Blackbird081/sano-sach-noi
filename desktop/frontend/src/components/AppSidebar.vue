@@ -8,8 +8,8 @@ import { go, remainMin, renderPct, rendering, state, type View } from '../lib/st
 
 const nav = [
   { key: 'library' as View, label: 'Thư viện', icon: Library },
+  { key: 'create' as View, label: 'Tạo sách nói', icon: FilePlus2 },
   { key: 'stats' as View, label: 'Hành trình nghe', icon: BarChart3 },
-  { key: 'create' as View, label: 'Tạo sách mới', icon: FilePlus2 },
   { key: 'settings' as View, label: 'Cài đặt', icon: Settings },
   { key: 'about' as View, label: 'Giới thiệu', icon: Info },
 ]

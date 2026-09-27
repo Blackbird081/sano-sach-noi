@@ -1,6 +1,6 @@
 // Trạng thái dùng chung của cửa sổ: màn đang mở, các bước Tạo sách (dữ liệu
 // thật từ phần Go), render nền, thư viện, bộ đọc.
-// Một cuốn render một lúc: đang render thì bấm "Tạo sách mới" mở màn tiến độ.
+// Một cuốn render một lúc: đang render thì bấm "Tạo sách nói" mở màn tiến độ.
 import { computed, reactive } from 'vue'
 import {
   cancelRender as goCancelRender, checkTTS, describeDocx, errText, inspectDocx, library as goLibrary,

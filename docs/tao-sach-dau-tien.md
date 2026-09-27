@@ -5,7 +5,7 @@ description: 'Hướng dẫn từng bước làm sách nói bằng AI từ file 
 
 # Cách làm sách nói bằng AI từ file Word
 
-Trong Sano, bấm **Tạo sách mới**. Việc tạo sách gồm 6 bước: **Nạp file** → **Mục lục** → **Giọng đọc** → **Lời mở đầu** → **Nghe thử** → **Render**. Giọng đọc AI chạy ngay trên máy bạn, tài liệu không gửi đi đâu.
+Trong Sano, bấm **Tạo sách nói**. Việc tạo sách gồm 6 bước: **Nạp file** → **Mục lục** → **Giọng đọc** → **Lời mở đầu** → **Nghe thử** → **Render**. Giọng đọc AI chạy ngay trên máy bạn, tài liệu không gửi đi đâu.
 
 ::: tip Chuẩn bị file Word
 Sano chỉ nhận file `.docx`. Đặt kiểu **Heading 1** cho tên chương và **Heading 2** cho tên mục, Sano dựa vào đó để làm mục lục. Tài liệu có nhiều bảng, hình, sơ đồ thì nên [làm mượt tài liệu](./lam-muot-tai-lieu) trước.

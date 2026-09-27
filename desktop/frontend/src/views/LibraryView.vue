@@ -317,7 +317,7 @@ async function onImported(slug: string) {
   toastTimer = window.setTimeout(() => (imported.value = null), 10000)
 }
 
-// Kéo thả: chỉ nhận một file .zip; file khác báo lỗi nhẹ (Word thì vào Tạo sách mới).
+// Kéo thả: chỉ nhận một file .zip; file khác báo lỗi nhẹ (Word thì vào Tạo sách nói).
 let offDrop: (() => void) | null = null
 let dragDepth = 0
 const hasFiles = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files')
@@ -342,7 +342,7 @@ onMounted(() => {
     if (importPath.value || editing.value || arranging.value || dragKey.value || Date.now() - dragEndedAt < 1500) return
     const zip = paths.find((p) => /\.zip$/i.test(p))
     if (zip) importPath.value = zip
-    else if (paths.length) actionError.value = /\.docx$/i.test(paths[0]) ? 'File Word thì vào Tạo sách mới. Ở đây chỉ nhập gói sách .zip.' : 'Chỉ nhập được gói sách .zip.'
+    else if (paths.length) actionError.value = /\.docx$/i.test(paths[0]) ? 'File Word thì vào Tạo sách nói. Ở đây chỉ nhập gói sách .zip.' : 'Chỉ nhập được gói sách .zip.'
   })
   window.addEventListener('dragenter', onDragEnter)
   window.addEventListener('dragleave', onDragLeave)
@@ -443,7 +443,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
         </div>
         <div class="flex gap-2">
           <Button variant="outline" title="Nhập gói sách (.zip) người khác gửi hoặc bản sao lưu" @click="pickZip"><Upload class="w-4 h-4" /> Nhập sách</Button>
-          <Button @click="go('create')"><FilePlus2 class="w-4 h-4" /> Tạo sách mới</Button>
+          <Button @click="go('create')"><FilePlus2 class="w-4 h-4" /> Tạo sách nói</Button>
         </div>
       </div>
       <p v-if="state.libraryError" class="mt-4 text-sm text-destructive">{{ state.libraryError }}</p>
@@ -499,7 +499,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
         <p class="font-medium">Chưa có cuốn nào</p>
         <p class="mt-1 text-sm text-muted-foreground">Tạo sách nói từ file Word, hoặc nhập gói sách (.zip) người khác gửi cho bạn.</p>
         <div class="mt-4 flex justify-center gap-2">
-          <Button @click="go('create')"><FilePlus2 class="w-4 h-4" /> Tạo sách mới</Button>
+          <Button @click="go('create')"><FilePlus2 class="w-4 h-4" /> Tạo sách nói</Button>
           <Button variant="outline" @click="pickZip"><Upload class="w-4 h-4" /> Nhập sách</Button>
           <Button variant="ghost" @click="openLibraryFolder().catch(() => {})"><FolderOpen class="w-4 h-4" /> Mở thư mục</Button>
         </div>
@@ -711,7 +711,7 @@ const progressText = (p: number) => (p >= 99 ? 'Đã nghe xong' : p === 0 ? 'Ch�
       <div class="text-center">
         <FileArchive class="w-10 h-10 mx-auto text-primary" />
         <p class="mt-3 font-medium">Thả gói sách (.zip) để nhập vào thư viện</p>
-        <p class="mt-1 text-sm text-muted-foreground">File .docx thì vào Tạo sách mới</p>
+        <p class="mt-1 text-sm text-muted-foreground">File .docx thì vào Tạo sách nói</p>
       </div>
     </div>
 

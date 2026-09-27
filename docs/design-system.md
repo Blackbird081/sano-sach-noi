@@ -83,7 +83,7 @@ Helper `cn()` ở `@/lib/utils` (clsx + tailwind-merge) để gộp class.
 ┌──────────────────────────── TitleBar (36px) ────────────────────────────┐
 │ AppSidebar (w-56)  │  main: tiêu đề màn + hành động chính bên phải      │
 │  Thư viện          │        nội dung (lưới sách / các bước / trình phát) │
-│  Tạo sách mới      │                                                     │
+│  Tạo sách nói      │                                                     │
 │  Cài đặt           │                                                     │
 │  Giới thiệu        │                                                     │
 │  ...               │                                                     │
