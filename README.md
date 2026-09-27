@@ -25,11 +25,14 @@
 ## Sano làm được gì
 
 - **Tạo sách nói** từ tài liệu Word của chính bạn: tự đọc mục lục theo Heading, tự chuẩn hoá số, chữ viết tắt, ký hiệu thành lời đọc tự nhiên
-- **Nghe trên máy tính** ngay trong phần mềm, nhớ chỗ nghe dở
+- **Ba cách đọc**: đọc nguyên văn, hoặc nhờ AI làm mượt, viết lại thành văn sách nói cho nghe cuốn hơn (xem bên dưới)
+- **Nghe trên máy tính** ngay trong phần mềm: nhớ chỗ nghe dở, chữ chạy theo lời đọc, đổi tốc độ, nghe tiếp ở thanh nghe nhỏ khi làm việc khác
+- **Thư viện gọn gàng**: danh mục, bộ sách nhiều tập (nghe hết tập này tự sang tập sau), xem dạng lưới hoặc danh sách, tự sắp xếp, tìm theo tên, tác giả, giọng đọc
+- **Hành trình nghe**: thời gian nghe mỗi ngày, chuỗi ngày nghe, sách đã nghe xong, mục tiêu nghe mỗi ngày. Số liệu chỉ lưu trên máy
+- **Chia sẻ sách**: gửi gói zip cho người dùng Sano khác nhập vào thư viện
 - **Nghe trên điện thoại**: xuất một file M4B có mục lục chương và bìa, nghe bằng app BookPlayer (miễn phí, có cho iPhone và Android)
 - **Nghe khi lái xe ô tô**: BookPlayer chạy trên CarPlay và Android Auto, chọn sách, chọn chương ngay trên màn hình xe
 - **25 giọng đọc AI tiếng Việt**: nam, nữ, giọng Bắc, Trung, Nam
-- **Nghe cuốn hơn nhờ AI viết lại** (không bắt buộc): ba cách đọc, từ đọc nguyên văn tới viết lại thành văn sách nói bằng Claude, ChatGPT hoặc Gemini bản miễn phí. Tặng kèm [skill làm sách nói](skills/) cho Claude và ChatGPT: nạp một lần, lần sau chỉ cần gửi file
 - **Không cần API key, không tốn tiền token**: mô hình AI tải về một lần rồi chạy ngay trên máy, không cần tài khoản ChatGPT hay dịch vụ AI nào; tài liệu không gửi lên mạng
 
 ## Nghe thử
@@ -46,16 +49,31 @@
 
 Giọng đọc do [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) tạo (xem mục [Cảm ơn](#cảm-ơn)). Bìa sách do Sano tự vẽ theo tên sách.
 
-## Tạo sách trong 4 bước
+## Tạo sách nói
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/app/b1-nap-file.jpg" alt="Bước 1: nạp file Word"><br><b>1. Nạp file Word.</b> Sano đọc mục lục, cảnh báo bảng, hình, chữ viết tắt lạ. Chưa có file thì tải file Word mẫu.</td>
-    <td width="50%"><img src="docs/images/app/b5-nghe-thu.jpg" alt="Bước 2: nghe thử và sửa lời đọc"><br><b>2. Chọn giọng, nghe thử.</b> Nghe từng đoạn, sửa lời đọc nếu cần trước khi tạo cả cuốn.</td>
+    <td width="50%"><img src="docs/images/app/b0-cach-doc.jpg" alt="Chọn cách đọc: đọc nguyên văn, làm mượt, viết lại thành văn sách nói"><br><b>1. Chọn cách đọc.</b> Đọc nguyên văn, hoặc nhờ AI làm mượt, viết lại thành văn sách nói. Mỗi cách có nút nghe mẫu.</td>
+    <td width="50%"><img src="docs/images/app/b1-nap-file.jpg" alt="Nạp file Word"><br><b>2. Nạp file Word.</b> Sano đọc mục lục, cảnh báo bảng, hình, chữ viết tắt lạ. Chưa có file thì tải file Word mẫu.</td>
   </tr>
   <tr>
-    <td><img src="docs/images/app/b6-render.jpg" alt="Bước 3: tạo sách chạy nền"><br><b>3. Tạo sách.</b> Chạy nền ngay trên máy bạn, vẫn làm việc khác được.</td>
-    <td><img src="docs/images/app/nghe.jpg" alt="Bước 4: nghe trong thư viện"><br><b>4. Nghe.</b> Trong thư viện của Sano, hoặc xuất M4B chép sang điện thoại.</td>
+    <td><img src="docs/images/app/b5-nghe-thu.jpg" alt="Chọn giọng, nghe thử và sửa lời đọc"><br><b>3. Chọn giọng, nghe thử.</b> Nghe từng đoạn, sửa lời đọc nếu cần, rồi tạo cả cuốn. Sano chạy nền ngay trên máy bạn.</td>
+    <td><img src="docs/images/app/nghe.jpg" alt="Nghe trong Sano"><br><b>4. Nghe.</b> Trong thư viện của Sano, hoặc xuất M4B chép sang điện thoại.</td>
+  </tr>
+</table>
+
+## Nghe cuốn hơn nhờ AI viết lại
+
+Văn viết để đọc bằng mắt, đọc to lên thường nghe chán. Ở bước **Cách đọc**, chọn **Làm mượt** (giữ nguyên ý, đổi bảng, hình, danh sách thành lời) hoặc **Viết lại thành văn sách nói** (kể như người kể chuyện, chương ngắn, cuối chương có ba ý cần nhớ). Sano đưa sẵn prompt cho Claude, ChatGPT hoặc Gemini, bản miễn phí cũng được. Nghe mẫu ba cách: [cấp 1](https://tanviet12.github.io/sano-sach-noi/audio/cach-doc-cap-1.mp3) · [cấp 2](https://tanviet12.github.io/sano-sach-noi/audio/cach-doc-cap-2.mp3) · [cấp 3](https://tanviet12.github.io/sano-sach-noi/audio/cach-doc-cap-3.mp3).
+
+**Tặng kèm [skill làm sách nói](skills/)** cho Claude và ChatGPT: nạp một lần, lần sau chỉ cần đính kèm file Word và gõ "Làm file sách nói dùng skill sano-sach-noi (cấp độ 3)". [Tải skill](https://tanviet12.github.io/sano-sach-noi/skill/sano-sach-noi.zip) · [cách nạp](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu).
+
+## Thư viện và Hành trình nghe
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/app/thu-vien.jpg" alt="Thư viện sách nói trong Sano"><br><b>Thư viện.</b> Nghe tiếp, danh mục, bộ sách nhiều tập, xem dạng lưới hoặc danh sách.</td>
+    <td width="50%"><img src="docs/images/app/hanh-trinh-nghe.jpg" alt="Hành trình nghe: thời gian nghe, chuỗi ngày, mục tiêu"><br><b>Hành trình nghe.</b> Thời gian nghe, chuỗi ngày nghe, sách nghe xong, mục tiêu mỗi ngày.</td>
   </tr>
 </table>
 
@@ -171,7 +189,7 @@ go run ./cmd/sano-docx2tts -h                                                 # 
 
 **Trang hướng dẫn: [tanviet12.github.io/sano-sach-noi](https://tanviet12.github.io/sano-sach-noi)** (cài đặt, tạo sách, nghe thử, câu hỏi thường gặp). Mã nguồn trang ở `docs/` (VitePress): `make docs-dev` để xem khi sửa, `make docs-build` để kiểm link gãy.
 
-- Làm mượt tài liệu bằng ChatGPT, Gemini, Claude (bảng, hình thành lời văn): [`docs/lam-muot-tai-lieu.md`](docs/lam-muot-tai-lieu.md)
+- Ba cách đọc, prompt và skill cho Claude, ChatGPT, Gemini: [`docs/lam-muot-tai-lieu.md`](docs/lam-muot-tai-lieu.md) · prompt ở [`docs/prompts/`](docs/prompts/) · skill ở [`skills/`](skills/)
 - Đọc giọng bằng VieNeu-TTS (dòng lệnh): [`docs/tts-build-guide.md`](docs/tts-build-guide.md)
 - Nghe trên điện thoại (xuất một file M4B): [`docs/nghe-tren-dien-thoai.md`](docs/nghe-tren-dien-thoai.md) · khi lái xe ô tô: [`docs/nghe-khi-lai-xe.md`](docs/nghe-khi-lai-xe.md)
 - Gói zip sao lưu / chuyển máy: [`docs/book-zip-format.md`](docs/book-zip-format.md)
