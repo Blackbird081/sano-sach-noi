@@ -18,6 +18,8 @@ Lần đầu mở Sano, thư viện có sẵn 3 cuốn mẫu để bạn nghe th
 - Mục **Tất cả sách** hiện bìa từng cuốn kèm tên, tác giả, thời lượng, **giọng đọc** và tiến độ: "Chưa nghe", "Đã nghe X%" hoặc "Đã nghe xong". Các tập của cùng một [bộ sách](#bo-sach-nhieu-tap-tu-0-1-11) gom thành một thẻ.
 - **Dạng lưới hoặc danh sách** (từ 0.1.14): nút cạnh **Sắp xếp** đổi giữa lưới bìa và danh sách từng dòng (tên sách, danh mục, thời lượng, tiến độ). Sano nhớ cách xem bạn chọn.
 
+<img class="app-shot" src="./images/app/thu-vien-danh-sach.jpg" alt="Thư viện dạng danh sách: tên sách, danh mục, thời lượng, tiến độ từng cuốn" width="1600" height="955">
+
 ## Tìm và sắp xếp
 
 - Ô **Tìm theo tên sách, tác giả hoặc giọng đọc…** tìm được cả khi gõ không dấu.

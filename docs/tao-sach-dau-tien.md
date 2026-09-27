@@ -23,7 +23,9 @@ Trong phần mềm, bước **Nạp file** cũng có nút **Tải file Word mẫ
 
 ## 1. Cách đọc
 
-Chọn một trong ba cấp: **Đọc nguyên văn** (Sano đọc đúng từng chữ), **Làm mượt** (nhờ AI đổi bảng, hình, danh sách thành lời, giữ nguyên ý), hoặc **Viết lại thành văn sách nói** (nhờ AI viết lại như người kể, nghe hấp dẫn nhất). Mỗi cấp có nút **Nghe mẫu**. Chọn cấp 2 hoặc 3, Sano hướng dẫn 3 bước nhờ Claude, ChatGPT hoặc Gemini, có sẵn prompt để sao chép. Chi tiết ở trang [Ba cách đọc](./lam-muot-tai-lieu).
+Chọn một trong ba cấp: **Đọc nguyên văn** (Sano đọc đúng từng chữ, chọn sẵn lần đầu), **Làm mượt** (nhờ AI đổi bảng, hình, danh sách thành lời, giữ nguyên ý), hoặc **Viết lại thành văn sách nói** (nhờ AI viết lại như người kể, nghe hấp dẫn nhất). Mỗi cấp có nút **Nghe mẫu**. Chọn cấp 2 hoặc 3, Sano hướng dẫn 3 bước nhờ Claude, ChatGPT hoặc Gemini, có sẵn prompt để sao chép. Chi tiết ở trang [Ba cách đọc](./lam-muot-tai-lieu).
+
+<img class="app-shot" src="./images/app/b0-cach-doc.jpg" alt="Bước Cách đọc: ba cấp Đọc nguyên văn, Làm mượt, Viết lại thành văn sách nói, mỗi cấp có nút Nghe mẫu" width="1600" height="955">
 
 ## 2. Nạp file
 

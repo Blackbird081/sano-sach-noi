@@ -13,7 +13,9 @@ Văn viết để đọc bằng mắt. Đọc to lên thường nghe chán: câu
 | 2. Làm mượt | Nhờ AI đổi bảng, hình, danh sách, chữ viết tắt thành lời. Giữ nguyên ý và giọng tác giả | Tài liệu nhiều bảng biểu, gạch đầu dòng | Khoảng 5 phút với AI |
 | 3. Viết lại thành văn sách nói | Nhờ AI viết lại như người kể: chuyện trước, lý thuyết sau, chương ngắn, cuối chương có ba ý cần nhớ | Sách, giáo trình, tài liệu dài muốn nghe cuốn như sách nói | Khoảng 10–15 phút với AI |
 
-Không chắc thì: sách hay tài liệu dài chọn **cấp 3**, bài ngắn đã trôi chảy chọn **cấp 1**. Sano nhớ lựa chọn cho lần sau.
+Lần đầu Sano chọn sẵn **cấp 1**. Không chắc thì: sách hay tài liệu dài chọn **cấp 3**, bài ngắn đã trôi chảy giữ **cấp 1**. Chọn cấp khác thì Sano nhớ cho lần sau.
+
+<img class="app-shot" src="./images/app/b0-cach-doc.jpg" alt="Bước Cách đọc: ba cấp, mỗi cấp có nút Nghe mẫu" width="1600" height="955">
 
 ## Nghe thử khác biệt
 
@@ -33,6 +35,8 @@ Dùng Claude, ChatGPT hoặc Gemini trên trình duyệt, AI bản miễn phí c
    - **Claude, ChatGPT**: tải file Word AI tạo về, bấm **Tiếp: nạp file AI tạo** rồi nạp file đó. Prompt đã dặn AI đặt sẵn tên sách, chương (Heading 1), mục (Heading 2), bạn không phải chỉnh gì.
    - **Gemini**: bản miễn phí không tạo được file Word, nên prompt cho Gemini dặn trả văn bản trong một khung. Bấm nút sao chép ở góc khung đó, sang bước Nạp file dán vào ô **Dán văn bản AI trả về**. Dòng `%` là tên sách, `#` là chương, `##` là mục.
 
+<img class="app-shot" src="./images/app/b0-nho-ai.jpg" alt="Màn Nhờ AI: chọn Claude, ChatGPT hoặc Gemini, rồi 3 bước sao chép prompt, mở AI, lấy kết quả về Sano" width="1600" height="955">
+
 Prompt cấp 3 đã dặn AI tự lập danh sách ý rồi tự soát. Muốn chắc hơn nữa, dùng **prompt soát lại** ở cuối trang: gửi cho AI cả file gốc và bản viết lại, AI đối chiếu, bổ sung chỗ mất ý và sửa chỗ tự thêm.
 
 ::: tip AI từ chối hoặc dừng giữa chừng
@@ -46,6 +50,8 @@ Làm sách thường xuyên thì nạp hướng dẫn của Sano cho AI một l�
 - **Claude**: tải `sano-sach-noi.zip` (không cần giải nén), mở claude.ai → **Customize** → **Skills** → nút **+** → **Create skill** → **Upload a skill**. Mọi gói Claude, kể cả miễn phí, đều nạp được skill. Skill này cũng dùng được trong Claude Code.
 - **ChatGPT**: tải `sano-huong-dan-ai.txt`, tạo một **Dự án** (Project) tên "Sano – sách nói", thêm file vào phần **Tệp** của dự án, rồi dán câu ngắn Sano đưa vào ô **Hướng dẫn** (Instructions). Ô này của ChatGPT tối đa 8.000 ký tự nên hướng dẫn đầy đủ nằm ở file đính kèm. Dùng ChatGPT Business hoặc Enterprise thì mục **Skills** nhận luôn file `sano-sach-noi.zip` của Claude (cùng định dạng SKILL.md): **Skills** → **Tạo** → **Tải lên**.
 - **Gemini**: chưa cần nạp gì, mỗi lần làm sách dán prompt là được. Gem của Gemini có tin sắp được thay bằng Skills chỉ dành cho gói trả phí, nên Sano chưa hướng dẫn tạo Gem. Khi Google công bố chính thức, trang này sẽ cập nhật.
+
+<img class="app-shot" src="./images/app/nap-skill.jpg" alt="Hộp Nạp skill cho Claude: tải file skill, mở Skills của Claude, và các câu gõ mẫu có nút Sao chép" width="1600" height="955">
 
 Nạp xong, mỗi lần làm sách mở cuộc trò chuyện mới (với ChatGPT dùng Dự án thì mở trong dự án "Sano – sách nói"), đính kèm file Word rồi gõ một trong các câu:
 

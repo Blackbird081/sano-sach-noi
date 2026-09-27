@@ -7,6 +7,8 @@ description: 'Xem bạn đã nghe sách nói bao lâu, chuỗi ngày nghe, sách
 
 Bấm **Hành trình nghe** ở thanh bên để xem thói quen nghe của bạn. Sano ghi số giây nghe thật mỗi ngày: phát bao lâu tính bấy lâu, tua hay nhảy chương không tính. Số liệu bắt đầu có từ bản 0.1.14.
 
+<img class="app-shot" src="./images/app/hanh-trinh-nghe.jpg" alt="Trang Hành trình nghe: thời gian nghe, chuỗi ngày nghe, sách nghe xong, phút nghe mỗi ngày, mục tiêu hôm nay, lịch nghe 6 tháng, giờ hay nghe" width="1600" height="955">
+
 ## Xem theo tuần, tháng, năm
 
 Mặc định Sano mở **Tháng này**, lần sau nhớ khoảng bạn chọn. Có thể đổi sang tuần, năm (chọn được năm cũ có số liệu) hoặc tất cả. Mỗi khoảng có:
