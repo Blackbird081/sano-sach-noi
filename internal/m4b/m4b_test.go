@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestEscapeMeta(t *testing.T) {
@@ -380,4 +381,47 @@ func TestExportUserCover(t *testing.T) {
 			t.Fatalf("ffmpeg dò nội dung bìa thành playlist HLS: %v", err)
 		}
 	})
+}
+
+func TestGapsValidate(t *testing.T) {
+	for _, c := range []struct {
+		g  Gaps
+		ok bool
+	}{
+		{DefaultGaps(), true},
+		{Gaps{}, true},
+		{Gaps{Section: MaxGap, Chapter: MaxGap}, true},
+		{Gaps{Section: -time.Millisecond}, false},
+		{Gaps{Chapter: MaxGap + time.Millisecond}, false},
+	} {
+		if err := c.g.Validate(); (err == nil) != c.ok {
+			t.Errorf("Validate(%+v) = %v, muốn ok=%v", c.g, err, c.ok)
+		}
+	}
+	if n := gapSamples(1200 * time.Millisecond); n != 52920 {
+		t.Errorf("gapSamples(1,2 giây) = %d, muốn 52920", n)
+	}
+}
+
+func TestExportQuangNghiTuyChinh(t *testing.T) {
+	ffmpeg := needFFmpeg(t)
+	dir := makeBookDir(t, ffmpeg, []float64{1.5, 2.25, 1})
+	b, err := FromDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 3 chương, mỗi chương một tiểu mục: 2 lần nghỉ trước chương mới.
+	res, err := Export(context.Background(), b, filepath.Join(t.TempDir(), "sach"), Options{
+		FFmpeg: ffmpeg, Gaps: &Gaps{Section: 0, Chapter: 500 * time.Millisecond},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d := res.DurationSec; d < 5.7 || d > 5.8 {
+		t.Errorf("thời lượng = %.3f, muốn ≈ 5.75", d)
+	}
+	bad := &Gaps{Section: 11 * time.Second}
+	if _, err := Export(context.Background(), b, filepath.Join(t.TempDir(), "x"), Options{FFmpeg: ffmpeg, Gaps: bad}); err == nil {
+		t.Error("quãng nghỉ 11 giây phải bị từ chối")
+	}
 }

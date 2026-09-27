@@ -66,6 +66,8 @@ func main() {
 		m4bOut     = flag.String("m4b", "", "xuất thêm một file .m4b (AAC, mục lục chương, bìa nhúng — nghe trên Apple Books, app sách nói Android, màn hình xe) ở đường dẫn này sau khi render xong")
 		m4bFromDir = flag.String("m4b-from-dir", "", "chỉ xuất M4B từ thư mục sách đã render sẵn (metadata.json + chNN-secNN.mp3), KHÔNG cần --input, KHÔNG render; lưu ở --m4b (mặc định <thư mục>/<Tên sách>.m4b)")
 		m4bBitrate = flag.String("m4b-bitrate", m4b.DefaultBitrate, "bitrate AAC mono của file M4B (64k đủ cho giọng đọc, ~29 MB/giờ)")
+		m4bGapSec  = flag.Duration("m4b-gap-section", m4b.DefaultSectionGap, "quãng nghỉ trong file M4B giữa hai tiểu mục cùng chương (0–10s, vd 1.2s)")
+		m4bGapCh   = flag.Duration("m4b-gap-chapter", m4b.DefaultChapterGap, "quãng nghỉ trong file M4B trước chương mới (0–10s)")
 		verbose    = flag.Bool("verbose", false, "log chi tiết")
 		genSample  = flag.String("gen-sample-docx", "", "tiện ích: ghi docx mẫu ra đường dẫn này rồi thoát")
 	)
@@ -108,7 +110,7 @@ func main() {
 	// Chế độ chỉ xuất M4B từ thư mục sách đã render.
 	if dir := strings.TrimSpace(*m4bFromDir); dir != "" {
 		out := strings.TrimSpace(*m4bOut)
-		if err := exportM4B(dir, out, *ffmpegBin, *m4bBitrate); err != nil {
+		if err := exportM4B(dir, out, *ffmpegBin, *m4bBitrate, m4b.Gaps{Section: *m4bGapSec, Chapter: *m4bGapCh}); err != nil {
 			log.Fatalf("xuất M4B thất bại: %v", err)
 		}
 		return
@@ -191,7 +193,7 @@ func main() {
 	}
 	fmt.Printf("\n✔ Hoàn tất: %d tiểu mục → %s\n", n, *outputDir)
 	if out := strings.TrimSpace(*m4bOut); out != "" {
-		if err := exportM4B(*outputDir, out, *ffmpegBin, *m4bBitrate); err != nil {
+		if err := exportM4B(*outputDir, out, *ffmpegBin, *m4bBitrate, m4b.Gaps{Section: *m4bGapSec, Chapter: *m4bGapCh}); err != nil {
 			log.Fatalf("xuất M4B thất bại: %v", err)
 		}
 	}
@@ -202,7 +204,7 @@ func main() {
 
 // exportM4B xuất thư mục sách dir thành một file .m4b ở out ("" = <dir>/<Tên sách>.m4b),
 // in tiến độ theo từng mười phần trăm.
-func exportM4B(dir, out, ffmpeg, bitrate string) error {
+func exportM4B(dir, out, ffmpeg, bitrate string, gaps m4b.Gaps) error {
 	b, err := m4b.FromDir(dir)
 	if err != nil {
 		return err
@@ -215,6 +217,7 @@ func exportM4B(dir, out, ffmpeg, bitrate string) error {
 	res, err := m4b.Export(context.Background(), b, out, m4b.Options{
 		FFmpeg:  ffmpeg,
 		Bitrate: bitrate,
+		Gaps:    &gaps,
 		Progress: func(p m4b.Progress) {
 			if p.Percent/10 != lastPct/10 {
 				lastPct = p.Percent

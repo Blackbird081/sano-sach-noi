@@ -9,11 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -54,8 +56,14 @@ type m4bJob struct {
 }
 
 // ExportM4B hỏi nơi lưu (mặc định <Tên sách>.m4b trong thư mục Tải về) rồi
-// xuất cuốn slug trong nền. Người dùng huỷ hộp lưu → (nil, nil).
-func (a *App) ExportM4B(slug string) (*M4BStatus, error) {
+// xuất cuốn slug trong nền, nghỉ sectionSec giây giữa các tiểu mục và
+// chapterSec giây trước chương mới (0–10, làm tròn 0,1). Người dùng huỷ hộp
+// lưu → (nil, nil).
+func (a *App) ExportM4B(slug string, sectionSec, chapterSec float64) (*M4BStatus, error) {
+	gaps, err := m4bGaps(sectionSec, chapterSec)
+	if err != nil {
+		return nil, err
+	}
 	if a.exportingM4B() {
 		return nil, errors.New("đang xuất M4B một cuốn khác — đợi xong hoặc huỷ trước")
 	}
@@ -98,11 +106,31 @@ func (a *App) ExportM4B(slug string) (*M4BStatus, error) {
 	st := job.status
 	a.mu.Unlock()
 
-	go a.runM4B(ctx, job, book, ffmpeg, reveal)
+	go a.runM4B(ctx, job, book, ffmpeg, gaps, reveal)
 	return &st, nil
 }
 
-func (a *App) runM4B(ctx context.Context, job *m4bJob, book m4b.Book, ffmpeg string, reveal bool) {
+// m4bGaps đổi số giây từ giao diện thành quãng nghỉ, từ chối số lạ (NaN, âm,
+// quá 10 giây) và làm tròn tới 0,1 giây.
+func m4bGaps(sectionSec, chapterSec float64) (m4b.Gaps, error) {
+	conv := func(sec float64) (time.Duration, error) {
+		if math.IsNaN(sec) || sec < 0 || sec > m4b.MaxGap.Seconds() {
+			return 0, fmt.Errorf("quãng nghỉ phải từ 0 đến %g giây", m4b.MaxGap.Seconds())
+		}
+		return time.Duration(math.Round(sec*10)) * 100 * time.Millisecond, nil
+	}
+	s, err := conv(sectionSec)
+	if err != nil {
+		return m4b.Gaps{}, err
+	}
+	c, err := conv(chapterSec)
+	if err != nil {
+		return m4b.Gaps{}, err
+	}
+	return m4b.Gaps{Section: s, Chapter: c}, nil
+}
+
+func (a *App) runM4B(ctx context.Context, job *m4bJob, book m4b.Book, ffmpeg string, gaps m4b.Gaps, reveal bool) {
 	var (
 		res    *m4b.Result
 		runErr error
@@ -116,6 +144,7 @@ func (a *App) runM4B(ctx context.Context, job *m4bJob, book m4b.Book, ffmpeg str
 	}()
 	res, runErr = m4b.Export(ctx, book, job.status.Path, m4b.Options{
 		FFmpeg: ffmpeg,
+		Gaps:   &gaps,
 		Progress: func(p m4b.Progress) {
 			a.mu.Lock()
 			job.status.Progress = p

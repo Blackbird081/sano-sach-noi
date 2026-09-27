@@ -39,12 +39,37 @@ const (
 	bytesPerSample = 2 // s16le mono
 	DefaultBitrate = "64k"
 	coverSize      = 1400 // bìa vuông tự vẽ khi sách không có bìa
-
-	// Khoảng lặng chèn trước một tiểu mục: sang chương mới nghỉ lâu hơn sang
-	// tiểu mục kế trong cùng chương.
-	chapterGapSamples = 2 * sampleRate
-	sectionGapSamples = sampleRate * 3 / 2
 )
+
+// Khoảng lặng chèn trước một tiểu mục: sang chương mới nghỉ lâu hơn sang tiểu
+// mục kế trong cùng chương.
+const (
+	DefaultSectionGap = 1500 * time.Millisecond
+	DefaultChapterGap = 2 * time.Second
+	MaxGap            = 10 * time.Second
+)
+
+// Gaps — quãng nghỉ chèn trước tiểu mục kế (Section) và trước chương mới
+// (Chapter), mỗi giá trị từ 0 tới MaxGap.
+type Gaps struct {
+	Section time.Duration
+	Chapter time.Duration
+}
+
+// DefaultGaps — quãng nghỉ mặc định (mức "Vừa").
+func DefaultGaps() Gaps { return Gaps{Section: DefaultSectionGap, Chapter: DefaultChapterGap} }
+
+// Validate báo lỗi nếu quãng nghỉ âm hoặc quá MaxGap.
+func (g Gaps) Validate() error {
+	for _, d := range []time.Duration{g.Section, g.Chapter} {
+		if d < 0 || d > MaxGap {
+			return fmt.Errorf("quãng nghỉ phải từ 0 đến %g giây", MaxGap.Seconds())
+		}
+	}
+	return nil
+}
+
+func gapSamples(d time.Duration) int64 { return int64(d) * sampleRate / int64(time.Second) }
 
 // Các giai đoạn báo trong Progress.Phase.
 const (
@@ -67,6 +92,7 @@ type Progress struct {
 type Options struct {
 	FFmpeg   string // đường dẫn ffmpeg; "" = "ffmpeg" trong PATH
 	Bitrate  string // "" = DefaultBitrate
+	Gaps     *Gaps  // nil = DefaultGaps()
 	TempDir  string // thư mục làm việc tạm; "" = os.TempDir()
 	Progress func(Progress)
 	Logf     func(string, ...any)
@@ -91,6 +117,13 @@ func Export(ctx context.Context, b Book, out string, opt Options) (*Result, erro
 	}
 	if opt.Logf == nil {
 		opt.Logf = func(string, ...any) {}
+	}
+	if opt.Gaps == nil {
+		g := DefaultGaps()
+		opt.Gaps = &g
+	}
+	if err := opt.Gaps.Validate(); err != nil {
+		return nil, err
 	}
 	if len(b.Tracks) == 0 {
 		return nil, errors.New("sách không có tiểu mục nào để xuất")
@@ -214,9 +247,9 @@ func encode(ctx context.Context, opt Options, tracks []Track, audio string, rep 
 		}
 		rep.track(i + 1)
 		if written > 0 {
-			gaps[i] = sectionGapSamples
+			gaps[i] = gapSamples(opt.Gaps.Section)
 			if t.NewChapter {
-				gaps[i] = chapterGapSamples
+				gaps[i] = gapSamples(opt.Gaps.Chapter)
 			}
 			if err := writeSilence(stdin, gaps[i]); err != nil {
 				return fail(fmt.Errorf("mã hoá AAC: %w", err))

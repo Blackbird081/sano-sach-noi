@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,7 +59,7 @@ func TestExportM4BVaoThuMuc(t *testing.T) {
 	outDir := t.TempDir()
 	t.Setenv(EnvM4BOut, outDir)
 
-	st, err := a.ExportM4B("sach-thu")
+	st, err := a.ExportM4B("sach-thu", 1.5, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +84,7 @@ func TestExportM4BDuongDanFile(t *testing.T) {
 	a := m4bTestApp(t)
 	out := filepath.Join(t.TempDir(), "con", "ten-rieng.m4b")
 	t.Setenv(EnvM4BOut, out)
-	if _, err := a.ExportM4B("sach-thu"); err != nil {
+	if _, err := a.ExportM4B("sach-thu", 1.5, 2); err != nil {
 		t.Fatal(err)
 	}
 	if st := waitM4B(t, a); !st.Done || st.Path != out {
@@ -95,7 +96,7 @@ func TestExportM4BTuChoiKhiDangXuat(t *testing.T) {
 	a := m4bTestApp(t)
 	t.Setenv(EnvM4BOut, t.TempDir())
 	a.m4b = &m4bJob{cancel: func() {}, status: M4BStatus{Running: true, Slug: "khac"}}
-	if _, err := a.ExportM4B("sach-thu"); err == nil || !strings.Contains(err.Error(), "đang xuất") {
+	if _, err := a.ExportM4B("sach-thu", 1.5, 2); err == nil || !strings.Contains(err.Error(), "đang xuất") {
 		t.Fatalf("err = %v, muốn từ chối vì đang xuất cuốn khác", err)
 	}
 }
@@ -103,10 +104,10 @@ func TestExportM4BTuChoiKhiDangXuat(t *testing.T) {
 func TestExportM4BSachKhongCo(t *testing.T) {
 	a := m4bTestApp(t)
 	t.Setenv(EnvM4BOut, t.TempDir())
-	if _, err := a.ExportM4B("khong-co"); err == nil {
+	if _, err := a.ExportM4B("khong-co", 1.5, 2); err == nil {
 		t.Fatal("sách không có phải báo lỗi")
 	}
-	if _, err := a.ExportM4B("../x"); err == nil {
+	if _, err := a.ExportM4B("../x", 1.5, 2); err == nil {
 		t.Fatal("slug lạ phải báo lỗi")
 	}
 }
@@ -115,5 +116,24 @@ func TestRevealM4BChuaXuat(t *testing.T) {
 	a := &App{lib: library.New(t.TempDir())}
 	if err := a.RevealM4B(); err == nil {
 		t.Fatal("chưa xuất mà mở được thư mục")
+	}
+}
+
+func TestM4BGaps(t *testing.T) {
+	g, err := m4bGaps(1.24, 2.5)
+	if err != nil || g.Section != 1200*time.Millisecond || g.Chapter != 2500*time.Millisecond {
+		t.Errorf("m4bGaps(1.24, 2.5) = %+v, %v", g, err)
+	}
+	if g, err := m4bGaps(0, 10); err != nil || g.Section != 0 || g.Chapter != 10*time.Second {
+		t.Errorf("m4bGaps(0, 10) = %+v, %v", g, err)
+	}
+	for _, c := range [][2]float64{{-0.1, 2}, {1, 10.1}, {math.NaN(), 2}, {1, math.Inf(1)}} {
+		if _, err := m4bGaps(c[0], c[1]); err == nil {
+			t.Errorf("m4bGaps(%v, %v) phải báo lỗi", c[0], c[1])
+		}
+	}
+	a := m4bTestApp(t)
+	if _, err := a.ExportM4B("sach-thu", 11, 2); err == nil {
+		t.Error("ExportM4B với quãng nghỉ 11 giây phải báo lỗi")
 	}
 }
