@@ -36,8 +36,18 @@ export function firstDay(log: ListenLog): string | null {
   return keys[0] ?? null
 }
 
-/** Khoảng [from, to] (khoá ngày) của range tính tới hôm nay; kèm khoảng kỳ trước để so sánh. */
-export function rangeBounds(range: StatsRange, today: Date, log: ListenLog) {
+/** Các năm có số liệu (mới trước), luôn có năm nay. */
+export function years(log: ListenLog, today: Date): number[] {
+  const f = firstDay(log)
+  const from = f ? Number(f.slice(0, 4)) : today.getFullYear()
+  const out: number[] = []
+  for (let y = today.getFullYear(); y >= from; y--) out.push(y)
+  return out
+}
+
+/** Khoảng [from, to] (khoá ngày) của range tính tới hôm nay; kèm khoảng kỳ trước để so sánh.
+ *  range 'year' xem năm `year` (mặc định năm nay). */
+export function rangeBounds(range: StatsRange, today: Date, log: ListenLog, year = today.getFullYear()) {
   switch (range) {
     case 'week': {
       const s = weekStart(today)
@@ -50,7 +60,7 @@ export function rangeBounds(range: StatsRange, today: Date, log: ListenLog) {
       return { from: dayKey(s), to: dayKey(e), prevFrom: dayKey(ps), prevTo: dayKey(addDays(s, -1)) }
     }
     case 'year':
-      return { from: `${today.getFullYear()}-01-01`, to: `${today.getFullYear()}-12-31`, prevFrom: `${today.getFullYear() - 1}-01-01`, prevTo: `${today.getFullYear() - 1}-12-31` }
+      return { from: `${year}-01-01`, to: `${year}-12-31`, prevFrom: `${year - 1}-01-01`, prevTo: `${year - 1}-12-31` }
     default:
       return { from: firstDay(log) ?? dayKey(today), to: dayKey(today), prevFrom: '', prevTo: '' }
   }
@@ -74,7 +84,7 @@ export function sumRange(log: ListenLog, from: string, to: string): DaySum {
 export interface Bar { label: string; title: string; min: number; today: boolean; future: boolean }
 
 /** Cột biểu đồ: tuần/tháng mỗi ngày một cột; năm mỗi tháng; tất cả mỗi tháng từ tháng đầu có số liệu. */
-export function bars(log: ListenLog, range: StatsRange, today: Date): Bar[] {
+export function bars(log: ListenLog, range: StatsRange, today: Date, year = today.getFullYear()): Bar[] {
   const tk = dayKey(today)
   const WD = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
   if (range === 'week' || range === 'month') {
@@ -94,8 +104,8 @@ export function bars(log: ListenLog, range: StatsRange, today: Date): Bar[] {
     return out
   }
   // theo tháng
-  let start = new Date(today.getFullYear(), 0, 1)
-  let end = new Date(today.getFullYear(), 11, 1)
+  let start = new Date(year, 0, 1)
+  let end = new Date(year, 11, 1)
   if (range === 'all') {
     const f = firstDay(log)
     start = f ? new Date(parseDay(f).getFullYear(), parseDay(f).getMonth(), 1) : new Date(today.getFullYear(), today.getMonth(), 1)
@@ -220,6 +230,24 @@ export function fmtRecent(k: string, today: Date): string {
   if (k === dayKey(addDays(today, -1))) return 'Hôm qua'
   const d = parseDay(k)
   return d.getFullYear() === today.getFullYear() ? `${d.getDate()}/${d.getMonth() + 1}` : fmtDay(k)
+}
+
+// ── Khoảng đang xem (nhớ theo máy; mặc định Tháng này vì nhiều người không nghe hằng ngày) ──
+const RANGE_KEY = 'sano.statsRange'
+export function loadRange(): StatsRange {
+  try {
+    const v = localStorage.getItem(RANGE_KEY)
+    return v === 'week' || v === 'month' || v === 'year' || v === 'all' ? v : 'month'
+  } catch {
+    return 'month'
+  }
+}
+export function saveRange(r: StatsRange) {
+  try {
+    localStorage.setItem(RANGE_KEY, r)
+  } catch {
+    // bộ nhớ trình duyệt bị chặn: chỉ mất tính năng nhớ lựa chọn
+  }
 }
 
 // ── Mục tiêu mỗi ngày (phút; 0 = tắt), nhớ theo máy ──

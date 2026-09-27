@@ -3,7 +3,7 @@
 // nghe, chuỗi ngày, sách nghe xong, thời gian tiết kiệm nhờ nghe nhanh, phút nghe mỗi
 // ngày + mục tiêu, lịch nghe 6 tháng, giờ hay nghe, nghe nhiều nhất, nghe xong gần đây.
 import { computed, onMounted, ref } from 'vue'
-import { BarChart3, BookCheck, Check, Clock, Flame, Gauge, Headphones, Library, Pencil, Target, X } from 'lucide-vue-next'
+import { BarChart3, BookCheck, Check, ChevronDown, Clock, Flame, Gauge, Headphones, Library, Pencil, Target, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
 import { errText, listenLog, type ListenLog } from '../lib/backend'
@@ -11,7 +11,7 @@ import { flushListening } from '../lib/listenlog'
 import { go, openBook, refreshLibrary, state } from '../lib/store'
 import {
   bars as makeBars, dayKey, finishedIn, firstDay, fmtDay, fmtDur, fmtRecent, heatmap, heatmapMonths, hours as makeHours,
-  loadGoal, peakHours, rangeBounds, saveGoal, streaks, sumRange, topBooks, type StatsRange,
+  loadGoal, loadRange, peakHours, rangeBounds, saveGoal, saveRange, streaks, sumRange, topBooks, years as makeYears, type StatsRange,
 } from '../lib/stats'
 
 const log = ref<ListenLog | null>(null)
@@ -28,13 +28,23 @@ onMounted(async () => {
   }
 })
 
-const range = ref<StatsRange>('week')
-const RANGES: [StatsRange, string][] = [['week', 'Tuần này'], ['month', 'Tháng này'], ['year', 'Năm nay'], ['all', 'Tất cả']]
-const PREV: Record<StatsRange, string> = { week: 'tuần trước', month: 'tháng trước', year: 'năm trước', all: '' }
+const range = ref<StatsRange>(loadRange())
+const year = ref(new Date().getFullYear())
+const yearOpen = ref(false)
+const yearList = computed(() => makeYears(L.value, today.value))
+const thisYear = computed(() => year.value === today.value.getFullYear())
+function setRange(r: StatsRange, y?: number) {
+  range.value = r
+  if (y) year.value = y
+  saveRange(r)
+  hover.value = null
+  yearOpen.value = false
+}
+const PREV = computed<Record<StatsRange, string>>(() => ({ week: 'tuần trước', month: 'tháng trước', year: thisYear.value ? 'năm trước' : `năm ${year.value - 1}`, all: '' }))
 
 const L = computed<ListenLog>(() => log.value ?? { version: 1, days: {}, finished: {} })
 const first = computed(() => firstDay(L.value))
-const bounds = computed(() => rangeBounds(range.value, today.value, L.value))
+const bounds = computed(() => rangeBounds(range.value, today.value, L.value, year.value))
 const sum = computed(() => sumRange(L.value, bounds.value.from, bounds.value.to))
 const prev = computed(() => (bounds.value.prevFrom ? sumRange(L.value, bounds.value.prevFrom, bounds.value.prevTo) : null))
 const streak = computed(() => streaks(L.value, today.value))
@@ -51,10 +61,11 @@ const tiles = computed(() => {
   const p = prev.value
   let timeSub = first.value ? `từ ${fmtDay(first.value)}, lúc bắt đầu ghi` : ''
   if (p && range.value !== 'all') {
-    if (p.listen < 60) timeSub = `${PREV[range.value]} chưa nghe`
+    if (first.value && bounds.value.prevTo < first.value) timeSub = `bắt đầu ghi từ ${fmtDay(first.value)}`
+    else if (p.listen < 60) timeSub = `${PREV.value[range.value]} chưa nghe`
     else {
       const pct = Math.round(((s.listen - p.listen) / p.listen) * 100)
-      timeSub = pct === 0 ? `bằng ${PREV[range.value]}` : `${pct > 0 ? 'tăng' : 'giảm'} ${Math.abs(pct)}% so với ${PREV[range.value]}`
+      timeSub = pct >= 200 ? `gấp ${Math.round(s.listen / p.listen)} lần ${PREV.value[range.value]}` : pct === 0 ? `bằng ${PREV.value[range.value]}` : `${pct > 0 ? 'tăng' : 'giảm'} ${Math.abs(pct)}% so với ${PREV.value[range.value]}`
     }
   }
   const saved = s.audio - s.listen
@@ -74,7 +85,7 @@ const tiles = computed(() => {
 // ── Biểu đồ cột ──
 const goal = ref(loadGoal())
 const dayRange = computed(() => range.value === 'week' || range.value === 'month')
-const chart = computed(() => makeBars(L.value, range.value, today.value))
+const chart = computed(() => makeBars(L.value, range.value, today.value, year.value))
 const maxMin = computed(() => Math.max(1, ...chart.value.map((b) => b.min), dayRange.value ? goal.value : 0) * 1.15)
 const hover = ref<number | null>(null)
 const fmtMin = (m: number) => fmtDur(m * 60)
@@ -133,10 +144,25 @@ const empty = computed(() => !!log.value && !first.value)
           <h1 class="text-xl font-semibold tracking-tight">Hành trình nghe</h1>
           <p class="text-sm text-muted-foreground">{{ first ? `Số liệu ghi từ ${fmtDay(first)}` : 'Đang đọc số liệu…' }} · chỉ lưu trên máy bạn</p>
         </div>
-        <div class="flex rounded-md border border-border p-0.5 text-sm shrink-0" role="radiogroup" aria-label="Khoảng thời gian">
-          <button v-for="r in RANGES" :key="r[0]" role="radio" :aria-checked="range === r[0]" class="h-7 px-3 rounded"
+        <div class="relative flex rounded-md border border-border p-0.5 text-sm shrink-0" role="radiogroup" aria-label="Khoảng thời gian">
+          <button v-for="r in ([['week', 'Tuần này'], ['month', 'Tháng này']] as [StatsRange, string][])" :key="r[0]" role="radio" :aria-checked="range === r[0]" class="h-7 px-3 rounded"
             :class="range === r[0] ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'"
-            @click="range = r[0]; hover = null">{{ r[1] }}</button>
+            @click="setRange(r[0])">{{ r[1] }}</button>
+          <!-- Năm: chọn năm để xem lại năm cũ -->
+          <button role="radio" :aria-checked="range === 'year'" aria-haspopup="listbox" :aria-expanded="yearOpen" class="h-7 pl-3 pr-2 rounded flex items-center gap-1"
+            :class="range === 'year' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="yearList.length > 1 ? (yearOpen = !yearOpen) : setRange('year', yearList[0])">
+            {{ range === 'year' && !thisYear ? `Năm ${year}` : 'Năm nay' }}<ChevronDown v-if="yearList.length > 1" class="w-3.5 h-3.5 opacity-60" />
+          </button>
+          <button role="radio" :aria-checked="range === 'all'" class="h-7 px-3 rounded"
+            :class="range === 'all' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="setRange('all')">Tất cả</button>
+          <div v-if="yearOpen" role="listbox" aria-label="Chọn năm" class="absolute right-16 top-full mt-1 w-36 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-30">
+            <button v-for="y in yearList" :key="y" role="option" :aria-selected="range === 'year' && year === y" class="w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-muted"
+              :class="range === 'year' && year === y && 'text-primary font-medium'" @click="setRange('year', y)">
+              {{ y === today.getFullYear() ? `Năm nay (${y})` : `Năm ${y}` }}<Check v-if="range === 'year' && year === y" class="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
       <p v-if="error" class="mt-3 text-sm text-destructive">Không đọc được nhật ký nghe: {{ error }}</p>
