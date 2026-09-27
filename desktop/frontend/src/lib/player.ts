@@ -5,6 +5,7 @@ import { computed, reactive, shallowRef, watch } from 'vue'
 import { book, bookTexts, errText, type BookDetail, type SectionText } from './backend'
 import { beforeClipPlay, clearAudioSource, setAudioSource } from './audio'
 import { loadPosition, savePosition } from './position'
+import { flushListening, listenFinished, listenStop, listenTick } from './listenlog'
 import { buildLyrics, findSilences, sentenceAt, snapToSilences, type Lyrics } from './lyrics'
 import { state } from './store'
 import { seriesKey } from './find'
@@ -106,6 +107,7 @@ async function open(slug: string, autoplay: boolean) {
     return
   }
   remember()
+  listenStop()
   audio.pause()
   player.playing = false
   player.detail = null
@@ -258,6 +260,7 @@ function remember() {
   const before = tracks.value.slice(0, player.current).reduce((n, t) => n + t.durationSec, 0)
   const pct = totalSec.value ? Math.min(100, ((before + player.time) / totalSec.value) * 100) : 0
   savePosition(slug, { track: player.current, time: player.time, pct })
+  if (pct >= 99) listenFinished(slug)
 }
 
 // Nghe mẫu giọng / nghe thử ở Tạo sách → tạm dừng sách để không chồng tiếng.
@@ -275,10 +278,12 @@ audio.addEventListener('play', () => {
 audio.addEventListener('pause', () => {
   player.playing = false
   remember()
+  listenStop()
 })
 let lastSave = 0
 audio.addEventListener('timeupdate', () => {
   player.time = audio.currentTime
+  if (!audio.paused && player.slug) listenTick(player.slug, player.current, audio.currentTime, audio.playbackRate)
   if (Date.now() - lastSave > 5000) {
     lastSave = Date.now()
     remember()
@@ -307,4 +312,7 @@ audio.addEventListener('ended', () => {
 audio.addEventListener('error', () => {
   if (audio.src) player.error = 'Không đọc được file âm thanh của tiểu mục này'
 })
-window.addEventListener('beforeunload', remember)
+window.addEventListener('beforeunload', () => {
+  remember()
+  flushListening()
+})

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -178,6 +179,18 @@ func (a *App) LibraryOrder() ([]string, error) { return a.lib.Order() }
 
 // SetLibraryOrder lưu thứ tự "Tự sắp xếp".
 func (a *App) SetLibraryOrder(items []string) error { return a.lib.SetOrder(items) }
+
+// RecordListening cộng số giây vừa nghe (thời gian thật + nội dung) vào nhật ký nghe
+// ~/Sano/.nghe.json, theo ngày và giờ của máy. Trình phát gọi mỗi ~30 giây.
+func (a *App) RecordListening(slug string, listenSec, audioSec float64) error {
+	return a.lib.RecordListening(slug, listenSec, audioSec, time.Now())
+}
+
+// MarkFinished ghi ngày nghe xong một cuốn (lần đầu).
+func (a *App) MarkFinished(slug string) error { return a.lib.MarkFinished(slug, time.Now()) }
+
+// ListenLog — nhật ký nghe cho trang thống kê.
+func (a *App) ListenLog() (*library.ListenLog, error) { return a.lib.ListenLog() }
 
 // OpenLibraryFolder hiện thư mục ~/Sano/Sach trong trình quản lý file.
 func (a *App) OpenLibraryFolder() error {

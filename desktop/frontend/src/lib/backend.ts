@@ -309,6 +309,9 @@ interface GoApp {
   RenameSeries(old: string, name: string): Promise<number>
   DeleteSeries(name: string): Promise<number>
   LibraryOrder(): Promise<string[]>
+  RecordListening(slug: string, listenSec: number, audioSec: number): Promise<void>
+  MarkFinished(slug: string): Promise<void>
+  ListenLog(): Promise<ListenLog>
   SetLibraryOrder(items: string[]): Promise<void>
   RevealBookZip(slug: string): Promise<void>
   OpenLibraryFolder(): Promise<void>
@@ -634,6 +637,23 @@ export async function libraryOrder(): Promise<string[]> {
   const app = goApp()
   if (!app) return [...mockOrder]
   return app.LibraryOrder()
+}
+// Nhật ký nghe (~/Sano/.nghe.json) cho thống kê. Trình duyệt (không có phần Go): bỏ qua.
+export interface BookListen { listen: number; audio: number }
+export interface DayListen { books: Record<string, BookListen>; hours: number[] }
+export interface ListenLog { version: number; days: Record<string, DayListen>; finished: Record<string, string> }
+export async function recordListening(slug: string, listenSec: number, audioSec: number): Promise<void> {
+  const app = goApp()
+  if (app) await app.RecordListening(slug, listenSec, audioSec)
+}
+export async function markFinished(slug: string): Promise<void> {
+  const app = goApp()
+  if (app) await app.MarkFinished(slug)
+}
+export async function listenLog(): Promise<ListenLog> {
+  const app = goApp()
+  if (!app) return { version: 1, days: {}, finished: {} }
+  return app.ListenLog()
 }
 export async function setLibraryOrder(items: string[]): Promise<void> {
   const app = goApp()
