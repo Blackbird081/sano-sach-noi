@@ -374,26 +374,33 @@ window.addEventListener('beforeunload', () => {
   void flushListening()
 })
 
-// Phím Space: dừng / nghe tiếp cuốn đang nạp, ở màn nghe lẫn khi đang có thanh nghe nhỏ.
-// Bỏ qua khi đang gõ chữ, khi có hộp thoại mở, và ở Tạo sách (màn đó có nút nghe thử riêng).
+// Phím tắt ở màn nghe lẫn khi đang có thanh nghe nhỏ: Space dừng / nghe tiếp,
+// ← / → sang tiểu mục trước / sau (như nút ⏮ ⏭). Bỏ qua khi đang gõ chữ, khi có
+// hộp thoại mở, và ở Tạo sách (màn đó có nút nghe thử riêng).
+const KEY_ACTIONS: Record<string, () => void> = {
+  Space: () => toggle(),
+  ArrowLeft: () => skip(-1),
+  ArrowRight: () => skip(1),
+}
 function typingTarget(el: EventTarget | null) {
   if (!(el instanceof HTMLElement)) return false
   return el.isContentEditable || !!el.closest('input, textarea, select, [contenteditable="true"]')
 }
-let spaceHandled = false
+let keyHandled = ''
 window.addEventListener('keydown', (e) => {
-  if (e.code !== 'Space' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+  const act = KEY_ACTIONS[e.code]
+  if (!act || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
   if (!player.slug || state.view === 'create' || typingTarget(e.target)) return
   if (document.querySelector('[aria-modal="true"]')) return
   // preventDefault: không để Space bấm luôn nút đang focus (vd nút Phát → bật rồi tắt ngay) hay cuộn trang.
   e.preventDefault()
-  if (e.repeat) return // giữ phím: không bật tắt liên tục
-  spaceHandled = true
-  toggle()
+  if (e.repeat) return // giữ phím: không bật tắt / nhảy mục liên tục
+  keyHandled = e.code
+  act()
 })
-// Nút đang focus nhận "bấm" lúc nhả Space → chặn cả keyup của lần Space vừa xử lý.
+// Nút đang focus nhận "bấm" lúc nhả Space → chặn cả keyup của lần phím vừa xử lý.
 window.addEventListener('keyup', (e) => {
-  if (e.code !== 'Space' || !spaceHandled) return
-  spaceHandled = false
+  if (e.code !== keyHandled) return
+  keyHandled = ''
   e.preventDefault()
 })
