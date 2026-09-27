@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.16 (27/09/2026)
+
+### Tính năng
+- **Nghe trên điện thoại:** nút mới dẫn từng bước, quét mã QR cài BookPlayer, có AirDrop trên Mac
+- **Chỉnh quãng nghỉ** giữa các phần: chung ở Cài đặt hoặc riêng từng cuốn (nút Nghỉ)
+- **Màn nghe vừa mọi cỡ cửa sổ**; Xuất zip, Xoá gom vào bánh răng góc trên
+- **Báo bản mới rõ hơn**, tự hiện một lần mỗi phiên bản
+- **Trang [Skill AI](https://tanviet12.github.io/sano-sach-noi/skill-ai):** tải skill làm sách nói cho Claude, ChatGPT
+
+### Lưu ý khi nâng cấp
+- Từ **0.1.2 – 0.1.15**: bấm **Cập nhật ngay**. Từ 0.1.0 / 0.1.1: tải bản 0.1.16 và cài đè một lần
+
 ## v0.1.15 (27/09/2026)
 
 ### Sửa lỗi

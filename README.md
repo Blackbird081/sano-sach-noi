@@ -30,7 +30,7 @@
 - **Thư viện gọn gàng**: danh mục, bộ sách nhiều tập (nghe hết tập này tự sang tập sau), xem dạng lưới hoặc danh sách, tự sắp xếp, tìm theo tên, tác giả, giọng đọc
 - **Hành trình nghe**: thời gian nghe mỗi ngày, chuỗi ngày nghe, sách đã nghe xong, mục tiêu nghe mỗi ngày. Số liệu chỉ lưu trên máy
 - **Chia sẻ sách**: gửi gói zip cho người dùng Sano khác nhập vào thư viện
-- **Nghe trên điện thoại**: xuất một file M4B có mục lục chương và bìa, nghe bằng app BookPlayer (miễn phí, có cho iPhone và Android)
+- **Nghe trên điện thoại**: bấm một nút, Sano tạo file M4B có mục lục chương và bìa rồi dẫn từng bước chép sang iPhone, Android, nghe bằng app BookPlayer miễn phí
 - **Nghe khi lái xe ô tô**: BookPlayer chạy trên CarPlay và Android Auto, chọn sách, chọn chương ngay trên màn hình xe
 - **25 giọng đọc AI tiếng Việt**: nam, nữ, giọng Bắc, Trung, Nam
 - **Không cần API key, không tốn tiền token**: mô hình AI tải về một lần rồi chạy ngay trên máy, không cần tài khoản ChatGPT hay dịch vụ AI nào; tài liệu không gửi lên mạng
@@ -58,7 +58,7 @@ Giọng đọc do [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) tạo (xe
   </tr>
   <tr>
     <td><img src="docs/images/app/b5-nghe-thu.jpg" alt="Chọn giọng, nghe thử và sửa lời đọc"><br><b>3. Chọn giọng, nghe thử.</b> Nghe từng đoạn, sửa lời đọc nếu cần, rồi tạo cả cuốn. Sano chạy nền ngay trên máy bạn.</td>
-    <td><img src="docs/images/app/nghe.jpg" alt="Nghe trong Sano"><br><b>4. Nghe.</b> Trong thư viện của Sano, hoặc xuất M4B chép sang điện thoại.</td>
+    <td><img src="docs/images/app/nghe.jpg" alt="Nghe trong Sano"><br><b>4. Nghe.</b> Trong thư viện của Sano, hoặc bấm Nghe trên điện thoại để chép sang máy.</td>
   </tr>
 </table>
 
@@ -93,9 +93,9 @@ Một file M4B có mục lục chương, tên sách, bìa, khoảng 29 MB cho m�
 
 | Máy | Tải | Ghi chú |
 |---|---|---|
-| **Windows** 10/11 | [Bộ cài .exe](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.15/Sano-0.1.15-windows-amd64-setup.exe) · [Bản portable .zip](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.15/Sano-0.1.15-windows-amd64-portable.zip) | không cần quyền admin |
-| **macOS** 14+ (Intel: 13+) | [Sano .dmg](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.15/Sano-0.1.15-macos-universal.dmg) | Apple Silicon và Intel |
-| **Linux** x86_64 | [Sano .AppImage](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.15/Sano-0.1.15-linux-amd64.AppImage) | cần WebKitGTK 4.1 |
+| **Windows** 10/11 | [Bộ cài .exe](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-windows-amd64-setup.exe) · [Bản portable .zip](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-windows-amd64-portable.zip) | không cần quyền admin |
+| **macOS** 14+ (Intel: 13+) | [Sano .dmg](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-macos-universal.dmg) | Apple Silicon và Intel |
+| **Linux** x86_64 | [Sano .AppImage](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.16/Sano-0.1.16-linux-amd64.AppImage) | cần WebKitGTK 4.1 |
 
 Lần mở đầu, Sano tự tải bộ đọc giọng Việt về máy (khoảng 1 GB, chỉ một lần). App chưa ký số nên lần đầu mở: macOS → Cài đặt hệ thống → Quyền riêng tư & Bảo mật → **Vẫn mở**; Windows → **Thông tin thêm** → **Vẫn chạy** ([chi tiết](https://tanviet12.github.io/sano-sach-noi/mo-app-lan-dau)). Kiểm file bằng `SHA256SUMS` trong [bản phát hành](https://github.com/tanviet12/sano-sach-noi/releases/latest); mọi bản cài build trên GitHub Actions từ thẻ phiên bản. Tất cả phiên bản: [Releases](https://github.com/tanviet12/sano-sach-noi/releases).
 
