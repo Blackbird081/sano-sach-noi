@@ -52,14 +52,31 @@ export function shortInstruction(): string {
   return `Mỗi khi tôi gửi tài liệu để làm sách nói, làm đúng theo file ${GUIDE_TXT} đã đính kèm. Mặc định làm việc A, cấp 3 viết lại thành văn sách nói. Tôi ghi "cấp 2" thì làm việc B, làm mượt.`
 }
 
-export const SKILL_STEPS: Record<'claude' | 'chatgpt', string[]> = {
+export type ChatGPTPlan = 'skills' | 'project'
+export const CHATGPT_PLANS: { k: ChatGPTPlan; title: string; sub: string }[] = [
+  { k: 'skills', title: 'Có mục Skills', sub: 'Gói Business, Enterprise, Edu' },
+  { k: 'project', title: 'Chưa có mục Skills', sub: 'Gói Free, Plus, Pro · dùng Dự án' },
+]
+
+export interface SkillStep {
+  text: string
+  act: 'file' | 'open' | 'copy'
+  file?: string
+  label?: string
+  url?: string
+}
+export const SKILL_STEPS: Record<'claude' | ChatGPTPlan, SkillStep[]> = {
   claude: [
-    `Tải file ${SKILL_ZIP} về, không cần giải nén.`,
-    'Mở claude.ai → Cài đặt (Settings) → Capabilities → Skills → Tải lên (Upload skill), chọn file vừa tải.',
+    { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: SKILL_ZIP },
+    { text: 'Mở Cài đặt → Capabilities → Skills → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở Skills của Claude', url: 'https://claude.ai/settings/capabilities' },
   ],
-  chatgpt: [
-    `Tải file ${GUIDE_TXT} về.`,
-    'Mở ChatGPT → tạo Dự án (Project) tên "Sano – sách nói", thêm file vừa tải vào phần Tệp (Files) của dự án.',
-    'Dán câu dưới đây vào ô Hướng dẫn (Instructions) của dự án. Từ nay làm sách trong dự án đó.',
+  skills: [
+    { text: 'Tải file skill về, không cần giải nén.', act: 'file', file: SKILL_ZIP },
+    { text: 'Mở ChatGPT → Skills → Tạo → Tải lên, chọn file vừa tải.', act: 'open', label: 'Mở ChatGPT', url: 'https://chatgpt.com/' },
+  ],
+  project: [
+    { text: 'Tải file hướng dẫn về.', act: 'file', file: GUIDE_TXT },
+    { text: 'Tạo Dự án (Project) tên "Sano – sách nói", thêm file vừa tải vào phần Tệp.', act: 'open', label: 'Mở ChatGPT', url: 'https://chatgpt.com/' },
+    { text: 'Dán câu Sano đưa vào ô Hướng dẫn (Instructions) của dự án. Từ nay làm sách trong dự án đó.', act: 'copy' },
   ],
 }

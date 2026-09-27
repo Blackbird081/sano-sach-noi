@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { Check, CheckCircle2, ChevronLeft, ClipboardPaste, Clock, Copy, Download, ExternalLink, FileText, Lightbulb, Pause, Play, Sparkles, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { copyText, errText, openURL, saveAIGuide } from '../../lib/backend'
-import { AI_TOOLS, GUIDE_TXT, SKILL_STEPS, SKILL_ZIP, promptFor, shortInstruction } from '../../lib/prompt'
+import { AI_TOOLS, CHATGPT_PLANS, SKILL_STEPS, SKILL_ZIP, promptFor, shortInstruction, type ChatGPTPlan } from '../../lib/prompt'
 import { saveAITool, saveLevel, state } from '../../lib/store'
 
 const options = [
@@ -67,15 +67,24 @@ async function copy(which: 1 | 3) {
   }
 }
 
-// Hộp "Nạp skill" (wireframe D8b): theo AI đã chọn, không tab. Gemini không có
-// hộp (Google có thể bỏ Gem từ 13/10/2026, Skills của Gemini chỉ gói trả phí).
+// Hộp "Nạp skill" (wireframe D8b): theo AI đã chọn, mỗi bước có nút làm ngay tại dòng.
+// ChatGPT chọn gói trước (không chọn sẵn): có mục Skills → zip như Claude; chưa có →
+// Dự án + file hướng dẫn. Gemini không có hộp (Google có thể bỏ Gem từ 13/10/2026).
 const skillOpen = ref(false)
+const plan = ref<'' | ChatGPTPlan>('')
 const saved = ref('')
 const saveError = ref('')
+const steps = computed(() => (state.aiTool === 'claude' ? SKILL_STEPS.claude : plan.value ? SKILL_STEPS[plan.value] : []))
 function openSkill() {
+  plan.value = ''
   saved.value = ''
   saveError.value = ''
   skillOpen.value = true
+}
+function pickPlan(p: ChatGPTPlan) {
+  plan.value = p
+  saved.value = ''
+  saveError.value = ''
 }
 async function download(kind: 'claude' | 'chatgpt') {
   saveError.value = ''
@@ -182,13 +191,13 @@ async function download(kind: 'claude' | 'chatgpt') {
         <button class="text-primary hover:underline" @click="openSkill">Nạp skill cho {{ tool.name }} một lần, lần sau chỉ cần gửi file</button>
       </div>
       <p v-else class="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-        <Sparkles class="w-4 h-4 text-chart shrink-0" /> Với Gemini, mỗi lần làm sách chỉ cần dán prompt, không cần nạp skill.
+        <Sparkles class="w-4 h-4 text-chart shrink-0" /> Với Gemini, mỗi lần làm sách chỉ cần dán prompt, Gemini chưa hỗ trợ skill.
       </p>
     </template>
 
-    <!-- ═══ Hộp nạp skill: theo AI đã chọn ═══ -->
+    <!-- ═══ Hộp nạp skill: theo AI đã chọn, mỗi bước có nút tại dòng ═══ -->
     <div v-if="skillOpen && tool && !gemini" class="fixed inset-0 bg-black/40 grid place-items-center z-50" @click.self="skillOpen = false">
-      <div class="w-[520px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-auto rounded-xl border border-border bg-background shadow-2xl" role="dialog" aria-modal="true" :aria-label="`Nạp skill làm sách nói cho ${tool.name}`">
+      <div class="w-[560px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-auto rounded-xl border border-border bg-background shadow-2xl" role="dialog" aria-modal="true" :aria-label="`Nạp skill làm sách nói cho ${tool.name}`">
         <div class="flex items-start justify-between p-5 pb-0">
           <div>
             <h2 class="font-semibold">Nạp skill làm sách nói cho {{ tool.name }}</h2>
@@ -197,23 +206,36 @@ async function download(kind: 'claude' | 'chatgpt') {
           <button class="text-muted-foreground hover:text-foreground" aria-label="Đóng" @click="skillOpen = false"><X class="w-4 h-4" /></button>
         </div>
         <div class="p-5">
-          <ol class="space-y-2.5 text-sm">
-            <li v-for="(st, i) in SKILL_STEPS[state.aiTool === 'claude' ? 'claude' : 'chatgpt']" :key="i" class="flex gap-3"><span class="h-5 w-5 rounded-full bg-muted grid place-items-center text-[11px] font-medium shrink-0 mt-px">{{ i + 1 }}</span><span>{{ st }}</span></li>
+          <template v-if="state.aiTool === 'chatgpt'">
+            <p class="text-sm font-medium">ChatGPT của bạn có mục Skills không?</p>
+            <div class="mt-2 grid grid-cols-2 gap-3" role="radiogroup" aria-label="Gói ChatGPT">
+              <button v-for="p in CHATGPT_PLANS" :key="p.k" role="radio" :aria-checked="plan === p.k" class="relative rounded-xl border p-3 text-left transition"
+                :class="plan === p.k ? 'border-primary ring-2 ring-primary/15 bg-primary/5' : 'border-border hover:border-primary/40'" @click="pickPlan(p.k)">
+                <span class="absolute top-3 right-3 h-4 w-4 rounded-full border-2 grid place-items-center" :class="plan === p.k ? 'border-primary bg-primary' : 'border-muted-foreground/30'"><Check v-if="plan === p.k" class="w-2.5 h-2.5 text-primary-foreground" /></span>
+                <span class="block text-sm font-semibold">{{ p.title }}</span>
+                <span class="mt-0.5 block text-xs text-muted-foreground">{{ p.sub }}</span>
+              </button>
+            </div>
+          </template>
+
+          <ol v-if="steps.length" class="rounded-xl border border-border divide-y divide-border text-sm" :class="state.aiTool === 'chatgpt' && 'mt-4'">
+            <li v-for="(st, i) in steps" :key="i" class="flex items-center gap-3 px-4 py-3">
+              <span class="h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold shrink-0">{{ i + 1 }}</span>
+              <span class="flex-1">{{ st.text }}</span>
+              <Button v-if="st.act === 'file'" size="sm" class="shrink-0 w-48" @click="download(st.file === SKILL_ZIP ? 'claude' : 'chatgpt')">
+                <component :is="saved ? CheckCircle2 : Download" class="w-4 h-4" /> {{ saved ? 'Đã lưu' : `Tải ${st.file}` }}
+              </Button>
+              <Button v-else-if="st.act === 'open'" size="sm" variant="outline" class="shrink-0 w-48" @click="openURL(st.url!)">{{ st.label }} <ExternalLink class="w-3.5 h-3.5" /></Button>
+              <Button v-else-if="st.act === 'copy'" size="sm" variant="outline" class="shrink-0 w-48" @click="copy(3)"><component :is="copied === 3 ? Check : Copy" class="w-4 h-4" /> {{ copied === 3 ? 'Đã sao chép' : 'Sao chép câu dán' }}</Button>
+            </li>
           </ol>
-          <div class="mt-4 flex items-center gap-3 rounded-lg bg-muted/40 p-3">
-            <FileText class="w-5 h-5 text-muted-foreground shrink-0" />
-            <span class="flex-1 text-sm font-mono">{{ state.aiTool === 'claude' ? SKILL_ZIP : GUIDE_TXT }}</span>
-            <Button size="sm" @click="download(state.aiTool === 'claude' ? 'claude' : 'chatgpt')"><Download class="w-4 h-4" /> Tải về</Button>
-          </div>
-          <p v-if="saved" class="mt-2 text-xs text-muted-foreground flex items-center gap-1.5"><CheckCircle2 class="w-3.5 h-3.5 text-rag-green" /> Đã lưu vào {{ saved }}</p>
+          <p v-if="saved" class="mt-2 text-xs text-muted-foreground">Đã lưu {{ saved }}</p>
           <p v-if="saveError" class="mt-2 text-xs text-destructive">{{ saveError }}</p>
-          <div v-if="state.aiTool === 'chatgpt'" class="mt-3 rounded-lg border border-border p-3 text-sm">
-            <p class="text-muted-foreground">{{ shortInstruction() }}</p>
-            <button class="mt-2 h-7 px-2.5 rounded-md border border-border text-xs flex items-center gap-1 hover:bg-muted" @click="copy(3)"><component :is="copied === 3 ? Check : Copy" class="w-3.5 h-3.5" /> {{ copied === 3 ? 'Đã sao chép' : 'Sao chép câu này' }}</button>
-          </div>
+          <p v-if="plan === 'project'" class="mt-2 text-xs text-muted-foreground">Câu dán: "{{ shortInstruction() }}"</p>
           <p class="mt-3 text-xs text-muted-foreground">
             <template v-if="state.aiTool === 'claude'">Cần gói Claude trả phí (Pro trở lên) và bật chạy code (Code execution). Skill cũng dùng được trong Claude Code.</template>
-            <template v-else>Dùng ChatGPT Business hoặc Enterprise? Mục Skills nhận luôn file skill của Claude: <button class="text-primary hover:underline" @click="download('claude')">tải {{ SKILL_ZIP }}</button>, rồi Skills → Tạo → Tải lên.</template>
+            <template v-else-if="plan === 'skills'">Mục Skills của ChatGPT dùng cùng định dạng skill với Claude, nên dùng chung một file.</template>
+            <template v-else-if="plan === 'project'">Ô Hướng dẫn của Dự án tối đa 8.000 ký tự, nên hướng dẫn đầy đủ nằm trong file đính kèm.</template>
           </p>
         </div>
       </div>
