@@ -60,6 +60,14 @@ Tuỳ độ dài tài liệu và sức máy. Ở bước **Mục lục**, Sano �
 
 Ở bước **Nghe thử**, sửa chữ trong ô **Lời đọc** (ví dụ viết tên nước ngoài theo cách đọc tiếng Việt) rồi bấm **Render lại đoạn này**. Số, chữ viết tắt thông dụng, mũi tên, ký hiệu Sano đã tự chuyển thành lời đọc.
 
+### AI viết lại tài liệu cho nghe hay hơn được không?
+
+Được. Ở bước **Cách đọc** chọn cấp 2 **Làm mượt** (giữ nguyên ý, đổi bảng, hình, danh sách thành lời) hoặc cấp 3 **Viết lại thành văn sách nói** (kể như người kể chuyện, chương ngắn, cuối chương có ba ý cần nhớ). Sano đưa sẵn prompt cho Claude, ChatGPT hoặc Gemini, bản miễn phí cũng được. Xem [Ba cách đọc](./lam-muot-tai-lieu).
+
+### Sano có thống kê thời gian nghe không?
+
+Có, từ bản 0.1.14: trang **Hành trình nghe** hiện thời gian nghe, chuỗi ngày nghe, sách đã nghe xong và mục tiêu mỗi ngày. Số liệu chỉ lưu trên máy. Xem [Hành trình nghe](./hanh-trinh-nghe).
+
 ### Nghe trên điện thoại được không?
 
 Được. Xuất sách thành một file M4B rồi chép sang điện thoại, xem [Nghe trên điện thoại](./nghe-tren-dien-thoai).

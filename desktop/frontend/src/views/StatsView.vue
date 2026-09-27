@@ -133,7 +133,7 @@ const empty = computed(() => !!log.value && !first.value)
       <div class="max-w-sm text-center">
         <div class="mx-auto h-14 w-14 rounded-full bg-muted grid place-items-center"><Headphones class="w-7 h-7 text-muted-foreground" /></div>
         <h1 class="mt-4 text-lg font-semibold">Chưa có số liệu nghe</h1>
-        <p class="mt-1 text-sm text-muted-foreground">Sano bắt đầu ghi từ bản 0.1.13. Nghe vài phút, quay lại đây sẽ thấy thời gian nghe, chuỗi ngày và sách đã nghe xong.</p>
+        <p class="mt-1 text-sm text-muted-foreground">Sano bắt đầu ghi từ bản 0.1.14. Nghe vài phút, quay lại đây sẽ thấy thời gian nghe, chuỗi ngày và sách đã nghe xong.</p>
         <Button class="mt-4" @click="go('library')"><Library class="w-4 h-4" /> Mở thư viện</Button>
       </div>
     </div>

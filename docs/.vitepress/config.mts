@@ -181,6 +181,7 @@ export default defineConfig({
           { text: 'Nghe trên điện thoại', link: '/nghe-tren-dien-thoai' },
           { text: 'Nghe khi lái xe ô tô', link: '/nghe-khi-lai-xe' },
           { text: 'Thư viện & danh mục', link: '/thu-vien' },
+          { text: 'Hành trình nghe', link: '/hanh-trinh-nghe' },
           { text: 'Xuất M4B / gói zip', link: '/xuat-m4b-goi-zip' },
         ],
       },

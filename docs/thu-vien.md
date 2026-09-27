@@ -14,7 +14,9 @@ Lần đầu mở Sano, thư viện có sẵn 3 cuốn mẫu để bạn nghe th
 ## Nghe tiếp và tất cả sách
 
 - Hàng **Nghe tiếp** hiện tối đa 3 cuốn đang nghe dở, bấm là phát tiếp.
+- **Xoá lịch sử nghe** (từ 0.1.14) ở hàng Nghe tiếp: bỏ vị trí đang nghe dở và dấu ✓ đã nghe của mọi cuốn, hàng Nghe tiếp trống lại. Số liệu [Hành trình nghe](./hanh-trinh-nghe) vẫn giữ.
 - Mục **Tất cả sách** hiện bìa từng cuốn kèm tên, tác giả, thời lượng, **giọng đọc** và tiến độ: "Chưa nghe", "Đã nghe X%" hoặc "Đã nghe xong". Các tập của cùng một [bộ sách](#bo-sach-nhieu-tap-tu-0-1-11) gom thành một thẻ.
+- **Dạng lưới hoặc danh sách** (từ 0.1.14): nút cạnh **Sắp xếp** đổi giữa lưới bìa và danh sách từng dòng (tên sách, danh mục, thời lượng, tiến độ). Sano nhớ cách xem bạn chọn.
 
 ## Tìm và sắp xếp
 
