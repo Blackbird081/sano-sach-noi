@@ -5,7 +5,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   Check, ChevronDown, ChevronLeft, Clapperboard, Download, Expand, Share2, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
-  Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
+  Image as ImageIcon, Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -21,7 +21,7 @@ import { openEdit } from '../lib/edit'
 import { m4bBusy, startM4B, useM4B } from '../lib/m4b'
 import { openPhone } from '../lib/phone'
 import { openShare } from '../lib/share'
-import { openBookVideo } from '../lib/bookVideo'
+import { openVideo } from '../lib/video'
 import {
   SPEEDS as speeds, bookHasLyrics, forgetBook, lyricIndex, lyrics, pause, pctTrack, pick, player, seek, seekFrac, setSpeed as applySpeed, skip, toggle, totalSec,
   track, tracks,
@@ -250,7 +250,6 @@ async function act(fn: (slug: string) => Promise<void>) {
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" title="Sửa chữ, đọc lại mục đang nghe (wireframe D11)" @click="menuAct(() => openEdit(state.playerSlug, { index: player.current }))"><Pencil class="w-4 h-4" /> Sửa mục đang nghe</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="!player.detail.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="menuAct(() => act(revealBookZip))"><Package class="w-4 h-4" /> Xuất gói zip</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="m4bBusy()" title="Tạo file M4B và tự chọn nơi lưu" @click="menuAct(() => startM4B(state.playerSlug, true))"><Download class="w-4 h-4" /> Lưu file M4B vào chỗ khác…</button>
-            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" title="Video cả cuốn có chữ chạy để đăng YouTube, Facebook (wireframe D15)" @click="menuAct(() => openBookVideo(state.playerSlug))"><Clapperboard class="w-4 h-4" /> Tạo video cả cuốn…</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="menuAct(() => act(openBookFolder))"><FolderOpen class="w-4 h-4" /> Mở thư mục sách</button>
             <div class="my-1 border-t border-border"></div>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" title="Chuyển cuốn sách vào Thùng rác (lấy lại được)" @click="menuAct(removeBook)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
@@ -283,7 +282,7 @@ async function act(fn: (slug: string) => Promise<void>) {
               <button class="h-8 rounded-md border border-border bg-background/70 hover:bg-muted hover:text-foreground flex items-center justify-center gap-1.5" :class="compact ? 'w-8' : 'px-2.5'"
                 title="Thu lại màn nghe thường" aria-label="Thu lại" @click="setFrame(false)"><Minimize2 class="w-3.5 h-3.5" /><template v-if="!compact">Thu lại</template></button>
               <button class="h-8 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 flex items-center justify-center gap-1.5 disabled:opacity-50" :class="compact ? 'w-8' : 'px-2.5'"
-                title="Chia sẻ đoạn hay: ảnh hoặc video có lời" aria-label="Chia sẻ" :disabled="!lyrics" @click="openShare(lyricIndex)"><Share2 class="w-3.5 h-3.5" /><template v-if="!compact">Chia sẻ</template></button>
+                title="Chia sẻ ảnh có lời từ đoạn hay" aria-label="Chia sẻ ảnh" :disabled="!lyrics" @click="openShare(lyricIndex)"><Share2 class="w-3.5 h-3.5" /><template v-if="!compact">Chia sẻ</template></button>
               <button class="h-8 w-8 rounded-md border border-border bg-background/70 hover:bg-muted hover:text-foreground grid place-items-center disabled:opacity-50"
                 title="Xem cả lời" aria-label="Xem cả lời" :disabled="!lyrics" @click="lyricsOpen = true"><Expand class="w-3.5 h-3.5" /></button>
             </div>
@@ -403,6 +402,9 @@ async function act(fn: (slug: string) => Promise<void>) {
       </div>
       <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Button size="sm" variant="outline" class="border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" :disabled="!player.detail" title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</Button>
+        <!-- D17: ảnh và video đưa ra hàng nút (trước đây ở khung lời đọc và menu bánh răng) -->
+        <Button size="sm" variant="outline" :disabled="!player.detail || !lyrics" :title="lyrics ? 'Ảnh có lời từ đoạn hay, đăng Facebook, Zalo, Story' : 'Mục đang nghe chưa có lời đọc theo câu'" @click="openShare(lyricIndex)"><ImageIcon class="w-4 h-4" /> Chia sẻ ảnh</Button>
+        <Button size="sm" variant="outline" :disabled="!player.detail" title="Video ngắn đăng Reels, TikTok · Video cả cuốn đăng YouTube, Facebook" @click="openVideo(state.playerSlug)"><Clapperboard class="w-4 h-4" /> Tạo video</Button>
         <M4BProgress v-if="state.playerSlug" :slug="state.playerSlug" />
       </div>
     </div>

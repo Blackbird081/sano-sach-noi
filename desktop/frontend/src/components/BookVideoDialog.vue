@@ -2,10 +2,12 @@
 // Hộp "Tạo video cả cuốn" (wireframe D15). Trái: xem trước từng cảnh vẽ bằng canvas
 // (giống file xuất). Phải: phần sách, trích đoạn mở đầu, khung, nền, file kèm; lúc tạo
 // hiện tiến độ theo bước; xong: mở thư mục, chép mô tả YouTube.
+// D17: mở từ nút "Tạo video" ở màn nghe; đầu hộp có thẻ chọn sang Video ngắn.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { Bell, Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Mic, Music, Pause, Pencil, Play, Square, Subtitles, Upload, Volume2, X } from 'lucide-vue-next'
 import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
+import VideoKindTabs from './VideoKindTabs.vue'
 import { bv, bvBusy, buildTimeline, cancelBookVideo, chapterAt, clock, creditsOf, isIntroTrack, quickLyrics, startBookVideo, CHAPTER_SEC, END_SEC, TITLE_SEC, type BookVideoOptions, type Opening, type Timeline } from '../lib/bookVideo'
 import { useVideoPreview } from '../lib/videoPreview'
 import { drawScene, type BVRatio, type Scene } from '../lib/bookVideoCard'
@@ -553,11 +555,13 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
       <div class="flex-1 min-w-0 flex flex-col">
         <div class="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-border">
           <div class="min-w-0">
-            <h2 id="bv-title" class="font-semibold flex items-center gap-2"><Clapperboard class="w-4 h-4" /> Tạo video cả cuốn</h2>
+            <h2 id="bv-title" class="font-semibold flex items-center gap-2"><Clapperboard class="w-4 h-4" /> Tạo video</h2>
             <p class="text-xs text-muted-foreground mt-0.5 truncate">Đăng YouTube, Facebook · {{ d.title }}</p>
           </div>
           <button aria-label="Đóng" class="h-8 w-8 grid place-items-center rounded-md hover:bg-muted" @click="close"><X class="w-4 h-4" /></button>
         </div>
+        <!-- D17: chọn loại video -->
+        <VideoKindTabs class="shrink-0 px-5 pt-3" current="full" :slug="bv.slug" :disabled="busy" />
 
         <!-- Tuỳ chọn -->
         <div v-if="!busy && bv.step !== 'done'" class="flex-1 min-h-0 overflow-auto px-5 py-3 space-y-3 text-sm">

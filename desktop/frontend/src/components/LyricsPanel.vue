@@ -89,8 +89,8 @@ function cycleSpeed() {
           {{ player.detail?.title }}<template v-if="player.detail?.voice"> · Giọng {{ player.detail.voice }}</template>
         </p>
       </div>
-      <button v-if="lyrics" class="h-8 px-2.5 rounded-md text-xs text-primary bg-primary/10 hover:bg-primary/15 flex items-center gap-1.5" title="Chia sẻ đoạn hay: ảnh hoặc video có lời" @click="openShare(lyricIndex)">
-        <Share2 class="w-4 h-4" /> Chia sẻ
+      <button v-if="lyrics" class="h-8 px-2.5 rounded-md text-xs text-primary bg-primary/10 hover:bg-primary/15 flex items-center gap-1.5" title="Chia sẻ ảnh có lời từ đoạn hay" @click="openShare(lyricIndex)">
+        <Share2 class="w-4 h-4" /> Chia sẻ ảnh
       </button>
       <button class="h-8 px-2.5 rounded-md text-xs text-muted-foreground hover:bg-muted flex items-center gap-1.5" @click="toggleBig">
         <Type class="w-4 h-4" /> {{ big ? 'Chữ vừa' : 'Chữ lớn' }}

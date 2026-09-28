@@ -1,13 +1,16 @@
 <script setup lang="ts">
 // Hộp "Chia sẻ đoạn hay" (wireframe D14). Trái: xem trước vẽ bằng canvas đúng như
-// file sẽ lưu. Phải: Ảnh / Video, chọn câu liền nhau, khung, nền; lưu, chép, AirDrop.
+// file sẽ lưu. Phải: chọn câu liền nhau, khung, nền; lưu, chép, AirDrop.
+// D17: mở theo một loại — "Chia sẻ ảnh" (chỉ ảnh) hoặc "Tạo video" · Video ngắn (đầu hộp có
+// thẻ chọn sang Video cả cuốn, cùng cỡ hộp D15 để đổi loại không nhảy khung).
 // Chụp lại tiểu mục lúc mở (câu, tiếng, bìa) nên nghe tiếp sang mục khác không đổi thẻ.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Check, Copy, Download, Film, Image as ImageIcon, Loader2, Play, Share2, Pause, Square, Volume2, X } from 'lucide-vue-next'
+import { Check, Clapperboard, Copy, Download, Film, Image as ImageIcon, Loader2, Play, Share2, Pause, Square, Volume2, X } from 'lucide-vue-next'
 import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
+import VideoKindTabs from './VideoKindTabs.vue'
 import { shareUI } from '../lib/share'
-import { BACKGROUNDS, audioBars, canvasPNG, drawBrightBars, drawCard, loadImage, prepareCard, videoLines, type ShareKind, type ShareRatio } from '../lib/shareCard'
+import { BACKGROUNDS, audioBars, canvasPNG, drawBrightBars, drawCard, loadImage, prepareCard, videoLines, type ShareRatio } from '../lib/shareCard'
 import {
   airDropShareImage, airDropShareVideo, canAirDrop, cancelShareVideo, copyShareImage, errText, makeShareVideo, onEvent, saveShareImage, saveShareVideo,
 } from '../lib/backend'
@@ -77,7 +80,7 @@ function onKey(e: KeyboardEvent) {
 document.addEventListener('keydown', onKey)
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
-const kind = computed({ get: () => shareUI.kind, set: (v: ShareKind) => (shareUI.kind = v) })
+const kind = computed(() => shareUI.kind)
 const ratio = computed({ get: () => shareUI.ratio, set: (v: ShareRatio) => (shareUI.ratio = v) })
 
 const lo = computed(() => Math.min(...picked.value))
@@ -312,9 +315,10 @@ function close() {
 <template>
   <div v-if="shareUI.open && snap" class="absolute inset-0 bg-background/70 backdrop-blur-sm grid place-items-center z-20" @mousedown.self="close">
     <div role="dialog" aria-modal="true" aria-labelledby="share-title" tabindex="-1"
-      class="relative w-[980px] max-w-[calc(100vw-2rem)] h-[684px] max-h-[calc(100vh-2rem)] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl flex overflow-hidden">
+      class="relative max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl flex overflow-hidden"
+      :class="kind === 'video' ? 'w-[1060px] h-[690px]' : 'w-[980px] h-[684px]'">
       <!-- Trái: xem trước -->
-      <div class="w-[460px] shrink-0 bg-muted/50 grid place-items-center p-6 relative">
+      <div class="shrink-0 bg-muted/50 grid place-items-center p-6 relative" :class="kind === 'video' ? 'w-[540px] max-w-[48%]' : 'w-[460px]'">
         <canvas ref="canvas" class="rounded-2xl shadow-2xl object-contain max-h-[calc(100vh-8rem)]"
           :class="ratio === 'square' ? 'w-[360px] h-[360px]' : 'w-[280px] h-[498px]'" aria-label="Xem trước thẻ chia sẻ"></canvas>
         <button v-if="kind === 'video' && vstate !== 'busy'" class="absolute bottom-3 left-1/2 -translate-x-1/2 h-7 px-3 rounded-full bg-background border border-border text-xs flex items-center gap-1.5 shadow-sm hover:bg-muted" @click="togglePreview">
@@ -325,18 +329,19 @@ function close() {
       <!-- Phải: tuỳ chọn -->
       <div class="flex-1 min-w-0 flex flex-col">
         <div class="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-border">
-          <h2 id="share-title" class="font-semibold flex items-center gap-2"><Share2 class="w-4 h-4" /> Chia sẻ đoạn hay</h2>
+          <div class="min-w-0">
+            <h2 id="share-title" class="font-semibold flex items-center gap-2">
+              <template v-if="kind === 'video'"><Clapperboard class="w-4 h-4" /> Tạo video</template>
+              <template v-else><ImageIcon class="w-4 h-4" /> Chia sẻ ảnh</template>
+            </h2>
+            <p class="text-xs text-muted-foreground mt-0.5 truncate">{{ kind === 'video' ? 'Đăng Reels, TikTok, Shorts' : 'Đăng Facebook, Zalo, Story' }} · {{ snap.title }}</p>
+          </div>
           <button aria-label="Đóng" class="h-8 w-8 grid place-items-center rounded-md hover:bg-muted" @click="close"><X class="w-4 h-4" /></button>
         </div>
 
         <!-- Danh sách câu co giãn theo chỗ còn lại để Khung, Nền luôn hiện đủ (cửa sổ thấp vẫn thấy). -->
         <div class="flex-1 min-h-0 flex flex-col px-5 py-4 gap-4 text-sm overflow-auto">
-          <div class="shrink-0 grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted" role="tablist">
-            <button v-for="k in (['image', 'video'] as const)" :key="k" role="tab" :aria-selected="kind === k" :disabled="vstate === 'busy'"
-              class="h-9 rounded-md flex items-center justify-center gap-2 font-medium" :class="kind === k ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'" @click="kind = k">
-              <component :is="k === 'image' ? ImageIcon : Film" class="w-4 h-4" /> {{ k === 'image' ? 'Ảnh có lời' : 'Video có tiếng đọc' }}
-            </button>
-          </div>
+          <VideoKindTabs v-if="kind === 'video'" class="shrink-0" current="short" :slug="snap.slug" :disabled="vstate === 'busy'" />
 
           <div class="flex-1 min-h-[104px] flex flex-col">
             <div class="flex items-baseline justify-between gap-2">
