@@ -12,6 +12,8 @@
 // Làm trên máy: ảnh vẽ bằng canvas; video ghép ảnh từng câu + đoạn mp3 bằng ffmpeg (có sẵn cho M4B).
 // Bản làm thật: sóng âm là cột thật tính từ tiếng đọc, tô sáng dần từ trái sang theo thời gian
 // (thay thanh tiến độ dưới câu); chữ dành chỗ theo câu dài nhất nên bìa không nhảy giữa các câu.
+// Bản làm thật (thêm sau duyệt, anh Việt yêu cầu): nghe thử trong danh sách câu — ▶ ở từng câu
+// nghe tiếp từ câu đó (dò đoạn hay), nút "Nghe đoạn đã chọn"; câu đang đọc tô đỏ.
 // Wireframe tĩnh: dữ liệu giả, KHÔNG gọi API.
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Check, Copy, Download, Film, Image as ImageIcon, Loader2, Mic, Play, Share2, Sun, Moon, X } from 'lucide-vue-next'

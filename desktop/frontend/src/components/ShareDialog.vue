@@ -3,7 +3,8 @@
 // file sẽ lưu. Phải: Ảnh / Video, chọn câu liền nhau, khung, nền; lưu, chép, AirDrop.
 // Chụp lại tiểu mục lúc mở (câu, tiếng, bìa) nên nghe tiếp sang mục khác không đổi thẻ.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Check, Copy, Download, Film, Image as ImageIcon, Loader2, Play, Share2, Pause, X } from 'lucide-vue-next'
+import { Check, Copy, Download, Film, Image as ImageIcon, Loader2, Play, Share2, Pause, Square, Volume2, X } from 'lucide-vue-next'
+import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
 import { shareUI } from '../lib/share'
 import { BACKGROUNDS, audioBars, canvasPNG, drawBrightBars, drawCard, loadImage, prepareCard, videoLines, type ShareKind, type ShareRatio } from '../lib/shareCard'
@@ -138,6 +139,12 @@ const reserve = computed(() => (snap.value ? Math.max(0, ...picked.value.map((i)
 // ── Xem trước ──
 const canvas = ref<HTMLCanvasElement | null>(null)
 const listEl = ref<HTMLElement | null>(null)
+// Nghe thử: ▶ ở từng câu = nghe từ câu đó chạy tiếp (dò đoạn hay); nút trên = đúng đoạn đã chọn.
+const pv = usePreview(() => (snap.value ? { url: snap.value.url, sentences: snap.value.sentences } : null))
+watch(() => pv.current.value, (i) => {
+  if (i >= 0 && pv.mode.value === 'from') listEl.value?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+})
+watch(() => shareUI.open, (o) => !o && pv.stop())
 const previewing = ref(false)
 const vIdx = ref(0)
 const pprog = ref(0) // phần đã chạy của bản xem thử video (0–1)
@@ -324,21 +331,32 @@ function close() {
           <div class="flex-1 min-h-[104px] flex flex-col">
             <div class="flex items-baseline justify-between gap-2">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate" :title="snap.section">Chọn câu · {{ snap.section }}</span>
-              <span class="text-xs text-muted-foreground tabular-nums shrink-0">{{ picked.length }}/{{ MAX }} câu<template v-if="kind === 'video'"> · {{ Math.round(dur) }} giây</template></span>
+              <span class="flex items-center gap-2 shrink-0">
+                <button class="h-6 px-2 rounded-md border text-[11px] flex items-center gap-1" :class="pv.playing.value && pv.mode.value === 'span' ? 'border-primary text-primary bg-primary/5' : 'border-border hover:bg-muted'"
+                  :disabled="!picked.length || vstate === 'busy'" @click="pv.playing.value && pv.mode.value === 'span' ? pv.stop() : pv.play(lo, hi)">
+                  <component :is="pv.playing.value && pv.mode.value === 'span' ? Square : Play" class="w-3 h-3" /> Nghe đoạn đã chọn
+                </button>
+                <span class="text-xs text-muted-foreground tabular-nums">{{ picked.length }}/{{ MAX }} câu<template v-if="kind === 'video'"> · {{ Math.round(dur) }} giây</template></span>
+              </span>
             </div>
             <div ref="listEl" class="mt-2 flex-1 min-h-0 max-h-[260px] overflow-auto rounded-lg border border-border divide-y divide-border">
-              <button v-for="(s, i) in snap.sentences" :key="i" :data-i="i" :disabled="vstate === 'busy'" class="w-full flex items-start gap-2.5 px-3 py-2 text-left"
-                :class="picked.includes(i) ? 'bg-primary/5' : 'hover:bg-muted/60'" @click="toggle(i)">
+              <div v-for="(s, i) in snap.sentences" :key="i" :data-i="i" role="checkbox" tabindex="0" :aria-checked="picked.includes(i)" :aria-disabled="vstate === 'busy'"
+                class="group w-full flex items-start gap-2.5 px-3 py-2 text-left cursor-pointer outline-none focus-visible:bg-muted"
+                :class="picked.includes(i) ? 'bg-primary/5' : 'hover:bg-muted/60'" @click="vstate !== 'busy' && toggle(i)" @keydown.enter.prevent="vstate !== 'busy' && toggle(i)" @keydown.space.prevent="vstate !== 'busy' && toggle(i)">
                 <span class="mt-0.5 h-4 w-4 rounded border grid place-items-center shrink-0"
                   :class="picked.includes(i) ? 'bg-primary border-primary text-primary-foreground' : canAdd(i) ? 'border-primary/50' : 'border-border'">
                   <Check v-if="picked.includes(i)" class="w-3 h-3" />
                 </span>
-                <span class="leading-snug" :class="picked.includes(i) ? 'text-foreground' : 'text-muted-foreground'">{{ s.text }}</span>
-              </button>
+                <span class="flex-1 leading-snug" :class="pv.current.value === i ? 'text-primary font-medium' : picked.includes(i) ? 'text-foreground' : 'text-muted-foreground'">{{ s.text }}</span>
+                <button class="h-6 w-6 -my-0.5 shrink-0 rounded-full grid place-items-center" :class="pv.current.value === i ? 'text-primary' : 'text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-muted hover:text-foreground'"
+                  :title="pv.current.value === i ? 'Dừng nghe thử' : 'Nghe từ câu này'" :aria-label="pv.current.value === i ? 'Dừng nghe thử' : 'Nghe từ câu này'" @click.stop="pv.current.value === i ? pv.stop() : pv.play(i)">
+                  <Volume2 v-if="pv.current.value === i" class="w-3.5 h-3.5" /><Play v-else class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
             <p class="mt-1.5 text-[11px] text-muted-foreground truncate" title="Chọn các câu liền nhau; bấm câu ở xa để chọn lại từ đầu">
               <template v-if="kind === 'video'">Câu liền nhau, tối đa {{ MAX }} câu / {{ MAX_VIDEO_SEC }} giây · video 15–30 giây dễ được xem hết nhất</template>
-              <template v-else>Câu liền nhau, tối đa {{ MAX }} câu · bấm câu ở xa để chọn lại từ đầu</template>
+              <template v-else>Câu liền nhau, tối đa {{ MAX }} câu · bấm ▶ ở một câu để nghe tiếp từ đó</template>
             </p>
           </div>
 

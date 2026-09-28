@@ -3,7 +3,8 @@
 // (giống file xuất). Phải: phần sách, trích đoạn mở đầu, khung, nền, file kèm; lúc tạo
 // hiện tiến độ theo bước; xong: mở thư mục, chép mô tả YouTube.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Subtitles, X } from 'lucide-vue-next'
+import { Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Play, Square, Subtitles, Volume2, X } from 'lucide-vue-next'
+import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
 import { bv, bvBusy, cancelBookVideo, chapterAt, clock, startBookVideo, CHAPTER_SEC, END_SEC, TITLE_SEC } from '../lib/bookVideo'
 import { drawScene, type BVRatio, type Scene } from '../lib/bookVideoCard'
@@ -111,6 +112,16 @@ function pickIntroTrack(i: number) {
 }
 
 const listEl = ref<HTMLElement | null>(null)
+// Nghe thử để dò đoạn hay: ▶ ở từng câu = nghe từ câu đó chạy tiếp; nút trên = đúng đoạn đã chọn.
+const pv = usePreview(() => {
+  const t = d.value?.tracks[introTrack.value]
+  return t ? { url: t.url, sentences: introSentences.value } : null
+})
+watch(introTrack, () => pv.stop())
+watch(() => pv.current.value, (i) => {
+  if (i >= 0 && pv.mode.value === 'from') listEl.value?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+})
+watch(() => bv.open, (o) => !o && pv.stop())
 async function init() {
   const b = d.value
   if (!b) return
@@ -214,6 +225,7 @@ const estMB = computed(() => Math.max(3, Math.round((totalSec.value / 60) * 2.5)
 function create() {
   const b = d.value
   if (!b) return
+  pv.stop()
   void startBookVideo(b, {
     from: span.value.from, to: span.value.to, ratio: ratio.value, bg: bg.value, extras: { ...extras.value },
     intro: introOn.value && introPicked.value.length ? { track: introTrack.value, from: lo.value, to: hi.value } : null,
@@ -324,15 +336,25 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
                 <select :value="introTrack" class="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2" aria-label="Tiểu mục của trích đoạn" @change="pickIntroTrack(Number(($event.target as HTMLSelectElement).value))">
                   <option v-for="x in withText" :key="x.i" :value="x.i">{{ x.t.title }}</option>
                 </select>
+                <button class="h-8 px-2.5 rounded-md border text-xs flex items-center gap-1.5 shrink-0" :class="pv.playing.value && pv.mode.value === 'span' ? 'border-primary text-primary bg-primary/5' : 'border-border hover:bg-muted'"
+                  :disabled="!introPicked.length" @click="pv.playing.value && pv.mode.value === 'span' ? pv.stop() : pv.play(lo, hi)">
+                  <component :is="pv.playing.value && pv.mode.value === 'span' ? Square : Play" class="w-3.5 h-3.5" /> Nghe đoạn đã chọn
+                </button>
                 <span class="text-muted-foreground tabular-nums shrink-0">{{ introPicked.length }}/{{ MAX_INTRO }} câu · {{ Math.round(introDur) }} giây</span>
               </div>
-              <div ref="listEl" class="mt-2 max-h-[76px] overflow-auto rounded-lg border border-border divide-y divide-border">
-                <button v-for="(s, i) in introSentences" :key="i" :data-i="i" class="w-full flex items-start gap-2.5 px-3 py-1.5 text-left" :class="introPicked.includes(i) ? 'bg-primary/5' : 'hover:bg-muted/60'" @click="toggle(i)">
+              <div ref="listEl" class="mt-2 max-h-[112px] overflow-auto rounded-lg border border-border divide-y divide-border">
+                <div v-for="(s, i) in introSentences" :key="i" :data-i="i" role="checkbox" tabindex="0" :aria-checked="introPicked.includes(i)"
+                  class="group w-full flex items-start gap-2.5 px-3 py-1.5 text-left cursor-pointer outline-none focus-visible:bg-muted" :class="introPicked.includes(i) ? 'bg-primary/5' : 'hover:bg-muted/60'"
+                  @click="toggle(i)" @keydown.enter.prevent="toggle(i)" @keydown.space.prevent="toggle(i)">
                   <span class="mt-0.5 h-4 w-4 rounded border grid place-items-center shrink-0" :class="introPicked.includes(i) ? 'bg-primary border-primary text-primary-foreground' : canAdd(i) ? 'border-primary/50' : 'border-border'"><Check v-if="introPicked.includes(i)" class="w-3 h-3" /></span>
-                  <span class="leading-snug text-[13px]" :class="introPicked.includes(i) ? '' : 'text-muted-foreground'">{{ s.text }}</span>
-                </button>
+                  <span class="flex-1 leading-snug text-[13px]" :class="pv.current.value === i ? 'text-primary font-medium' : introPicked.includes(i) ? '' : 'text-muted-foreground'">{{ s.text }}</span>
+                  <button class="h-6 w-6 -my-0.5 shrink-0 rounded-full grid place-items-center" :class="pv.current.value === i ? 'text-primary' : 'text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-muted hover:text-foreground'"
+                    :title="pv.current.value === i ? 'Dừng nghe thử' : 'Nghe từ câu này'" :aria-label="pv.current.value === i ? 'Dừng nghe thử' : 'Nghe từ câu này'" @click.stop="pv.current.value === i ? pv.stop() : pv.play(i)">
+                    <Volume2 v-if="pv.current.value === i" class="w-3.5 h-3.5" /><Play v-else class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <p class="mt-1 text-[11px] text-muted-foreground truncate">Mặc định lấy đoạn đang nghe · tối đa {{ MAX_INTRO_SEC }} giây · người xem nghe thử trước khi vào sách</p>
+              <p class="mt-1 text-[11px] text-muted-foreground truncate">Bấm ▶ ở một câu để nghe tiếp từ đó, dò đoạn hay · tối đa {{ MAX_INTRO_SEC }} giây</p>
             </template>
             <p v-else class="mt-1 text-[11px] text-muted-foreground">Tắt: video phát từ đầu đến cuối như thường.</p>
           </div>

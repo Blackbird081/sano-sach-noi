@@ -14,6 +14,8 @@
 // ~1–3 phút cho cuốn 27 phút, có tiến độ theo bước, huỷ được. Lưu vào một thư mục chọn sẵn.
 // Bản làm thật: chỉ vài chương thì màn tựa / thumbnail ghi "NGHE THỬ SÁCH NÓI", lưu thư mục riêng
 // "<Tên sách> - <Chương>" để không đè video cả cuốn.
+// Bản làm thật (thêm sau duyệt, anh Việt yêu cầu): nghe thử trong danh sách câu — ▶ ở từng câu
+// nghe tiếp từ câu đó (dò đoạn hay), nút "Nghe đoạn đã chọn"; câu đang đọc tô đỏ.
 // Wireframe tĩnh: dữ liệu giả, KHÔNG gọi API.
 import { computed, ref } from 'vue'
 import { Check, ChevronDown, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Mic, Sparkles, Subtitles, Sun, Moon, X } from 'lucide-vue-next'
