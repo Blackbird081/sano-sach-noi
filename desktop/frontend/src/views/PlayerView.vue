@@ -321,19 +321,25 @@ async function act(fn: (slug: string) => Promise<void>) {
     </div>
     <div ref="tocEl" class="w-72 shrink-0 border-l border-border overflow-auto">
       <div class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mục lục · {{ tracks.length }} mục · {{ fmtLong(totalSec) }}</div>
-      <button v-for="(c, i) in tracks" :key="c.file" :data-current="i === player.current"
-        class="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-left hover:bg-muted/60"
-        :class="i === player.current ? 'bg-primary/10 text-primary font-medium' : player.heard.includes(i) ? 'text-muted-foreground' : ''"
-        :title="c.chapter !== c.title ? c.chapter : ''"
-        @click="pick(i)">
-        <span class="truncate flex items-center gap-2">
-          <Volume2 v-if="i === player.current" class="w-3.5 h-3.5 shrink-0" />
-          <Check v-else-if="player.heard.includes(i)" class="w-3.5 h-3.5 shrink-0" aria-label="Đã nghe" />
-          <span v-else class="w-3.5 shrink-0"></span>
-          {{ c.title }}
-        </span>
-        <span class="text-xs tabular-nums shrink-0">{{ fmtClock(c.durationSec) }}</span>
-      </button>
+      <template v-for="(c, i) in tracks" :key="c.file">
+        <!-- Tên chương đứng trước tiểu mục đầu của chương; chương chỉ có 1 tiểu mục trùng tên thì không lặp. -->
+        <div v-if="c.chapterStart && c.chapter && c.chapter !== c.title"
+          class="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider truncate"
+          :class="c.chapter === track?.chapter ? 'text-primary' : 'text-muted-foreground'"
+          :title="c.chapter">{{ c.chapter }}</div>
+        <button :data-current="i === player.current"
+          class="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-left hover:bg-muted/60"
+          :class="i === player.current ? 'bg-primary/10 text-primary font-medium' : player.heard.includes(i) ? 'text-muted-foreground' : ''"
+          @click="pick(i)">
+          <span class="truncate flex items-center gap-2">
+            <Volume2 v-if="i === player.current" class="w-3.5 h-3.5 shrink-0" />
+            <Check v-else-if="player.heard.includes(i)" class="w-3.5 h-3.5 shrink-0" aria-label="Đã nghe" />
+            <span v-else class="w-3.5 shrink-0"></span>
+            {{ c.title }}
+          </span>
+          <span class="text-xs tabular-nums shrink-0">{{ fmtClock(c.durationSec) }}</span>
+        </button>
+      </template>
     </div>
   </section>
 </template>
