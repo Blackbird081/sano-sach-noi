@@ -12,8 +12,13 @@ import {
 } from '../lib/backend'
 import { lyrics, player, track } from '../lib/player'
 
-const MAX = 4 // số câu tối đa
+// Ảnh: tối đa 4 câu (nhiều hơn chữ phải thu nhỏ, khó đọc). Video: tối đa 8 câu / 30 giây,
+// mở ra chọn sẵn ~15 giây (Reels 15–30 giây dễ được xem hết nhất; mỗi câu đọc ~3,3 giây).
+const MAX_IMAGE = 4
+const MAX_VIDEO = 8
 const MAX_VIDEO_SEC = 30
+const AUTO_VIDEO_SEC = 15
+const MAX = computed(() => (kind.value === 'video' ? MAX_VIDEO : MAX_IMAGE))
 
 interface Snap {
   slug: string
@@ -45,6 +50,7 @@ async function init() {
   }
   const i = Math.min(Math.max(0, shareUI.sentence), ss.length - 1)
   picked.value = [i]
+  if (shareUI.kind === 'video') autoFill()
   vstate.value = 'idle'
   err.value = ''
   cover.value = null
@@ -69,7 +75,7 @@ const span = (a: number, b: number) => (snap.value ? snap.value.sentences[b].end
 const dur = computed(() => (picked.value.length ? Math.min(MAX_VIDEO_SEC, span(lo.value, hi.value)) : 0))
 function canAdd(i: number) {
   const p = picked.value
-  if (p.length >= MAX || !(i === lo.value - 1 || i === hi.value + 1)) return false
+  if (p.length >= MAX.value || !(i === lo.value - 1 || i === hi.value + 1)) return false
   return kind.value === 'image' || span(Math.min(i, lo.value), Math.max(i, hi.value)) <= MAX_VIDEO_SEC
 }
 function toggle(i: number) {
@@ -81,10 +87,33 @@ function toggle(i: number) {
   }
   picked.value = canAdd(i) ? [...p, i].sort((a, b) => a - b) : [i] // câu không liền kề → chọn lại từ đầu
 }
-// Đổi sang video mà đoạn quá dài → giữ các câu đầu vừa 30 giây.
+// Video: thêm dần các câu kế tiếp (rồi câu trước nếu hết tiểu mục) tới ~15 giây.
+function autoFill() {
+  const s = snap.value
+  if (!s) return
+  const p = [...picked.value]
+  const len = () => span(Math.min(...p), Math.max(...p))
+  while (p.length < MAX_VIDEO && len() < AUTO_VIDEO_SEC) {
+    const next = Math.max(...p) + 1
+    const prev = Math.min(...p) - 1
+    const add = next < s.sentences.length ? next : prev >= 0 ? prev : -1
+    if (add < 0) break
+    const q = [...p, add]
+    if (span(Math.min(...q), Math.max(...q)) > MAX_VIDEO_SEC) break
+    p.push(add)
+  }
+  picked.value = p.sort((a, b) => a - b)
+}
+// Sang video: đoạn ngắn thì chọn thêm cho đủ ~15 giây, dài quá thì bớt câu cuối cho vừa 30 giây.
+// Sang ảnh: giữ tối đa 4 câu đầu.
 watch(kind, (k) => {
-  if (k !== 'video' || !snap.value) return
+  if (!snap.value) return
+  if (k === 'image') {
+    if (picked.value.length > MAX_IMAGE) picked.value = picked.value.slice(0, MAX_IMAGE)
+    return
+  }
   while (picked.value.length > 1 && span(lo.value, hi.value) > MAX_VIDEO_SEC) picked.value = picked.value.slice(0, -1)
+  if (span(lo.value, hi.value) < AUTO_VIDEO_SEC - 5) autoFill()
 })
 
 // ── Sóng âm thật của đoạn đã chọn (video) ──
@@ -266,10 +295,10 @@ function close() {
 <template>
   <div v-if="shareUI.open && snap" class="absolute inset-0 bg-background/70 backdrop-blur-sm grid place-items-center z-20" @mousedown.self="close">
     <div role="dialog" aria-modal="true" aria-labelledby="share-title" tabindex="-1"
-      class="relative w-[880px] max-w-[calc(100%-2rem)] h-[600px] max-h-[calc(100%-2rem)] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl flex overflow-hidden">
+      class="relative w-[980px] max-w-[calc(100vw-2rem)] h-[684px] max-h-[calc(100vh-2rem)] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl flex overflow-hidden">
       <!-- Trái: xem trước -->
-      <div class="w-[420px] shrink-0 bg-muted/50 grid place-items-center p-6 relative">
-        <canvas ref="canvas" class="rounded-2xl shadow-2xl object-contain max-h-full"
+      <div class="w-[460px] shrink-0 bg-muted/50 grid place-items-center p-6 relative">
+        <canvas ref="canvas" class="rounded-2xl shadow-2xl object-contain max-h-[calc(100vh-8rem)]"
           :class="ratio === 'square' ? 'w-[360px] h-[360px]' : 'w-[280px] h-[498px]'" aria-label="Xem trước thẻ chia sẻ"></canvas>
         <button v-if="kind === 'video' && vstate !== 'busy'" class="absolute bottom-3 left-1/2 -translate-x-1/2 h-7 px-3 rounded-full bg-background border border-border text-xs flex items-center gap-1.5 shadow-sm hover:bg-muted" @click="togglePreview">
           <component :is="previewing ? Pause : Play" class="w-3 h-3" /> {{ previewing ? 'Dừng xem thử' : 'Xem thử (không tiếng)' }}
@@ -283,20 +312,21 @@ function close() {
           <button aria-label="Đóng" class="h-8 w-8 grid place-items-center rounded-md hover:bg-muted" @click="close"><X class="w-4 h-4" /></button>
         </div>
 
-        <div class="flex-1 min-h-0 overflow-auto px-5 py-4 space-y-4 text-sm">
-          <div class="grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted" role="tablist">
+        <!-- Danh sách câu co giãn theo chỗ còn lại để Khung, Nền luôn hiện đủ (cửa sổ thấp vẫn thấy). -->
+        <div class="flex-1 min-h-0 flex flex-col px-5 py-4 gap-4 text-sm overflow-auto">
+          <div class="shrink-0 grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted" role="tablist">
             <button v-for="k in (['image', 'video'] as const)" :key="k" role="tab" :aria-selected="kind === k" :disabled="vstate === 'busy'"
               class="h-9 rounded-md flex items-center justify-center gap-2 font-medium" :class="kind === k ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'" @click="kind = k">
               <component :is="k === 'image' ? ImageIcon : Film" class="w-4 h-4" /> {{ k === 'image' ? 'Ảnh có lời' : 'Video có tiếng đọc' }}
             </button>
           </div>
 
-          <div>
+          <div class="flex-1 min-h-[104px] flex flex-col">
             <div class="flex items-baseline justify-between gap-2">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate" :title="snap.section">Chọn câu · {{ snap.section }}</span>
               <span class="text-xs text-muted-foreground tabular-nums shrink-0">{{ picked.length }}/{{ MAX }} câu<template v-if="kind === 'video'"> · {{ Math.round(dur) }} giây</template></span>
             </div>
-            <div ref="listEl" class="mt-2 max-h-[196px] overflow-auto rounded-lg border border-border divide-y divide-border">
+            <div ref="listEl" class="mt-2 flex-1 min-h-0 max-h-[260px] overflow-auto rounded-lg border border-border divide-y divide-border">
               <button v-for="(s, i) in snap.sentences" :key="i" :data-i="i" :disabled="vstate === 'busy'" class="w-full flex items-start gap-2.5 px-3 py-2 text-left"
                 :class="picked.includes(i) ? 'bg-primary/5' : 'hover:bg-muted/60'" @click="toggle(i)">
                 <span class="mt-0.5 h-4 w-4 rounded border grid place-items-center shrink-0"
@@ -306,13 +336,16 @@ function close() {
                 <span class="leading-snug" :class="picked.includes(i) ? 'text-foreground' : 'text-muted-foreground'">{{ s.text }}</span>
               </button>
             </div>
-            <p class="mt-1.5 text-[11px] text-muted-foreground">Chọn các câu liền nhau, tối đa {{ MAX }} câu<template v-if="kind === 'video'">, {{ MAX_VIDEO_SEC }} giây</template>. Bấm câu ở xa để chọn lại từ đầu.</p>
+            <p class="mt-1.5 text-[11px] text-muted-foreground truncate" title="Chọn các câu liền nhau; bấm câu ở xa để chọn lại từ đầu">
+              <template v-if="kind === 'video'">Câu liền nhau, tối đa {{ MAX }} câu / {{ MAX_VIDEO_SEC }} giây · video 15–30 giây dễ được xem hết nhất</template>
+              <template v-else>Câu liền nhau, tối đa {{ MAX }} câu · bấm câu ở xa để chọn lại từ đầu</template>
+            </p>
           </div>
 
-          <div>
+          <div class="shrink-0">
             <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Khung</span>
             <div class="mt-2 grid grid-cols-2 gap-2">
-              <button v-for="r in (['square', 'story'] as const)" :key="r" :disabled="vstate === 'busy'" class="h-14 rounded-lg border flex items-center gap-3 px-3 text-left"
+              <button v-for="r in (['story', 'square'] as const)" :key="r" :disabled="vstate === 'busy'" class="h-12 rounded-lg border flex items-center gap-3 px-3 text-left"
                 :class="ratio === r ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/60'" @click="ratio = r">
                 <span class="border-2 rounded-sm shrink-0" :class="[r === 'square' ? 'w-5 h-5' : 'w-4 h-7', ratio === r ? 'border-primary' : 'border-muted-foreground/50']"></span>
                 <span><span class="block font-medium">{{ r === 'square' ? 'Vuông 1:1' : 'Dọc 9:16' }}</span><span class="block text-[11px] text-muted-foreground">{{ r === 'square' ? 'Bài đăng Facebook, Zalo' : 'Story, Reels, TikTok' }}</span></span>
@@ -320,13 +353,13 @@ function close() {
             </div>
           </div>
 
-          <div>
+          <div class="shrink-0">
             <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nền</span>
             <div class="mt-2 flex flex-wrap gap-2">
               <button v-for="(b, i) in BACKGROUNDS" :key="i" :disabled="vstate === 'busy'" class="flex flex-col items-center gap-1 text-[11px]" :class="shareUI.bg === i ? 'text-foreground font-medium' : 'text-muted-foreground'" @click="shareUI.bg = i">
                 <span class="h-11 w-11 rounded-lg overflow-hidden ring-offset-2 ring-offset-card relative" :class="[shareUI.bg === i ? 'ring-2 ring-primary' : 'ring-1 ring-border', b.swatch]">
-                  <img v-if="i === 0 && player.detail?.coverUrl" :src="player.detail.thumbUrl || player.detail.coverUrl" alt="" class="absolute -inset-2 w-[calc(100%+1rem)] h-[calc(100%+1rem)] max-w-none object-cover blur-md" />
-                  <span v-else-if="i === 0" class="absolute inset-0 bg-stone-700"></span>
+                  <img v-if="!b.stops.length && player.detail?.coverUrl" :src="player.detail.thumbUrl || player.detail.coverUrl" alt="" class="absolute -inset-2 w-[calc(100%+1rem)] h-[calc(100%+1rem)] max-w-none object-cover blur-md" />
+                  <span v-else-if="!b.stops.length" class="absolute inset-0 bg-stone-700"></span>
                 </span>
                 {{ b.label }}
               </button>

@@ -3,14 +3,15 @@
 import { reactive, watch } from 'vue'
 import type { ShareKind, ShareRatio } from './shareCard'
 
-const KEY = 'sano.share'
+// v2: đổi thứ tự nền (Hoàng hôn đầu) nên không đọc lựa chọn của bản cũ.
+const KEY = 'sano.share.v2'
 function read(): { kind: ShareKind; ratio: ShareRatio; bg: number } {
-  const def = { kind: 'image' as ShareKind, ratio: 'square' as ShareRatio, bg: 0 }
+  const def = { kind: 'image' as ShareKind, ratio: 'story' as ShareRatio, bg: 0 } // Dọc 9:16 + Hoàng hôn
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? 'null')
     return {
       kind: v?.kind === 'video' ? 'video' : def.kind,
-      ratio: v?.ratio === 'story' ? 'story' : def.ratio,
+      ratio: v?.ratio === 'square' ? 'square' : def.ratio,
       bg: Number.isInteger(v?.bg) && v.bg >= 0 && v.bg < 5 ? v.bg : def.bg,
     }
   } catch {

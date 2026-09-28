@@ -6,10 +6,10 @@ import logoUrl from '@/assets/favicon.svg'
 export type ShareKind = 'image' | 'video'
 export type ShareRatio = 'square' | 'story'
 
-/** Nền: 0 = theo bìa (bìa làm mờ, phủ tối); còn lại là dải màu chéo. */
+/** Nền: Hoàng hôn đầu tiên (mặc định); không có stops = theo bìa (bìa làm mờ, phủ tối). */
 export const BACKGROUNDS: { label: string; stops: string[]; swatch: string }[] = [
-  { label: 'Theo bìa', stops: [], swatch: '' },
   { label: 'Hoàng hôn', stops: ['#f97316', '#e11d48', '#6b21a8'], swatch: 'bg-gradient-to-br from-orange-500 via-rose-600 to-purple-800' },
+  { label: 'Theo bìa', stops: [], swatch: '' },
   { label: 'Biển', stops: ['#06b6d4', '#14b8a6', '#84cc16'], swatch: 'bg-gradient-to-br from-cyan-500 via-teal-500 to-lime-500' },
   { label: 'Đêm', stops: ['#4338ca', '#1e40af', '#a21caf'], swatch: 'bg-gradient-to-br from-indigo-700 via-blue-800 to-fuchsia-700' },
   { label: 'Trà', stops: ['#57534e', '#92400e', '#1c1917'], swatch: 'bg-gradient-to-br from-stone-600 via-amber-800 to-stone-900' },
@@ -208,17 +208,48 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = '#fff'
 
-  // Chân thẻ: (bìa nhỏ) tên sách, giọng · logo Sano. Đáy chân thẻ = bh - padY.
-  const footBottom = bh - padY
-  const logoS = 28
+  // Dải thương hiệu dưới cùng (marketing lan truyền): logo + "Sano · Tự tạo sách nói" · sanobook.com,
+  // vạch mảnh phía trên. Người xem biết ngay Sano để làm gì và tìm tới đâu.
+  const brandRow = 24
+  const brandBottom = bh - padY
+  const brandTop = brandBottom - brandRow
+  ctx.fillStyle = 'rgba(255,255,255,0.2)'
+  ctx.fillRect(padX, brandTop - 12 - 1, innerW, 1)
+  if (logoImg) {
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = 6
+    ctx.drawImage(logoImg, padX, brandTop, brandRow, brandRow)
+    ctx.restore()
+  }
+  const midY = brandTop + brandRow / 2 + 4.2
+  ctx.fillStyle = '#fff'
+  ctx.font = `700 12px ${sans}`
+  const bx = padX + brandRow + 8
+  ctx.fillText('Sano', bx, midY)
+  const sanoW = ctx.measureText('Sano').width
+  ctx.font = `400 12px ${sans}`
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'
+  ctx.fillText(' · Tự tạo sách nói', bx + sanoW, midY)
+  ctx.font = `600 11px ${sans}`
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.textAlign = 'right'
+  ;(ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0.3px'
+  ctx.fillText('sanobook.com', bw - padX, midY)
+  ;(ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px'
+  ctx.textAlign = 'left'
+  ctx.fillStyle = '#fff'
+
+  // Chân thẻ: (bìa nhỏ) tên sách, giọng — nằm trên dải thương hiệu.
+  const footBottom = brandTop - 12 - 1 - 12
   const hasMini = o.kind === 'image'
   const textX = padX + (hasMini ? 36 + 12 : 0)
-  const textW = bw - padX - logoS - 12 - textX
+  const textW = bw - padX - textX
   ctx.font = `600 13px ${sans}`
   const titleLines = clampLines(ctx, wrap(ctx, o.title, textW), 2, textW)
   const voiceH = o.voice ? 16 : 0
   const footTextH = titleLines.length * 16 + voiceH
-  const footH = Math.max(hasMini ? 48 : 0, footTextH, logoS + 13)
+  const footH = Math.max(hasMini ? 48 : 0, footTextH)
   const footTop = footBottom - footH
   if (hasMini) drawBook(ctx, o, padX, footBottom - 48, 36, 48, 4)
   let ty = footBottom - footTextH
@@ -233,22 +264,6 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
     ctx.fillText(clampLines(ctx, ['Giọng ' + o.voice], 1, textW)[0], textX, ty + 12)
     ctx.fillStyle = '#fff'
   }
-  const lx = bw - padX - logoS
-  if (logoImg) {
-    ctx.save()
-    ctx.shadowColor = 'rgba(0,0,0,0.3)'
-    ctx.shadowBlur = 6
-    ctx.drawImage(logoImg, lx, footBottom - 13 - logoS, logoS, logoS)
-    ctx.restore()
-  }
-  ctx.font = `700 9px ${sans}`
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'
-  ctx.textAlign = 'center'
-  ;(ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '1.4px'
-  ctx.fillText('SANO', lx + logoS / 2 + 0.7, footBottom - 2)
-  ;(ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px'
-  ctx.textAlign = 'left'
-  ctx.fillStyle = '#fff'
 
   let wave: CardResult['wave'] = null
   if (o.kind === 'image') {
