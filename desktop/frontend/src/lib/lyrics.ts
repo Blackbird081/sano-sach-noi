@@ -71,6 +71,30 @@ function startTimes(pieces: Piece[], duration: number): number[] {
   return out
 }
 
+const alignKey = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+const samePrefix = (a: string, b: string) => a.length > 0 && a.slice(0, 10) === b.slice(0, 10)
+
+/**
+ * Ghép câu chữ gốc với câu lời đọc theo NỘI DUNG (không chỉ đếm số câu): lời đọc có thể có
+ * tên tiểu mục ở đầu và câu bị tách thêm ở giữa (vd dấu ":" đọc thành ngắt câu từ 0.1.17).
+ * Trả chỉ số câu lời đọc bắt đầu mỗi câu chữ gốc; không ghép được thì null.
+ */
+export function alignSentences(spoken: string[], shown: string[]): number[] | null {
+  const sk = spoken.map(alignKey)
+  const hk = shown.map(alignKey)
+  if (!hk.length) return null
+  let j = sk.findIndex((k, n) => n < 5 && samePrefix(k, hk[0]))
+  if (j < 0) return null
+  const map: number[] = []
+  for (let i = 0; i < hk.length; i++) {
+    if (j >= sk.length) return null
+    map.push(j++)
+    // Mẩu lời đọc kế là phần tách ra của câu chữ gốc này (không phải câu chữ gốc kế) → bỏ qua.
+    while (j < sk.length && i + 1 < hk.length && !samePrefix(sk[j], hk[i + 1]) && hk[i].includes(sk[j].slice(0, 10))) j++
+  }
+  return map
+}
+
 /** Dựng lời hiển thị + thời điểm ước lượng cho một tiểu mục. */
 export function buildLyrics(text: string, script: string, duration: number): Lyrics {
   const shown = splitSentences(text)
@@ -79,7 +103,11 @@ export function buildLyrics(text: string, script: string, duration: number): Lyr
 
   const spoken = splitSentences(script || text).flat()
   const lead = spoken.length - flatShown.length // câu đọc thêm ở đầu (tên tiểu mục)
-  if (duration > 0 && lead >= 0 && lead <= 3) {
+  const map = duration > 0 ? alignSentences(spoken.map((p) => p.text), flatShown.map((p) => p.text)) : null
+  if (map) {
+    const all = startTimes(spoken, duration)
+    starts = map.map((j) => all[j])
+  } else if (duration > 0 && lead >= 0 && lead <= 3) {
     starts = startTimes(spoken, duration).slice(lead)
   } else if (duration > 0) {
     // Lời đọc lệch số câu với chữ gốc: tính trên chữ gốc, thêm tên tiểu mục (đoạn
@@ -132,7 +160,8 @@ export function snapToSilences(l: Lyrics, silences: { end: number; len: number }
   let prev = 0
   let k = 0
   for (const s of l.sentences) {
-    if (s.index === 0) continue
+    // Câu đầu: chỉ dò khi có tên tiểu mục đọc trước (bắt đầu muộn), không thì giữ 0.
+    if (s.index === 0 && s.start < 0.5) continue
     let best = -1
     let bestScore = Infinity
     for (let j = k; j < silences.length; j++) {
