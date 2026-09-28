@@ -1,6 +1,6 @@
 # HANDOFF — Sano (sách nói tiếng Việt)
 
-Cập nhật: 27/09/2026 21:34 · Phiên bản đang phát hành: **0.1.17** (Latest trên GitHub Releases)
+Cập nhật: 28/09/2026 13:38 · Phiên bản đang phát hành: **0.1.17** (Latest trên GitHub Releases) · trên `main` có 2 sửa lỗi chưa phát hành (mục 3)
 
 Phiên mới: đọc file này + `README.md` + `CHANGELOG.md` là đủ nắm trạng thái.
 
@@ -29,7 +29,28 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Phát hành: cập nhật `VERSION`, `CHANGELOG.md` (ngắn, hộp cập nhật của bản cũ hiện đoạn này), link tải trong `README.md` → commit `chore: phát hành vX.Y.Z` → push `main` → `git tag -a vX.Y.Z` + push tag → chờ CI → `gh release edit vX.Y.Z --draft=false --latest`.
 - VirusTotal luôn báo 2 phần mềm nhầm bản Windows (đã có từ 0.1.16, file Go chưa ký), không chặn phát hành.
 
-## 3. Đã làm trong phiên 27/09 (0.1.16 → 0.1.17)
+## 3. Phiên 28/09 — 2 sửa lỗi trên `main`, CHƯA phát hành, CHƯA push
+
+- `0eed810` **Mục lục màn nghe hiện tên chương**: `PlayerView.vue` chèn dòng tên chương (chữ nhỏ, in hoa) trước tiểu mục
+  đầu mỗi chương theo cờ `chapterStart` backend đã có; chương đang nghe tô màu chính; chương 1 tiểu mục trùng tên không lặp.
+- `3dfdc6d` **Giọng Thiền Tâm Đức đọc "chánh" thành "tránh"** (chánh niệm, chánh kiến…). Gốc: bộ phiên âm sea_g2p của
+  VieNeu gộp ch/tr thành cùng âm `tʃ`, model tự chọn; chỉ giọng này chọn sai (anh Việt nghe tai: Hải Đăng, Ngọc Huyền vẫn đúng).
+  Sửa: `scripts/tts/audio_gen.py` có bảng `PHONEME_OVERRIDES` **theo giọng** (từ → phiên âm IPA), bọc
+  `vieneu.v3turbo.phonemize_text_with_emotions`; hiện chỉ `"Thiền Tâm Đức": {"chánh": "tʃˈeɜɲ"}` (anh Việt đã nghe duyệt).
+  Giọng khác không đụng. App tự đồng bộ script khi nội dung khác (`EnsureScripts`).
+  **Bài học:** Whisper (mlx-whisper large-v3-turbo, `uvx --offline --from mlx-whisper mlx_whisper`) nghe ch/tr của giọng
+  VieNeu KHÔNG tin được — ghi "tránh" cho mọi giọng dù tai người nghe đúng. Kết luận âm phải dựng mp3 gửi anh nghe.
+- Bản RC đã build và chạy trên máy: `desktop/build/bin/Sano.app` = 0.1.18-rc.4 (có cả 2 sửa).
+
+### Việc dở dang lúc handoff — phiên sau làm tiếp
+
+1. ~~Đọc lại cuốn "Chánh niệm, nghệ thuật của sự có mặt"~~ **ĐÃ XONG** (13:39): 21/39 mục có chữ "chánh" đã đọc lại
+   bằng script mới qua `ApplySection` + `Repack` (mp3, metadata, zip đều cập nhật). Chương trình tạm đã xoá. Còn lại:
+   anh Việt nghe thử mục "Vì sao có bản nghe này" trong app xác nhận "chánh niệm" đúng tai.
+2. **Phát hành 0.1.18**: `VERSION`, `CHANGELOG.md` (2 mục trên, viết ngắn cho người dùng), link tải `README.md`, commit
+   `chore: phát hành v0.1.18`, push, tag, chờ CI, công khai (mục 2). Chưa được lệnh push — hỏi anh trước.
+
+## 4. Đã làm trong phiên 27/09 (0.1.16 → 0.1.17)
 
 - Dấu ":" giữa câu đọc thành ngắt câu (VieNeu chỉ nghỉ ~0,25 s ở ":"), giữ 10:30, 3:1, link.
 - Phím tắt khi nghe: Space dừng / nghe tiếp, ← → tiểu mục trước / sau (bỏ qua khi gõ chữ, có hộp thoại, ở Tạo sách / Sửa sách).
@@ -47,7 +68,10 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Bìa: kệ sách dùng bản thu nhỏ 480px (đệm `~/Sano/.tam/bia`), ảnh lỗi thì thử lại rồi hiện bìa tự vẽ;
   ảnh bìa tự chọn lớn hơn 1200×1600 thì thu nhỏ giữ tỉ lệ.
 
-## 4. Việc còn tồn
+## 5. Việc còn tồn
+
+- App chưa có nút "Đọc lại cả cuốn" (khi script đọc / bộ đọc đổi, sách cũ không tự đọc lại; hiện phải mượn từ điển
+  của cuốn để đánh dấu mục, hoặc chạy tay như mục 3). Tính năng mới → cần wireframe (tab Giọng đọc trong Sửa sách).
 
 - 11 nhánh cũ trên máy + remote (`feat/cach-doc-3-cap`, `feat/thu-vien-bo-sach`, `release/0.1.3`, `release/0.1.4`,
   `fix/linux-audio`…): nhiều nhánh đã gộp vào `main`, cần kiểm rồi mới xoá.
@@ -58,7 +82,7 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Trang hướng dẫn (`docs/`) chưa có bài riêng cho Sửa sách và Từ điển cách đọc.
 - Khi app bị tắt cứng (không qua hộp hỏi), tiến trình Python của bộ đọc có thể còn chạy tới hết lượt (có từ trước, cả Tạo sách).
 
-## 5. Ý tưởng chưa làm: giọng đọc tiếng Anh, tiếng Nhật (anh Việt: "chưa cần làm", 27/09)
+## 6. Ý tưởng chưa làm: giọng đọc tiếng Anh, tiếng Nhật (anh Việt: "chưa cần làm", 27/09)
 
 Nhiều người hỏi. Đã phân tích, **chưa làm**. Khi làm lại thì đọc đoạn này trước.
 
