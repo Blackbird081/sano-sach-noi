@@ -64,11 +64,13 @@ type Book struct {
 	Slug        string `json:"slug"`
 	Title       string `json:"title"`
 	Author      string `json:"author"`
-	Category    string `json:"category"` // tên danh mục; trống = chưa phân loại
-	Series      string `json:"series"`   // tên bộ sách; trống = sách lẻ
-	Volume      int    `json:"volume"`   // số tập trong bộ (0 khi là sách lẻ)
-	Cover       string `json:"cover"`    // tương đối với Root(); trống nếu không có
-	Zip         string `json:"zip"`      // tương đối với Root(); trống nếu không có
+	Translator  string `json:"translator"` // dịch giả; trống nếu không có
+	Publisher   string `json:"publisher"`  // nhà xuất bản; trống nếu không có
+	Category    string `json:"category"`   // tên danh mục; trống = chưa phân loại
+	Series      string `json:"series"`     // tên bộ sách; trống = sách lẻ
+	Volume      int    `json:"volume"`     // số tập trong bộ (0 khi là sách lẻ)
+	Cover       string `json:"cover"`      // tương đối với Root(); trống nếu không có
+	Zip         string `json:"zip"`        // tương đối với Root(); trống nếu không có
 	Chapters    int    `json:"chapters"`
 	Sections    int    `json:"sections"`
 	DurationSec int    `json:"durationSec"`
@@ -94,13 +96,15 @@ type Detail struct {
 
 // metadata — phần metadata.json (bookmaker outMeta) thư viện cần đọc.
 type metadata struct {
-	Title    string `json:"title"`
-	Author   string `json:"author"`
-	Category string `json:"category"`
-	Series   string `json:"series"`
-	Volume   int    `json:"series_volume"`
-	Cover    string `json:"cover"`
-	Chapters []struct {
+	Title      string `json:"title"`
+	Author     string `json:"author"`
+	Translator string `json:"translator"`
+	Publisher  string `json:"publisher"`
+	Category   string `json:"category"`
+	Series     string `json:"series"`
+	Volume     int    `json:"series_volume"`
+	Cover      string `json:"cover"`
+	Chapters   []struct {
 		Title    string `json:"title"`
 		Sections []struct {
 			Title string `json:"title"`
@@ -175,7 +179,7 @@ func (l *Library) Get(slug string) (*Detail, error) {
 	}
 	rel := func(name string) string { return filepath.ToSlash(filepath.Join(BooksDir, slug, name)) }
 
-	d := &Detail{Book: Book{Slug: slug, Title: m.Title, Author: m.Author, Category: NormalizeCategory(m.Category), Chapters: len(m.Chapters)}}
+	d := &Detail{Book: Book{Slug: slug, Title: m.Title, Author: m.Author, Translator: m.Translator, Publisher: m.Publisher, Category: NormalizeCategory(m.Category), Chapters: len(m.Chapters)}}
 	if d.Series = NormalizeSeries(m.Series); d.Series != "" {
 		d.Volume = max(m.Volume, 0)
 	}

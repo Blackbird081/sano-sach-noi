@@ -331,3 +331,28 @@ func TestTexts_AlignedWithTracks(t *testing.T) {
 		t.Errorf("sách không có phải ErrNotFound, got %v", err)
 	}
 }
+
+// D16: dịch giả, nhà xuất bản ghi được, đọc lại được; để trống thì xoá khoá.
+func TestUpdateInfo_TranslatorPublisher(t *testing.T) {
+	lib := New(t.TempDir())
+	meta := `{"title":"Sách thử","chapters":[{"title":"Chương 1","sections":[{"title":"Mở đầu","file":"ch01-sec01.mp3"}]}]}`
+	dir, _ := makeFullBook(t, lib, "sach-thu", meta)
+	d, err := lib.UpdateInfo("sach-thu", Info{Title: "Sách thử", Translator: " Tạ Nguyễn ", Publisher: "NXB Trẻ"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Translator != "Tạ Nguyễn" || d.Publisher != "NXB Trẻ" {
+		t.Errorf("đọc lại sai: %+v", d.Book)
+	}
+	if _, err := lib.UpdateInfo("sach-thu", Info{Title: "Sách thử"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "metadata.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := readJSON(t, string(raw))
+	if _, ok := m["translator"]; ok {
+		t.Errorf("để trống mà vẫn còn khoá translator: %v", m)
+	}
+}

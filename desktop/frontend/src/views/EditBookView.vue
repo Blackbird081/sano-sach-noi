@@ -179,12 +179,12 @@ const seriesGroups = computed<[string, number][]>(() => {
   }
   return [...m.values()]
 })
-const info = ref({ title: '', author: '', category: '', series: '', volume: 0 })
+const info = ref({ title: '', author: '', translator: '', publisher: '', category: '', series: '', volume: 0 })
 function resetInfo() {
   const b = v.value
-  if (b) info.value = { title: b.title, author: b.author, category: b.category, series: b.series ?? '', volume: b.volume || 0 }
+  if (b) info.value = { title: b.title, author: b.author, translator: b.translator ?? '', publisher: b.publisher ?? '', category: b.category, series: b.series ?? '', volume: b.volume || 0 }
 }
-watch(() => v.value?.slug + '|' + v.value?.title + '|' + v.value?.author, resetInfo, { immediate: true })
+watch(() => v.value?.slug + '|' + v.value?.title + '|' + v.value?.author + '|' + v.value?.translator + '|' + v.value?.publisher, resetInfo, { immediate: true })
 const taken = computed(() =>
   books.value.filter((b) => b.slug !== edit.slug && b.series && seriesKey(b.series) === seriesKey(info.value.series)).map((b) => b.volume),
 )
@@ -196,7 +196,7 @@ const nameChanged = computed(() => !!v.value && (info.value.title.trim() !== v.v
 const infoChanged = computed(() => {
   const b = v.value
   if (!b) return false
-  return nameChanged.value || info.value.category !== b.category || (info.value.series || '') !== (b.series || '') || (info.value.volume || 0) !== (b.volume || 0)
+  return nameChanged.value || info.value.translator.trim() !== (b.translator ?? '') || info.value.publisher.trim() !== (b.publisher ?? '') || info.value.category !== b.category || (info.value.series || '') !== (b.series || '') || (info.value.volume || 0) !== (b.volume || 0)
 })
 const hasIntro = computed(() => !!secs.value[0]?.intro)
 const saving = ref(false)
@@ -208,7 +208,7 @@ async function saveInfo() {
   infoMsg.value = ''
   try {
     const r = await saveBookInfo(edit.slug, {
-      title: info.value.title.trim(), author: info.value.author.trim(), category: info.value.category,
+      title: info.value.title.trim(), author: info.value.author.trim(), translator: info.value.translator.trim(), publisher: info.value.publisher.trim(), category: info.value.category,
       series: info.value.series, volume: info.value.series ? Math.max(0, Math.floor(Number(info.value.volume) || 0)) : 0,
     })
     await load(false)
@@ -481,6 +481,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             <input v-model="info.title" maxlength="200" class="mt-1 w-full h-9 rounded-md border bg-background px-3 text-sm" :class="info.title.trim() !== v.title ? 'border-rag-amber' : 'border-input'" /></label>
           <label class="block"><span class="text-xs font-medium text-muted-foreground">Tác giả</span>
             <input v-model="info.author" maxlength="200" placeholder="Không bắt buộc" class="mt-1 w-full h-9 rounded-md border bg-background px-3 text-sm" :class="info.author.trim() !== v.author ? 'border-rag-amber' : 'border-input'" /></label>
+          <!-- D16: dùng cho lời giới thiệu có giọng đọc, màn tựa, mô tả YouTube khi tạo video -->
+          <div class="grid grid-cols-2 gap-2">
+            <label class="block"><span class="text-xs font-medium text-muted-foreground">Dịch giả</span>
+              <input v-model="info.translator" maxlength="200" placeholder="Không bắt buộc" class="mt-1 w-full h-9 rounded-md border bg-background px-3 text-sm" :class="info.translator.trim() !== (v.translator ?? '') ? 'border-rag-amber' : 'border-input'" /></label>
+            <label class="block"><span class="text-xs font-medium text-muted-foreground">Nhà xuất bản</span>
+              <input v-model="info.publisher" maxlength="200" placeholder="Không bắt buộc" class="mt-1 w-full h-9 rounded-md border bg-background px-3 text-sm" :class="info.publisher.trim() !== (v.publisher ?? '') ? 'border-rag-amber' : 'border-input'" /></label>
+          </div>
+          <p class="text-[11px] text-muted-foreground -mt-1">Dịch giả, nhà xuất bản dùng cho lời giới thiệu, màn tựa và mô tả khi tạo video.</p>
           <div><span class="text-xs font-medium text-muted-foreground">Danh mục</span>
             <CategoryPicker v-model="info.category" :categories="categories" class="mt-1" /></div>
           <div class="grid grid-cols-[1fr_90px] gap-2">

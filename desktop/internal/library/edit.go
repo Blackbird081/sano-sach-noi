@@ -27,11 +27,13 @@ const maxTitleLen = 200
 
 // Info — thông tin hiển thị sửa được của một cuốn.
 type Info struct {
-	Title    string `json:"title"`
-	Author   string `json:"author"`
-	Category string `json:"category"`
-	Series   string `json:"series"` // tên bộ sách; trống = sách lẻ
-	Volume   int    `json:"volume"` // số tập; <= 0 kèm Series = tự lấy số tập kế tiếp
+	Title      string `json:"title"`
+	Author     string `json:"author"`
+	Translator string `json:"translator"` // dịch giả (không bắt buộc)
+	Publisher  string `json:"publisher"`  // nhà xuất bản (không bắt buộc)
+	Category   string `json:"category"`
+	Series     string `json:"series"` // tên bộ sách; trống = sách lẻ
+	Volume     int    `json:"volume"` // số tập; <= 0 kèm Series = tự lấy số tập kế tiếp
 }
 
 // ErrEmptyTitle — tên sách để trống.
@@ -105,11 +107,13 @@ func (l *Library) UpdateInfo(slug string, in Info) (*Detail, error) {
 		return nil, err
 	}
 	f := fields{
-		title:    title,
-		author:   clip(strings.TrimSpace(in.Author), maxTitleLen),
-		category: l.CanonicalCategory(in.Category, slug),
-		series:   series,
-		volume:   volume,
+		title:      title,
+		author:     clip(strings.TrimSpace(in.Author), maxTitleLen),
+		translator: clip(strings.TrimSpace(in.Translator), maxTitleLen),
+		publisher:  clip(strings.TrimSpace(in.Publisher), maxTitleLen),
+		category:   l.CanonicalCategory(in.Category, slug),
+		series:     series,
+		volume:     volume,
 	}
 	if err := l.writeFields(slug, f); err != nil {
 		return nil, err
@@ -119,12 +123,12 @@ func (l *Library) UpdateInfo(slug string, in Info) (*Detail, error) {
 
 // fields — thông tin hiển thị ghi vào metadata.json + manifest.json.
 type fields struct {
-	title, author, category, series string
-	volume                          int
+	title, author, translator, publisher, category, series string
+	volume                                                 int
 }
 
 func fieldsOf(b Book) fields {
-	return fields{title: b.Title, author: b.Author, category: b.Category, series: b.Series, volume: b.Volume}
+	return fields{title: b.Title, author: b.Author, translator: b.Translator, publisher: b.Publisher, category: b.Category, series: b.Series, volume: b.Volume}
 }
 
 // writeFields ghi f vào manifest.json trong gói zip rồi metadata.json, giữ giờ
@@ -150,6 +154,8 @@ func (l *Library) writeFields(slug string, f fields) error {
 	apply := func(m map[string]json.RawMessage) {
 		setJSON(m, "title", f.title)
 		setJSON(m, "author", f.author)
+		setJSON(m, "translator", f.translator)
+		setJSON(m, "publisher", f.publisher)
 		setJSON(m, "category", f.category)
 		setJSON(m, "series", f.series)
 		setInt(m, "series_volume", f.volume)
