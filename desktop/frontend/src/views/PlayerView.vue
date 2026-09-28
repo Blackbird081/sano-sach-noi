@@ -4,7 +4,7 @@
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  Check, ChevronDown, ChevronLeft, Clapperboard, Download, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
+  AudioLines, Check, ChevronDown, ChevronLeft, Clapperboard, Download, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
   Image as ImageIcon, Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import BookCover from '@/components/sano/BookCover.vue'
@@ -318,11 +318,12 @@ async function act(fn: (slug: string) => Promise<void>) {
         </div>
         <!-- Chiều cao cố định để không đẩy nút phía dưới; cách xếp Hẹp chỉ 1 dòng.
              Bấm vào khung hoặc Phóng to: lời đọc to ngay trong khung (D13). -->
-        <div v-if="bookHasLyrics && !framed" class="mt-4 w-full max-w-md shrink-0 rounded-lg border border-border bg-muted/30 px-4 py-3 hover:bg-muted/60">
-          <span class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Lời đọc
+        <!-- Khung tô nhẹ màu Hoàng hôn (cùng họ màu nút chia sẻ, thẻ chia sẻ) thay nền xám -->
+        <div v-if="bookHasLyrics && !framed" class="mt-4 w-full max-w-md shrink-0 rounded-xl border border-rose-200/70 dark:border-rose-500/20 bg-gradient-to-br from-orange-50 via-rose-50 to-purple-50 dark:from-orange-500/10 dark:via-rose-500/10 dark:to-purple-500/10 px-4 py-3 shadow-sm shadow-rose-500/5 hover:shadow-md hover:shadow-rose-500/10 transition-shadow">
+          <span class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-rose-600/80 dark:text-rose-400/90">
+            <span class="flex items-center gap-1.5"><AudioLines class="w-3.5 h-3.5" /> Lời đọc</span>
             <span class="flex items-center gap-3 normal-case font-normal tracking-normal text-primary">
-              <button class="flex items-center gap-1 hover:underline" title="Phóng to lời đọc ngay trong khung" @click="setFrame(true)"><Maximize2 class="w-3 h-3" /> Phóng to</button>
+              <button class="h-6 px-2 rounded-full bg-white/70 dark:bg-white/10 text-rose-600 dark:text-rose-300 font-medium flex items-center gap-1 hover:bg-white dark:hover:bg-white/15" title="Phóng to lời đọc ngay trong khung" @click="setFrame(true)"><Maximize2 class="w-3 h-3" /> Phóng to</button>
             </span>
           </span>
           <button class="lyrics-body block w-full text-left disabled:cursor-default" :disabled="!lyrics" title="Phóng to lời đọc" @click="setFrame(true)">
