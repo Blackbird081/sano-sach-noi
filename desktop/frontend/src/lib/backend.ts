@@ -282,6 +282,48 @@ export interface ShareVideoRequest {
   title: string
 }
 
+/** Video cả cuốn (D15) — khớp BookVideoPlan / BookVideoStatus bên Go. */
+export interface BookVideoSeg {
+  file: string
+  start: number
+  dur: number
+  silence: boolean
+}
+export interface BookVideoOverlay {
+  png: string
+  x: number
+  y: number
+  w: number
+  h: number
+  t0: number
+  t1: number
+}
+export interface BookVideoPlan {
+  frames: number[]
+  segs: BookVideoSeg[]
+  overlays: BookVideoOverlay[]
+  width: number
+  height: number
+  title: string
+  thumb: string
+  srt: string
+  desc: string
+}
+export interface BookVideoStatus {
+  running: boolean
+  done: boolean
+  error: string
+  slug: string
+  title: string
+  phase: 'frames' | 'audio' | 'video' | 'files'
+  pct: number
+  dir: string
+  video: string
+  bytes: number
+  durSec: number
+  started: number
+}
+
 interface GoApp {
   Version(): Promise<string>
   CheckUpdate(): Promise<UpdateInfo>
@@ -349,6 +391,12 @@ interface GoApp {
   CancelShareVideo(): Promise<void>
   SaveShareVideo(): Promise<string>
   AirDropShareVideo(): Promise<void>
+  BookVideoBegin(slug: string, title: string): Promise<string>
+  BookVideoFrame(id: string, index: number, img: string): Promise<void>
+  BookVideoFinish(id: string, plan: BookVideoPlan): Promise<void>
+  BookVideoCancel(): Promise<void>
+  BookVideoState(): Promise<BookVideoStatus | null>
+  OpenBookVideoFolder(): Promise<void>
   CancelM4B(): Promise<void>
   M4BStatus(): Promise<M4BStatus | null>
   RevealM4B(): Promise<void>
@@ -971,4 +1019,24 @@ export async function saveShareVideo(): Promise<string> {
 }
 export async function airDropShareVideo(): Promise<void> {
   return need().AirDropShareVideo()
+}
+
+// ── Video cả cuốn (D15) ──
+export async function bookVideoBegin(slug: string, title: string): Promise<string> {
+  return need().BookVideoBegin(slug, title)
+}
+export async function bookVideoFrame(id: string, index: number, img: string): Promise<void> {
+  return need().BookVideoFrame(id, index, img)
+}
+export async function bookVideoFinish(id: string, plan: BookVideoPlan): Promise<void> {
+  return need().BookVideoFinish(id, plan)
+}
+export async function bookVideoCancel(): Promise<void> {
+  await goApp()?.BookVideoCancel()
+}
+export async function bookVideoState(): Promise<BookVideoStatus | null> {
+  return (await goApp()?.BookVideoState()) ?? null
+}
+export async function openBookVideoFolder(): Promise<void> {
+  return need().OpenBookVideoFolder()
 }

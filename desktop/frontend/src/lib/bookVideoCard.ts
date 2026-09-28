@@ -1,0 +1,332 @@
+// Vẽ các cảnh của video cả cuốn (wireframe D15) bằng canvas: trích đoạn, màn tựa,
+// thẻ chương, trong sách (câu đang đọc chữ to, câu kế nhạt, thanh tiến độ cả cuốn có
+// vạch chương), màn kết, thumbnail. Toạ độ theo khung gốc 640×360 (dọc 360×640), nhân
+// 3 ra 1920×1080; thumbnail luôn ngang 1280×720. Chữ chính tránh ~15% đáy (YouTube phủ
+// thanh điều khiển, phụ đề).
+import { cardLogo, clampLines, drawBackground, drawBars, drawBook, roundRect, SANS, wrap } from './shareCard'
+
+export type BVRatio = 'wide' | 'tall'
+
+export interface SceneCommon {
+  ratio: BVRatio
+  bg: number
+  cover: HTMLImageElement | null
+  title: string
+  voice: string
+  totalLabel: string // "27:00" — tổng thời lượng phần sách
+}
+
+export type Scene =
+  | { kind: 'intro'; line: string; bars: number[]; reserve: number } // reserve: số dòng dành chỗ (câu dài nhất) để sóng âm đứng yên
+  | { kind: 'title'; meta: string; badge: string } // badge: SÁCH NÓI ĐẦY ĐỦ / NGHE THỬ SÁCH NÓI
+  | { kind: 'chapter'; chapter: string; ticks: number[] }
+  | { kind: 'main'; chapter: string; section: string; line: string; next: string; ticks: number[] }
+  | { kind: 'end' }
+  | { kind: 'thumb'; meta: string; badge: string }
+
+export interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+export interface SceneResult {
+  wave: Rect | null // khung sóng âm (px ảnh) — trích đoạn
+  bar: Rect | null // thanh tiến độ cả cuốn (px ảnh)
+}
+
+const K = 3
+
+// Nền (bìa làm mờ tốn thời gian) vẽ một lần cho mọi khung cùng cỡ / nền / bìa.
+let bgCache: { key: string; canvas: HTMLCanvasElement } | null = null
+function background(o: SceneCommon, W: number, H: number) {
+  const key = `${W}x${H}|${o.bg}|${o.cover?.src ?? ''}|${o.title}`
+  if (bgCache?.key !== key) {
+    const c = document.createElement('canvas')
+    c.width = W
+    c.height = H
+    drawBackground(c.getContext('2d')!, { bg: o.bg, cover: o.cover, title: o.title }, W, H)
+    bgCache = { key, canvas: c }
+  }
+  return bgCache.canvas
+}
+export function sceneSize(ratio: BVRatio, kind: Scene['kind']) {
+  if (kind === 'thumb') return { w: 1280, h: 720, bw: 640, bh: 360 }
+  return ratio === 'wide' ? { w: 640 * K, h: 360 * K, bw: 640, bh: 360 } : { w: 360 * K, h: 640 * K, bw: 360, bh: 640 }
+}
+
+type Ctx = CanvasRenderingContext2D & { letterSpacing?: string }
+
+function text(ctx: Ctx, s: string, x: number, y: number, font: string, color: string, spacing = 0) {
+  ctx.font = font
+  ctx.fillStyle = color
+  ctx.letterSpacing = spacing + 'px'
+  ctx.fillText(s, x, y)
+  ctx.letterSpacing = '0px'
+}
+
+/** Khối chữ tự thu cỡ cho vừa (maxLines, cao tối đa maxH); trả chiều cao đã vẽ. */
+function block(ctx: Ctx, s: string, x: number, y: number, w: number, size: number, opts: { weight?: number; color?: string; lh?: number; maxLines?: number; maxH?: number; min?: number; family?: string; align?: 'left' | 'center' } = {}) {
+  const { weight = 700, color = '#fff', lh = 1.3, maxLines = 5, maxH = 1e9, min = 10, family = SANS(), align = 'left' } = opts
+  let lines: string[] = []
+  for (; size >= min; size--) {
+    ctx.font = `${weight} ${size}px ${family}`
+    lines = wrap(ctx, s, w)
+    if (lines.length <= maxLines && lines.length * size * lh <= maxH) break
+  }
+  ctx.font = `${weight} ${size}px ${family}`
+  lines = clampLines(ctx, lines, maxLines, w)
+  ctx.fillStyle = color
+  ctx.textAlign = align
+  lines.forEach((l, i) => ctx.fillText(l, align === 'center' ? x + w / 2 : x, y + size * 1.02 + i * size * lh))
+  ctx.textAlign = 'left'
+  return lines.length * size * lh
+}
+
+function brand(ctx: Ctx, bw: number, top: number, right: number) {
+  const logo = cardLogo()
+  const sans = SANS()
+  ctx.font = `700 12px ${sans}`
+  const w1 = ctx.measureText('Sano · ').width
+  ctx.font = `400 12px ${sans}`
+  const w2 = ctx.measureText('Tự tạo sách nói').width
+  const tw = Math.max(w1 + w2, 70)
+  const x = bw - right - tw
+  if (logo) {
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = 6
+    ctx.drawImage(logo, x - 30, top, 25, 25)
+    ctx.restore()
+  }
+  text(ctx, 'Sano · ', x, top + 11, `700 12px ${sans}`, '#fff')
+  text(ctx, 'Tự tạo sách nói', x + w1, top + 11, `400 12px ${sans}`, 'rgba(255,255,255,0.8)')
+  text(ctx, 'sanobook.com', x, top + 24, `600 10.5px ${sans}`, 'rgba(255,255,255,0.88)', 0.2)
+}
+
+/** Thanh tiến độ mờ + vạch chương (phần sáng do ffmpeg phủ dần / bản xem trước tô `progress`). */
+function progressBar(ctx: Ctx, x: number, y: number, w: number, ticks: number[], totalLabel: string, progress?: number) {
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'
+  roundRect(ctx, x, y, w, 4, 2)
+  ctx.fill()
+  if (progress) {
+    ctx.fillStyle = '#fff'
+    roundRect(ctx, x, y, Math.max(4, w * progress), 4, 2)
+    ctx.fill()
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'
+  for (const t of ticks) if (t > 0.002 && t < 0.998) ctx.fillRect(x + w * t - 0.5, y - 2.5, 1, 9)
+  ctx.textAlign = 'right'
+  text(ctx, totalLabel, x + w, y + 17, `500 10px ${SANS()}`, 'rgba(255,255,255,0.7)')
+  ctx.textAlign = 'left'
+}
+
+function coverShadow(ctx: Ctx, o: SceneCommon, x: number, y: number, w: number, h: number, r = 8) {
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'
+  ctx.shadowBlur = 26
+  ctx.shadowOffsetY = 10
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'
+  roundRect(ctx, x, y, w, h, r)
+  ctx.fill()
+  ctx.restore()
+  drawBook(ctx, o, x, y, w, h, r)
+}
+
+/** Vẽ một cảnh; `preview.progress` (0–1) tô phần sáng cho bản xem trước. */
+export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, preview: { progress?: number } = {}): SceneResult {
+  const { w: W, h: H, bw, bh } = sceneSize(o.ratio, s.kind)
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')! as Ctx
+  const k = W / bw
+  const sans = SANS()
+  const wide = s.kind === 'thumb' || o.ratio === 'wide'
+  ctx.save()
+  ctx.drawImage(background(o, W, H), 0, 0)
+  ctx.scale(k, k)
+  const res: SceneResult = { wave: null, bar: null }
+  const px = (r: Rect): Rect => ({ x: Math.round(r.x * k), y: Math.round(r.y * k), w: Math.round(r.w * k), h: Math.round(r.h * k) })
+  const safeBottom = bh * 0.85 // YouTube phủ ~15% đáy
+
+  if (s.kind !== 'end' && s.kind !== 'thumb') brand(ctx, bw, 16, 18)
+
+  if (s.kind === 'intro') {
+    const x = wide ? 52 : 28
+    const w = wide ? 540 : bw - 56
+    const lineH = Math.min(wide ? 150 : 260, safeBottom - 140)
+    const size = wide ? 28 : 26
+    // đo trước để canh giữa theo chiều dọc
+    ctx.font = `700 ${size}px ${sans}`
+    const est = Math.min(lineH, Math.min(5, Math.max(s.reserve, wrap(ctx, s.line, w).length)) * size * 1.3)
+    const groupH = 22 + 14 + est + 16 + 26 + 16 + 14
+    let y = Math.max(44, (safeBottom - groupH) / 2 + 10)
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'
+    roundRect(ctx, x, y, 92, 20, 10)
+    ctx.fill()
+    text(ctx, '✦  TRÍCH ĐOẠN', x + 10, y + 14, `700 10px ${sans}`, '#fff', 1.6)
+    y += 22 + 14
+    block(ctx, s.line, x, y, w, size, { maxLines: 5, maxH: est, min: 16 })
+    y += est + 16
+    const wr = { x, y, w: Math.min(260, w), h: 26 }
+    drawBars(ctx, wr.x, wr.y, wr.w, wr.h, s.bars, 'rgba(255,255,255,0.35)')
+    if (preview.progress) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(wr.x, wr.y, wr.w * preview.progress, wr.h)
+      ctx.clip()
+      drawBars(ctx, wr.x, wr.y, wr.w, wr.h, s.bars, 'rgba(255,255,255,0.95)')
+      ctx.restore()
+    }
+    res.wave = px(wr)
+    y += 26 + 16
+    block(ctx, `${o.title} · Giọng ${o.voice}`, x, y, w, 12, { weight: 400, color: 'rgba(255,255,255,0.78)', maxLines: 2 })
+  } else if (s.kind === 'title' || s.kind === 'thumb') {
+    const thumb = s.kind === 'thumb'
+    if (wide) {
+      const cw = thumb ? 192 : 154
+      const ch = (cw * 4) / 3
+      const cx = thumb ? 44 : 62
+      const cy = (thumb ? bh : safeBottom) / 2 - ch / 2 + (thumb ? 0 : 6)
+      if (thumb) {
+        ctx.save()
+        ctx.translate(cx + cw / 2, cy + ch / 2)
+        ctx.rotate(-0.035)
+        coverShadow(ctx, o, -cw / 2, -ch / 2, cw, ch)
+        ctx.restore()
+      } else coverShadow(ctx, o, cx, cy, cw, ch)
+      const tx = cx + cw + (thumb ? 34 : 30)
+      const tw = bw - tx - 30
+      let y = cy + (thumb ? 30 : 34)
+      if (thumb) {
+        ctx.font = `900 15px ${sans}`
+        const bwid = ctx.measureText(s.badge).width + 16
+        ctx.fillStyle = '#fff'
+        roundRect(ctx, tx, y, bwid, 24, 4)
+        ctx.fill()
+        text(ctx, s.badge, tx + 8, y + 17.5, `900 15px ${sans}`, '#be123c', 0.4)
+        y += 36
+        y += block(ctx, o.title, tx, y, tw, 40, { weight: 900, lh: 1.08, maxLines: 4, maxH: 190, min: 22 }) + 12
+        block(ctx, s.meta, tx, y, tw, 15, { weight: 600, color: 'rgba(255,255,255,0.92)', maxLines: 2 })
+        brand(ctx, bw, bh - 44, 20)
+      } else {
+        text(ctx, s.badge, tx, y + 10, `700 11px ${sans}`, 'rgba(255,255,255,0.72)', 2.4)
+        y += 20
+        y += block(ctx, o.title, tx, y, tw, 34, { family: 'Georgia, serif', lh: 1.15, maxLines: 4, maxH: 170, min: 20 }) + 12
+        block(ctx, s.meta, tx, y, tw, 13, { weight: 400, color: 'rgba(255,255,255,0.82)', maxLines: 2 })
+      }
+    } else {
+      const cw = 172
+      const ch = (cw * 4) / 3
+      const cy = 118
+      coverShadow(ctx, o, (bw - cw) / 2, cy, cw, ch)
+      let y = cy + ch + 34
+      ctx.textAlign = 'center'
+      text(ctx, s.badge, bw / 2, y, `700 11px ${sans}`, 'rgba(255,255,255,0.72)', 2.4)
+      ctx.textAlign = 'left'
+      y += 14
+      y += block(ctx, o.title, 28, y, bw - 56, 30, { family: 'Georgia, serif', lh: 1.15, maxLines: 4, maxH: 150, min: 18, align: 'center' }) + 10
+      block(ctx, s.meta, 28, y, bw - 56, 13, { weight: 400, color: 'rgba(255,255,255,0.82)', maxLines: 2, align: 'center' })
+    }
+  } else if (s.kind === 'chapter') {
+    const x = wide ? 70 : 32
+    const w = bw - x * 2
+    ctx.textAlign = 'center'
+    text(ctx, o.title.toUpperCase().slice(0, 60), bw / 2, safeBottom / 2 - 40, `700 11px ${sans}`, 'rgba(255,255,255,0.7)', 1.8)
+    ctx.textAlign = 'left'
+    block(ctx, s.chapter, x, safeBottom / 2 - 24, w, wide ? 34 : 30, { maxLines: 3, maxH: 130, min: 18, align: 'center', lh: 1.2 })
+    const bar = { x: 30, y: bh - 30, w: bw - 60, h: 4 }
+    progressBar(ctx, bar.x, bar.y, bar.w, s.ticks, o.totalLabel)
+    res.bar = px(bar)
+  } else if (s.kind === 'main') {
+    if (wide) {
+      const cw = 136
+      const ch = (cw * 4) / 3
+      const top = 62
+      const bottom = safeBottom - 6
+      const cy = top + (bottom - top - (ch + 44)) / 2
+      coverShadow(ctx, o, 52, cy, cw, ch)
+      let fy = cy + ch + 10
+      fy += block(ctx, o.title, 52, fy, cw, 12.5, { weight: 600, maxLines: 2, lh: 1.2 })
+      block(ctx, 'Giọng ' + o.voice, 52, fy + 1, cw, 10.5, { weight: 400, color: 'rgba(255,255,255,0.72)', maxLines: 1 })
+      const tx = 52 + cw + 36
+      const tw = bw - tx - 48
+      let y = top + 6
+      ctx.font = `700 11px ${sans}`
+      text(ctx, clampLines(ctx, [s.chapter.toUpperCase()], 1, tw)[0], tx, y + 9, `700 11px ${sans}`, 'rgba(255,255,255,0.72)', 1.4)
+      y += 14
+      ctx.font = `400 12px ${sans}`
+      text(ctx, clampLines(ctx, [s.section], 1, tw)[0], tx, y + 11, `400 12px ${sans}`, 'rgba(255,255,255,0.62)')
+      y += 26
+      const avail = bottom - y
+      const h1 = block(ctx, s.line, tx, y, tw, 27, { maxLines: 5, maxH: avail * 0.68, min: 15, lh: 1.28 })
+      if (s.next) block(ctx, s.next, tx, y + h1 + 12, tw, 19, { color: 'rgba(255,255,255,0.35)', maxLines: 2, maxH: avail - h1 - 12, min: 12, lh: 1.28 })
+    } else {
+      const cw = 132
+      const ch = (cw * 4) / 3
+      coverShadow(ctx, o, (bw - cw) / 2, 70, cw, ch)
+      let y = 70 + ch + 28
+      const x = 28
+      const tw = bw - 56
+      ctx.font = `700 11px ${sans}`
+      text(ctx, clampLines(ctx, [s.chapter.toUpperCase()], 1, tw)[0], x, y + 9, `700 11px ${sans}`, 'rgba(255,255,255,0.72)', 1.2)
+      y += 22
+      const bottom = safeBottom - 40
+      const h1 = block(ctx, s.line, x, y, tw, 25, { maxLines: 6, maxH: (bottom - y) * 0.7, min: 15, lh: 1.28 })
+      if (s.next) block(ctx, s.next, x, y + h1 + 12, tw, 18, { color: 'rgba(255,255,255,0.35)', maxLines: 3, maxH: bottom - y - h1 - 12, min: 12, lh: 1.28 })
+      block(ctx, o.title, x, safeBottom - 30, tw, 12.5, { weight: 600, maxLines: 1 })
+    }
+    const bar = { x: 30, y: bh - 30, w: bw - 60, h: 4 }
+    progressBar(ctx, bar.x, bar.y, bar.w, s.ticks, o.totalLabel)
+    res.bar = px(bar)
+  } else {
+    // Màn kết
+    const logo = cardLogo()
+    const cy = safeBottom / 2 - 10
+    if (logo) {
+      ctx.save()
+      ctx.shadowColor = 'rgba(0,0,0,0.35)'
+      ctx.shadowBlur = 18
+      ctx.drawImage(logo, bw / 2 - 36, cy - 92, 72, 72)
+      ctx.restore()
+    }
+    ctx.textAlign = 'center'
+    text(ctx, 'Tạo sách nói của bạn', bw / 2, cy + 12, `700 ${wide ? 30 : 26}px ${sans}`, '#fff')
+    text(ctx, 'Miễn phí · chạy ngay trên máy · từ file Word', bw / 2, cy + 36, `400 ${wide ? 14 : 12.5}px ${sans}`, 'rgba(255,255,255,0.82)')
+    ctx.font = `700 18px ${sans}`
+    const pw = ctx.measureText('sanobook.com').width + 40
+    ctx.fillStyle = '#fff'
+    roundRect(ctx, bw / 2 - pw / 2, cy + 56, pw, 38, 19)
+    ctx.fill()
+    text(ctx, 'sanobook.com', bw / 2, cy + 81, `700 18px ${sans}`, '#171717', 0.3)
+    ctx.textAlign = 'left'
+  }
+  ctx.restore()
+  return res
+}
+
+/** Thanh tiến độ sáng (nền trong suốt, cỡ đúng khung) để ffmpeg tô dần theo thời gian. */
+export function drawBrightBar(canvas: HTMLCanvasElement, r: Rect) {
+  canvas.width = r.w
+  canvas.height = r.h
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#fff'
+  roundRect(ctx, 0, 0, r.w, r.h, r.h / 2)
+  ctx.fill()
+}
+
+/** Số dòng câu chiếm ở cảnh trích đoạn (để dành chỗ theo câu dài nhất). */
+export function introLines(ratio: BVRatio, line: string) {
+  const ctx = document.createElement('canvas').getContext('2d')!
+  ctx.font = `700 ${ratio === 'wide' ? 28 : 26}px ${SANS()}`
+  return Math.min(5, wrap(ctx, line, ratio === 'wide' ? 540 : 360 - 56).length)
+}
+
+/** Sóng âm sáng của trích đoạn (nền trong suốt, cỡ đúng khung px) để ffmpeg tô dần. */
+export function drawBrightWave(canvas: HTMLCanvasElement, r: Rect, bars: number[]) {
+  canvas.width = r.w
+  canvas.height = r.h
+  const ctx = canvas.getContext('2d')!
+  ctx.scale(K, K)
+  drawBars(ctx, 0, 0, r.w / K, r.h / K, bars, 'rgba(255,255,255,0.95)')
+}

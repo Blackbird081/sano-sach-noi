@@ -72,17 +72,19 @@ export async function prepareCard(): Promise<HTMLImageElement | null> {
   return logo
 }
 let logoImg: HTMLImageElement | null = null
+/** Logo Sano đã nạp (sau prepareCard). */
+export const cardLogo = () => logoImg
 void prepareCard().then((l) => (logoImg = l))
 
-const SANS = () => getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif'
+export const SANS = () => getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif'
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath()
   ctx.roundRect(x, y, w, h, r)
 }
 
 /** Ảnh vừa khít khung (object-fit: cover). */
-function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement | CanvasImageSource, iw: number, ih: number, x: number, y: number, w: number, h: number) {
+export function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement | CanvasImageSource, iw: number, ih: number, x: number, y: number, w: number, h: number) {
   const s = Math.max(w / iw, h / ih)
   const sw = w / s
   const sh = h / s
@@ -90,7 +92,7 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement | Canvas
 }
 
 /** Bìa sách: ảnh bìa, hoặc màu bìa mặc định + tên sách. */
-function drawBook(ctx: CanvasRenderingContext2D, o: CardOptions, x: number, y: number, w: number, h: number, r: number) {
+export function drawBook(ctx: CanvasRenderingContext2D, o: Pick<CardOptions, 'cover' | 'title'>, x: number, y: number, w: number, h: number, r: number) {
   ctx.save()
   roundRect(ctx, x, y, w, h, r)
   ctx.clip()
@@ -114,7 +116,7 @@ function drawBook(ctx: CanvasRenderingContext2D, o: CardOptions, x: number, y: n
   ctx.restore()
 }
 
-function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+export function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
   const out: string[] = []
   let cur = ''
   for (const word of text.split(/\s+/).filter(Boolean)) {
@@ -129,7 +131,7 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string
 }
 
 /** Cắt còn `max` dòng, dòng cuối thêm "…". */
-function clampLines(ctx: CanvasRenderingContext2D, lines: string[], max: number, maxW: number) {
+export function clampLines(ctx: CanvasRenderingContext2D, lines: string[], max: number, maxW: number) {
   if (lines.length <= max) return lines
   const keep = lines.slice(0, max)
   let last = keep[max - 1] + '…'
@@ -138,7 +140,7 @@ function clampLines(ctx: CanvasRenderingContext2D, lines: string[], max: number,
   return keep
 }
 
-function drawBackground(ctx: CanvasRenderingContext2D, o: CardOptions, W: number, H: number) {
+export function drawBackground(ctx: CanvasRenderingContext2D, o: Pick<CardOptions, 'bg' | 'cover' | 'title'>, W: number, H: number) {
   const preset = BACKGROUNDS[o.bg]
   if (preset && preset.stops.length) {
     const g = ctx.createLinearGradient(0, 0, W, H)
@@ -339,7 +341,7 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
   return { wave }
 }
 
-function drawBars(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, bars: number[], color: string) {
+export function drawBars(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, bars: number[], color: string) {
   const step = w / bars.length
   const bw = Math.max(1, step * 0.55)
   ctx.fillStyle = color

@@ -4,7 +4,7 @@
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  Check, ChevronDown, ChevronLeft, Download, Expand, Share2, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
+  Check, ChevronDown, ChevronLeft, Clapperboard, Download, Expand, Share2, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
   Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ import { openEdit } from '../lib/edit'
 import { m4bBusy, startM4B, useM4B } from '../lib/m4b'
 import { openPhone } from '../lib/phone'
 import { openShare } from '../lib/share'
+import { openBookVideo } from '../lib/bookVideo'
 import {
   SPEEDS as speeds, bookHasLyrics, forgetBook, lyricIndex, lyrics, pause, pctTrack, pick, player, seek, seekFrac, setSpeed as applySpeed, skip, toggle, totalSec,
   track, tracks,
@@ -249,6 +250,7 @@ async function act(fn: (slug: string) => Promise<void>) {
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" title="Sửa chữ, đọc lại mục đang nghe (wireframe D11)" @click="menuAct(() => openEdit(state.playerSlug, { index: player.current }))"><Pencil class="w-4 h-4" /> Sửa mục đang nghe</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="!player.detail.zip" title="Sao lưu hoặc chuyển sách sang máy khác" @click="menuAct(() => act(revealBookZip))"><Package class="w-4 h-4" /> Xuất gói zip</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted disabled:opacity-50" :disabled="m4bBusy()" title="Tạo file M4B và tự chọn nơi lưu" @click="menuAct(() => startM4B(state.playerSlug, true))"><Download class="w-4 h-4" /> Lưu file M4B vào chỗ khác…</button>
+            <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" title="Video cả cuốn có chữ chạy để đăng YouTube, Facebook (wireframe D15)" @click="menuAct(() => openBookVideo(state.playerSlug))"><Clapperboard class="w-4 h-4" /> Tạo video cả cuốn…</button>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted" @click="menuAct(() => act(openBookFolder))"><FolderOpen class="w-4 h-4" /> Mở thư mục sách</button>
             <div class="my-1 border-t border-border"></div>
             <button role="menuitem" class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted text-destructive" title="Chuyển cuốn sách vào Thùng rác (lấy lại được)" @click="menuAct(removeBook)"><Trash2 class="w-4 h-4" /> Chuyển vào Thùng rác</button>
