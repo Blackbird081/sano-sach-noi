@@ -38,17 +38,85 @@ import models
 DEFAULT_VOICE = "Hải Đăng"
 MAX_CHARS = 90
 
+# Phiên âm ghi đè theo từ, RIÊNG TỪNG GIỌNG: tên giọng → {từ viết thường → phiên âm
+# IPA kiểu sea_g2p}. Giọng không có trong bảng đọc như thường.
+#
+# Vì sao: bộ phiên âm sea_g2p của VieNeu gộp "ch" và "tr" thành cùng một âm tʃ,
+# nên "chánh" (chánh niệm, chánh kiến, chánh định...) và "tránh" có phiên âm giống
+# hệt nhau (tʃˈe-ɜɲ), model tự chọn cách đọc. Giọng Thiền Tâm Đức đọc thành
+# "tránh" (nghe kiểm 28/09/2026), đổi cách viết cũng không sửa được; các giọng khác
+# (Hải Đăng, Ngọc Huyền...) nghe vẫn đúng "chánh" nên không ghi đè. Phiên âm riêng
+# dưới đây đã nghe kiểm với Thiền Tâm Đức: "chánh" rõ, "tránh" chỗ khác vẫn đúng.
+# Lưu ý: Whisper nhận dạng ch/tr với giọng VieNeu không tin được, phải nghe tai.
+PHONEME_OVERRIDES = {
+    "Thiền Tâm Đức": {"chánh": "tʃˈeɜɲ"},
+}
+
+# Bảng ghi đè của giọng đang đọc (set_voice_overrides đặt trước mỗi lần đọc).
+_active_overrides = {}
+
+_SENTINEL_WORD = "khuỵp"
+_SENTINEL_PHONEME_RE = re.compile(r"xw[ˈˌ]?i6p")
+
 
 def clean_text(text):
     """Bỏ dòng tiêu đề markdown (# ...) — không đọc."""
     return re.sub(r'^#+\s.*$', '', text, flags=re.MULTILINE).strip()
 
 
+def set_voice_overrides(voice):
+    """Chọn bảng phiên âm ghi đè theo giọng sắp đọc (không có → không ghi đè)."""
+    global _active_overrides
+    _active_overrides = PHONEME_OVERRIDES.get(voice, {})
+
+
+def _with_phoneme_overrides(phonemize):
+    """Bọc hàm phiên âm của VieNeu: từ trong bảng ghi đè của giọng đang đọc (nguyên
+    từ, không phân biệt hoa thường) được thay bằng phiên âm riêng, phần còn lại
+    phiên âm như thường. Lệch số lượng (bộ phiên âm bỏ mất từ đánh dấu) thì trả
+    về phiên âm gốc."""
+
+    def patched(text):
+        overrides = _active_overrides
+        if not overrides:
+            return phonemize(text)
+        words = "|".join(re.escape(w) for w in sorted(overrides, key=len, reverse=True))
+        word_re = re.compile(rf"(?<!\w)(?:{words})(?!\w)", re.IGNORECASE)
+        found = []
+
+        def mark(m):
+            found.append(overrides[m.group(0).lower()])
+            return _SENTINEL_WORD
+
+        marked = word_re.sub(mark, text)
+        if not found:
+            return phonemize(text)
+        it = iter(found)
+        out, n = _SENTINEL_PHONEME_RE.subn(lambda m: next(it), phonemize(marked))
+        if n != len(found):
+            return phonemize(text)
+        return out
+
+    patched._sano_overrides = True
+    return patched
+
+
+def install_phoneme_overrides():
+    """Gắn PHONEME_OVERRIDES vào đường phiên âm của VieNeu v3 Turbo (mọi lối
+    infer / infer_stream đều qua hàm này). Gọi nhiều lần vô hại."""
+    import vieneu.v3turbo as v3
+
+    if not getattr(v3.phonemize_text_with_emotions, "_sano_overrides", False):
+        v3.phonemize_text_with_emotions = _with_phoneme_overrides(v3.phonemize_text_with_emotions)
+
+
 def load_tts():
     """Nạp VieNeu v3 Turbo với model ghim revision, không cần mạng sau lần tải đầu."""
     models.activate_offline()
     from vieneu import Vieneu
-    return Vieneu(mode="v3turbo")
+    tts = Vieneu(mode="v3turbo")
+    install_phoneme_overrides()
+    return tts
 
 
 def voice_names(tts):
@@ -83,6 +151,7 @@ def synth_file(tts, voice, input_path, output_path):
     text = clean_text(Path(input_path).read_text(encoding="utf-8"))
     if not text:
         raise ValueError(f"File rỗng: {input_path}")
+    set_voice_overrides(voice)
     start = time.time()
     wav = tts.infer(text=text, voice=voice, max_chars=MAX_CHARS)
     compute = time.time() - start
