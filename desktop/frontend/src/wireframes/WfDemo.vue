@@ -77,7 +77,7 @@ const pct = computed(() => (playingKey.value === 'book' ? (time.value / chapter.
       <!-- 1. Mở đầu -->
       <section class="border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
         <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <p v-if="notes" :class="noteCls" class="mb-3">Trang mới docs/demo.md (layout: home) · link gửi đi: tanviet12.github.io/sano-sach-noi/demo</p>
+          <p v-if="notes" :class="noteCls" class="mb-3">Trang mới docs/demo.md (layout: home) · link gửi đi: sanobook.com/demo</p>
           <p class="text-sm font-medium text-primary">Nghe thử Sano</p>
           <h1 class="mt-2 max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">Sách nói tạo bằng AI, <span class="text-primary">ngay trên máy tính</span></h1>
           <p class="mt-4 max-w-2xl text-lg text-muted-foreground">

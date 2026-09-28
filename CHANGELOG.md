@@ -18,7 +18,7 @@
 - **Chỉnh quãng nghỉ** giữa các phần: chung ở Cài đặt hoặc riêng từng cuốn (nút Nghỉ)
 - **Màn nghe vừa mọi cỡ cửa sổ**; Xuất zip, Xoá gom vào bánh răng góc trên
 - **Báo bản mới rõ hơn**, tự hiện một lần mỗi phiên bản
-- **Trang [Skill AI](https://tanviet12.github.io/sano-sach-noi/skill-ai):** tải skill làm sách nói cho Claude, ChatGPT
+- **Trang [Skill AI](https://sanobook.com/skill-ai):** tải skill làm sách nói cho Claude, ChatGPT
 
 ## v0.1.15 (27/09/2026)
 
@@ -41,7 +41,7 @@
 ### Lưu ý khi nâng cấp
 - Từ **0.1.2 – 0.1.12**: bấm **Cập nhật ngay**. Không có bản 0.1.13, các thay đổi ra chung trong 0.1.14
 
-Chi tiết: [Ba cách đọc và skill](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu) · [Hành trình nghe](https://tanviet12.github.io/sano-sach-noi/hanh-trinh-nghe). Nhỏ hơn: menu đổi thành Thư viện → Tạo sách nói → Hành trình nghe → Cài đặt → Giới thiệu; thanh bên có dòng nhà tài trợ; dấu ✓ trong mục lục chỉ hiện khi nghe thật từ 85% trở lên. Từ 0.1.0 / 0.1.1: tải bản 0.1.14 và cài đè một lần.
+Chi tiết: [Ba cách đọc và skill](https://sanobook.com/lam-muot-tai-lieu) · [Hành trình nghe](https://sanobook.com/hanh-trinh-nghe). Nhỏ hơn: menu đổi thành Thư viện → Tạo sách nói → Hành trình nghe → Cài đặt → Giới thiệu; thanh bên có dòng nhà tài trợ; dấu ✓ trong mục lục chỉ hiện khi nghe thật từ 85% trở lên. Từ 0.1.0 / 0.1.1: tải bản 0.1.14 và cài đè một lần.
 
 ## v0.1.12 (27/09/2026)
 
@@ -138,7 +138,7 @@ Chi tiết: [Ba cách đọc và skill](https://tanviet12.github.io/sano-sach-no
 - **Vá thư viện Python của bộ đọc**: bỏ phần giao diện web của VieNeu-TTS (gradio cùng fastapi, starlette, python-multipart, pillow… kéo theo) — Sano không dùng; nâng bản đã vá cho filelock, idna, msgpack, protobuf, requests, urllib3. Bộ đọc nhẹ hơn: 92 → 49 thư viện, thư mục bộ đọc còn khoảng 1,1 GB
   - Máy đã cài bộ đọc: mở Sano sẽ thấy **Cập nhật bộ đọc** (khoảng 1 phút, chỉ tải lại vài thư viện, mô hình giọng đọc giữ nguyên). Bỏ qua vẫn tạo sách được; nút cập nhật có trong **Cài đặt → Bộ đọc**
 - Mỗi bản phát hành được quét bằng VirusTotal, kết quả ghi trong ghi chú phát hành
-- Trang [Chính sách ký số](https://tanviet12.github.io/sano-sach-noi/chinh-sach-ky-so): file nào được ký, ký ở đâu, ai duyệt; đang xin ký số Windows miễn phí qua SignPath Foundation
+- Trang [Chính sách ký số](https://sanobook.com/chinh-sach-ky-so): file nào được ký, ký ở đâu, ai duyệt; đang xin ký số Windows miễn phí qua SignPath Foundation
 
 ### Sửa lỗi
 - Bấm **Huỷ** khi đang tải bản mới dừng ngay

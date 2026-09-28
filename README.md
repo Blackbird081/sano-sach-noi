@@ -12,13 +12,13 @@
 
 <p align="center">
   <b><a href="https://github.com/tanviet12/sano-sach-noi/releases/latest">Tải Sano</a></b> ·
-  <b><a href="https://tanviet12.github.io/sano-sach-noi/demo">Nghe thử</a></b> ·
-  <b><a href="https://tanviet12.github.io/sano-sach-noi/">Trang chủ</a></b> ·
-  <b><a href="https://tanviet12.github.io/sano-sach-noi/cai-dat">Hướng dẫn</a></b>
+  <b><a href="https://sanobook.com/demo">Nghe thử</a></b> ·
+  <b><a href="https://sanobook.com/">Trang chủ</a></b> ·
+  <b><a href="https://sanobook.com/cai-dat">Hướng dẫn</a></b>
 </p>
 
 <p align="center">
-  <a href="https://tanviet12.github.io/sano-sach-noi/video/sano-gioi-thieu.mp4"><img src="docs/images/readme/sano-demo.gif" alt="Sano: nạp file Word, nghe thử và sửa lời đọc, tạo sách, nghe trên máy hoặc điện thoại" width="860"></a><br>
+  <a href="https://sanobook.com/video/sano-gioi-thieu.mp4"><img src="docs/images/readme/sano-demo.gif" alt="Sano: nạp file Word, nghe thử và sửa lời đọc, tạo sách, nghe trên máy hoặc điện thoại" width="860"></a><br>
   <sub>Bấm vào ảnh để xem video 40 giây có tiếng (giọng Hải Đăng)</sub>
 </p>
 
@@ -39,15 +39,15 @@
 
 ## Nghe thử
 
-5 cuốn sách mẫu tự viết, mỗi cuốn một giọng, tạo hoàn toàn bằng Sano. Bấm để nghe chương 1 ngay trong trình duyệt, hoặc mở **[trang nghe thử](https://tanviet12.github.io/sano-sach-noi/demo)** để nghe đủ 3 chương mỗi cuốn và so 12 giọng đọc cùng một đoạn.
+5 cuốn sách mẫu tự viết, mỗi cuốn một giọng, tạo hoàn toàn bằng Sano. Bấm để nghe chương 1 ngay trong trình duyệt, hoặc mở **[trang nghe thử](https://sanobook.com/demo)** để nghe đủ 3 chương mỗi cuốn và so 12 giọng đọc cùng một đoạn.
 
 | | Sách | Giọng | Nghe |
 |---|---|---|---|
-| <img src="docs/public/audio/demo/ky-nang-mem-cho-nguoi-tre.jpg" width="56" alt=""> | Kỹ năng mềm cho người trẻ | Hải Đăng · nam · Bắc | [Chương 1 ▶](https://tanviet12.github.io/sano-sach-noi/audio/demo/ky-nang-mem-cho-nguoi-tre-1.mp3) |
-| <img src="docs/public/audio/demo/tam-ly-tich-cuc.jpg" width="56" alt=""> | Tâm lý tích cực | Trúc Ly · nữ · Bắc | [Chương 1 ▶](https://tanviet12.github.io/sano-sach-noi/audio/demo/tam-ly-tich-cuc-1.mp3) |
-| <img src="docs/public/audio/demo/khoi-nghiep-tu-so-0.jpg" width="56" alt=""> | Khởi nghiệp từ số 0 | Thái Sơn · nam · Nam | [Chương 1 ▶](https://tanviet12.github.io/sano-sach-noi/audio/demo/khoi-nghiep-tu-so-0-1.mp3) |
-| <img src="docs/public/audio/demo/tai-chinh-ca-nhan-co-ban.jpg" width="56" alt=""> | Tài chính cá nhân cơ bản | Thục Đoan · nữ · Nam | [Chương 1 ▶](https://tanviet12.github.io/sano-sach-noi/audio/demo/tai-chinh-ca-nhan-co-ban-1.mp3) |
-| <img src="docs/public/audio/demo/lanh-dao-cho-quan-ly-moi.jpg" width="56" alt=""> | Lãnh đạo cho quản lý mới | Ngọc Trân · nữ · Trung | [Chương 1 ▶](https://tanviet12.github.io/sano-sach-noi/audio/demo/lanh-dao-cho-quan-ly-moi-1.mp3) |
+| <img src="docs/public/audio/demo/ky-nang-mem-cho-nguoi-tre.jpg" width="56" alt=""> | Kỹ năng mềm cho người trẻ | Hải Đăng · nam · Bắc | [Chương 1 ▶](https://sanobook.com/audio/demo/ky-nang-mem-cho-nguoi-tre-1.mp3) |
+| <img src="docs/public/audio/demo/tam-ly-tich-cuc.jpg" width="56" alt=""> | Tâm lý tích cực | Trúc Ly · nữ · Bắc | [Chương 1 ▶](https://sanobook.com/audio/demo/tam-ly-tich-cuc-1.mp3) |
+| <img src="docs/public/audio/demo/khoi-nghiep-tu-so-0.jpg" width="56" alt=""> | Khởi nghiệp từ số 0 | Thái Sơn · nam · Nam | [Chương 1 ▶](https://sanobook.com/audio/demo/khoi-nghiep-tu-so-0-1.mp3) |
+| <img src="docs/public/audio/demo/tai-chinh-ca-nhan-co-ban.jpg" width="56" alt=""> | Tài chính cá nhân cơ bản | Thục Đoan · nữ · Nam | [Chương 1 ▶](https://sanobook.com/audio/demo/tai-chinh-ca-nhan-co-ban-1.mp3) |
+| <img src="docs/public/audio/demo/lanh-dao-cho-quan-ly-moi.jpg" width="56" alt=""> | Lãnh đạo cho quản lý mới | Ngọc Trân · nữ · Trung | [Chương 1 ▶](https://sanobook.com/audio/demo/lanh-dao-cho-quan-ly-moi-1.mp3) |
 
 Giọng đọc do [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) tạo (xem mục [Cảm ơn](#cảm-ơn)). Bìa sách do Sano tự vẽ theo tên sách.
 
@@ -66,9 +66,9 @@ Giọng đọc do [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) tạo (xe
 
 ## Nghe cuốn hơn nhờ AI viết lại
 
-Văn viết để đọc bằng mắt, đọc to lên thường nghe chán. Ở bước **Cách đọc**, chọn **Làm mượt** (giữ nguyên ý, đổi bảng, hình, danh sách thành lời) hoặc **Viết lại thành văn sách nói** (kể như người kể chuyện, chương ngắn, cuối chương có ba ý cần nhớ). Sano đưa sẵn prompt cho Claude, ChatGPT hoặc Gemini, bản miễn phí cũng được. Nghe mẫu ba cách: [cấp 1](https://tanviet12.github.io/sano-sach-noi/audio/cach-doc-cap-1.mp3) · [cấp 2](https://tanviet12.github.io/sano-sach-noi/audio/cach-doc-cap-2.mp3) · [cấp 3](https://tanviet12.github.io/sano-sach-noi/audio/cach-doc-cap-3.mp3).
+Văn viết để đọc bằng mắt, đọc to lên thường nghe chán. Ở bước **Cách đọc**, chọn **Làm mượt** (giữ nguyên ý, đổi bảng, hình, danh sách thành lời) hoặc **Viết lại thành văn sách nói** (kể như người kể chuyện, chương ngắn, cuối chương có ba ý cần nhớ). Sano đưa sẵn prompt cho Claude, ChatGPT hoặc Gemini, bản miễn phí cũng được. Nghe mẫu ba cách: [cấp 1](https://sanobook.com/audio/cach-doc-cap-1.mp3) · [cấp 2](https://sanobook.com/audio/cach-doc-cap-2.mp3) · [cấp 3](https://sanobook.com/audio/cach-doc-cap-3.mp3).
 
-**Tặng kèm [skill làm sách nói](skills/)** cho Claude và ChatGPT: nạp một lần, lần sau chỉ cần đính kèm file Word và gõ "Làm file sách nói dùng skill sano-sach-noi (cấp độ 3)". [Tải skill](https://tanviet12.github.io/sano-sach-noi/skill/sano-sach-noi.zip) · [cách nạp](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu).
+**Tặng kèm [skill làm sách nói](skills/)** cho Claude và ChatGPT: nạp một lần, lần sau chỉ cần đính kèm file Word và gõ "Làm file sách nói dùng skill sano-sach-noi (cấp độ 3)". [Tải skill](https://sanobook.com/skill/sano-sach-noi.zip) · [cách nạp](https://sanobook.com/lam-muot-tai-lieu).
 
 ## Thư viện và Hành trình nghe
 
@@ -89,7 +89,7 @@ Văn viết để đọc bằng mắt, đọc to lên thường nghe chán. Ở 
   </tr>
 </table>
 
-Một file M4B có mục lục chương, tên sách, bìa, khoảng 29 MB cho mỗi giờ nghe. Nghe không cần mạng. Ảnh CarPlay chụp trên xe thật. Hướng dẫn: [nghe trên điện thoại](https://tanviet12.github.io/sano-sach-noi/nghe-tren-dien-thoai) · [nghe khi lái xe ô tô](https://tanviet12.github.io/sano-sach-noi/nghe-khi-lai-xe).
+Một file M4B có mục lục chương, tên sách, bìa, khoảng 29 MB cho mỗi giờ nghe. Nghe không cần mạng. Ảnh CarPlay chụp trên xe thật. Hướng dẫn: [nghe trên điện thoại](https://sanobook.com/nghe-tren-dien-thoai) · [nghe khi lái xe ô tô](https://sanobook.com/nghe-khi-lai-xe).
 
 ## Tải về
 
@@ -99,7 +99,7 @@ Một file M4B có mục lục chương, tên sách, bìa, khoảng 29 MB cho m�
 | **macOS** 14+ (Intel: 13+) | [Sano .dmg](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.17/Sano-0.1.17-macos-universal.dmg) | Apple Silicon và Intel |
 | **Linux** x86_64 | [Sano .AppImage](https://github.com/tanviet12/sano-sach-noi/releases/download/v0.1.17/Sano-0.1.17-linux-amd64.AppImage) | cần WebKitGTK 4.1 |
 
-Lần mở đầu, Sano tự tải bộ đọc giọng Việt về máy (khoảng 1 GB, chỉ một lần). App chưa ký số nên lần đầu mở: macOS → Cài đặt hệ thống → Quyền riêng tư & Bảo mật → **Vẫn mở**; Windows → **Thông tin thêm** → **Vẫn chạy** ([chi tiết](https://tanviet12.github.io/sano-sach-noi/mo-app-lan-dau)). Kiểm file bằng `SHA256SUMS` trong [bản phát hành](https://github.com/tanviet12/sano-sach-noi/releases/latest); mọi bản cài build trên GitHub Actions từ thẻ phiên bản. Tất cả phiên bản: [Releases](https://github.com/tanviet12/sano-sach-noi/releases).
+Lần mở đầu, Sano tự tải bộ đọc giọng Việt về máy (khoảng 1 GB, chỉ một lần). App chưa ký số nên lần đầu mở: macOS → Cài đặt hệ thống → Quyền riêng tư & Bảo mật → **Vẫn mở**; Windows → **Thông tin thêm** → **Vẫn chạy** ([chi tiết](https://sanobook.com/mo-app-lan-dau)). Kiểm file bằng `SHA256SUMS` trong [bản phát hành](https://github.com/tanviet12/sano-sach-noi/releases/latest); mọi bản cài build trên GitHub Actions từ thẻ phiên bản. Tất cả phiên bản: [Releases](https://github.com/tanviet12/sano-sach-noi/releases).
 
 > Repo không kèm sách nào ngoài 5 cuốn mẫu tự viết. Xem [Bản quyền và trách nhiệm](#bản-quyền-và-trách-nhiệm) trước khi dùng.
 
@@ -189,7 +189,7 @@ go run ./cmd/sano-docx2tts -h                                                 # 
 
 ### Tài liệu
 
-**Trang hướng dẫn: [tanviet12.github.io/sano-sach-noi](https://tanviet12.github.io/sano-sach-noi)** (cài đặt, tạo sách, nghe thử, câu hỏi thường gặp). Mã nguồn trang ở `docs/` (VitePress): `make docs-dev` để xem khi sửa, `make docs-build` để kiểm link gãy.
+**Trang hướng dẫn: [sanobook.com](https://sanobook.com)** (cài đặt, tạo sách, nghe thử, câu hỏi thường gặp). Mã nguồn trang ở `docs/` (VitePress): `make docs-dev` để xem khi sửa, `make docs-build` để kiểm link gãy.
 
 - Ba cách đọc, prompt và skill cho Claude, ChatGPT, Gemini: [`docs/lam-muot-tai-lieu.md`](docs/lam-muot-tai-lieu.md) · prompt ở [`docs/prompts/`](docs/prompts/) · skill ở [`skills/`](skills/)
 - Đọc giọng bằng VieNeu-TTS (dòng lệnh): [`docs/tts-build-guide.md`](docs/tts-build-guide.md)

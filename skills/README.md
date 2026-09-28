@@ -1,18 +1,18 @@
 # Skill làm sách nói cho AI
 
-Skill giúp Claude hoặc ChatGPT biến tài liệu của bạn thành bản đọc cho sách nói, rồi trả về file Word có sẵn chương, mục để nạp vào [Sano](https://tanviet12.github.io/sano-sach-noi). Có ba việc:
+Skill giúp Claude hoặc ChatGPT biến tài liệu của bạn thành bản đọc cho sách nói, rồi trả về file Word có sẵn chương, mục để nạp vào [Sano](https://sanobook.com). Có ba việc:
 
 - **Cấp độ 3:** viết lại thành văn sách nói, như người kể: chuyện trước, lý thuyết sau, chương ngắn, cuối chương có ba ý cần nhớ.
 - **Cấp độ 2:** làm mượt, giữ nguyên ý: đổi bảng, hình, danh sách, chữ viết tắt thành lời.
 - **Soát lại:** đối chiếu bản viết lại với bản gốc, bổ sung chỗ mất ý, sửa chỗ tự thêm.
 
-Hướng dẫn đầy đủ, có ảnh: [Ba cách đọc](https://tanviet12.github.io/sano-sach-noi/lam-muot-tai-lieu).
+Hướng dẫn đầy đủ, có ảnh: [Ba cách đọc](https://sanobook.com/lam-muot-tai-lieu).
 
 ## Tải về
 
 | File | Dùng cho |
 |---|---|
-| [`sano-sach-noi.zip`](https://tanviet12.github.io/sano-sach-noi/skill/sano-sach-noi.zip) (thư mục [`sano-sach-noi/`](sano-sach-noi/SKILL.md)) | Claude (mọi gói), ChatGPT có mục Skills, Claude Code |
+| [`sano-sach-noi.zip`](https://sanobook.com/skill/sano-sach-noi.zip) (thư mục [`sano-sach-noi/`](sano-sach-noi/SKILL.md)) | Claude (mọi gói), ChatGPT có mục Skills, Claude Code |
 | [`sano-huong-dan-ai.txt`](sano-huong-dan-ai.txt) | Dự án (Project) của ChatGPT chưa có mục Skills |
 
 Trong phần mềm Sano: bước **Tạo sách nói** → **Cách đọc** → chọn cấp 2 hoặc 3 → **Nạp skill cho Claude / ChatGPT** cũng tải được hai file này.

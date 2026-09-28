@@ -5,7 +5,7 @@ import { defineConfig, type HeadConfig } from 'vitepress'
 // Bám khuôn Chat-Quality-Agent/docs; giao diện theo wireframe đã duyệt
 // desktop/frontend/src/wireframes/WfLanding.vue + WfDocsPage.vue.
 
-const SITE = 'https://tanviet12.github.io/sano-sach-noi/'
+const SITE = 'https://sanobook.com/'
 const REPO = 'https://github.com/tanviet12/sano-sach-noi'
 const SITE_TITLE = 'Sano – Tạo sách nói bằng AI từ file Word'
 const SITE_DESC =
@@ -61,7 +61,7 @@ export default defineConfig({
   title: SITE_TITLE,
   titleTemplate: ':title – Sano',
   description: SITE_DESC,
-  base: '/sano-sach-noi/',
+  base: '/',
   cleanUrls: true,
   lastUpdated: true,
   // demo-books: văn bản thô để render audio mẫu; prompts: lời nhắc mẫu app nhúng (?raw)
@@ -75,8 +75,8 @@ export default defineConfig({
   },
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/sano-sach-noi/favicon.svg' }],
-    ['link', { rel: 'apple-touch-icon', href: '/sano-sach-noi/og-image.png' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ['link', { rel: 'apple-touch-icon', href: '/og-image.png' }],
     ['meta', { name: 'theme-color', content: '#c60505' }],
     ['meta', { name: 'google-site-verification', content: 'bt9HLADxcVs75XtEjF_0izZDGD3qOJRO4Zd2gWyMvbo' }],
     ['meta', { property: 'og:type', content: 'website' }],

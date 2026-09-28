@@ -17,7 +17,7 @@ Sano làm mục lục dựa vào **kiểu chữ của tiêu đề**: mỗi chư�
 
 Cách nhanh nhất là làm theo **file Word mẫu**: đã đặt sẵn đúng kiểu tiêu đề, bên trong có lời hướng dẫn. Mở bằng Word, xoá phần hướng dẫn, dán nội dung của bạn vào. Nạp ngay file mẫu vào Sano cũng tạo được sách để thử.
 
-<a class="sano-btn outline" href="/sano-sach-noi/mau/Mau-sach-noi-Sano.docx" download>Tải file Word mẫu (.docx)</a>
+<a class="sano-btn outline" href="/mau/Mau-sach-noi-Sano.docx" download>Tải file Word mẫu (.docx)</a>
 
 Trong phần mềm, bước **Nạp file** cũng có nút **Tải file Word mẫu**. Tài liệu có bảng, hình, danh sách: xem thêm [Ba cách đọc](./lam-muot-tai-lieu).
 

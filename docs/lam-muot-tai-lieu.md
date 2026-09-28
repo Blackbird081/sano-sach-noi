@@ -21,9 +21,9 @@ Lần đầu Sano chọn sẵn **cấp 1**. Không chắc thì: sách hay tài l
 
 Cùng một ý, viết theo ba cách, đọc bằng giọng Hải Đăng. Trong phần mềm, mỗi cấp cũng có nút **Nghe mẫu**.
 
-<p><b>Cấp 1 · Đọc nguyên văn</b><br><audio controls preload="none" src="/sano-sach-noi/audio/cach-doc-cap-1.mp3"></audio></p>
-<p><b>Cấp 2 · Làm mượt</b><br><audio controls preload="none" src="/sano-sach-noi/audio/cach-doc-cap-2.mp3"></audio></p>
-<p><b>Cấp 3 · Viết lại thành văn sách nói</b><br><audio controls preload="none" src="/sano-sach-noi/audio/cach-doc-cap-3.mp3"></audio></p>
+<p><b>Cấp 1 · Đọc nguyên văn</b><br><audio controls preload="none" src="/audio/cach-doc-cap-1.mp3"></audio></p>
+<p><b>Cấp 2 · Làm mượt</b><br><audio controls preload="none" src="/audio/cach-doc-cap-2.mp3"></audio></p>
+<p><b>Cấp 3 · Viết lại thành văn sách nói</b><br><audio controls preload="none" src="/audio/cach-doc-cap-3.mp3"></audio></p>
 
 ## Nhờ AI làm cấp 2 hoặc cấp 3
 
@@ -48,8 +48,8 @@ Thỉnh thoảng AI trả lời "không giúp được" khi chưa đọc xong fi
 Làm sách thường xuyên thì nạp skill làm sách nói của Sano cho AI một lần. Lần sau chỉ cần đính kèm file Word và gõ một câu có sẵn, không phải dán prompt. Skill miễn phí, tải ngay ở đây, hoặc trong phần mềm bấm **Nạp skill cho Claude** (hoặc ChatGPT) ở màn nhờ AI.
 
 <p>
-  <a class="sano-btn brand" href="/sano-sach-noi/skill/sano-sach-noi.zip" download>Tải skill sano-sach-noi.zip</a>
-  <a class="sano-btn outline" href="/sano-sach-noi/skill/sano-huong-dan-ai.txt" download>Tải sano-huong-dan-ai.txt (Dự án ChatGPT)</a>
+  <a class="sano-btn brand" href="/skill/sano-sach-noi.zip" download>Tải skill sano-sach-noi.zip</a>
+  <a class="sano-btn outline" href="/skill/sano-huong-dan-ai.txt" download>Tải sano-huong-dan-ai.txt (Dự án ChatGPT)</a>
 </p>
 
 Mã nguồn skill ở thư mục [`skills/`](https://github.com/tanviet12/sano-sach-noi/tree/main/skills) trên GitHub. Giới thiệu đầy đủ về skill, gửi link cho người khác: [Skill AI làm sách nói](./skill-ai).

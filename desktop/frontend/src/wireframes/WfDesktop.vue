@@ -26,7 +26,7 @@ const selectedVoice = ref('Ly')
 const playingSample = ref<string | null>(null)
 const renderDone = ref(false)
 // Link ngoài (app thật mở bằng trình duyệt mặc định)
-const DOCS = 'https://tanviet12.github.io/sano-sach-noi'
+const DOCS = 'https://sanobook.com'
 const REPO = 'https://github.com/tanviet12/sano-sach-noi'
 const AUTHOR_FB = 'https://www.facebook.com/buitanviet'
 // Cập nhật app: 'closed' | 'info' | 'downloading' | 'ready' | 'error'

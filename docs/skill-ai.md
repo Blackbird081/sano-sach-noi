@@ -10,8 +10,8 @@ Tài liệu viết để **đọc bằng mắt** thường khó nghe: bảng bi�
 Nạp skill **một lần**. Mỗi lần làm sách chỉ cần đính kèm file Word và gõ một câu, không phải dán prompt dài.
 
 <div class="sano-actions">
-  <a class="sano-btn brand" href="/sano-sach-noi/skill/sano-sach-noi.zip" download>Tải skill sano-sach-noi.zip</a>
-  <a class="sano-btn outline" href="/sano-sach-noi/skill/sano-huong-dan-ai.txt" download>Tải sano-huong-dan-ai.txt (Dự án ChatGPT)</a>
+  <a class="sano-btn brand" href="/skill/sano-sach-noi.zip" download>Tải skill sano-sach-noi.zip</a>
+  <a class="sano-btn outline" href="/skill/sano-huong-dan-ai.txt" download>Tải sano-huong-dan-ai.txt (Dự án ChatGPT)</a>
 </div>
 
 Miễn phí, mã nguồn mở. Mã nguồn skill ở thư mục [`skills/`](https://github.com/tanviet12/sano-sach-noi/tree/main/skills) trên GitHub.

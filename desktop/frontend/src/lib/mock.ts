@@ -3,7 +3,7 @@
 // đều đọc thật qua backend.ts.
 import type { LibraryInfo, Outline, Voice } from './backend'
 
-export const DOCS = 'https://tanviet12.github.io/sano-sach-noi'
+export const DOCS = 'https://sanobook.com'
 export const REPO = 'https://github.com/tanviet12/sano-sach-noi'
 export const AUTHOR_FB = 'https://www.facebook.com/buitanviet'
 
