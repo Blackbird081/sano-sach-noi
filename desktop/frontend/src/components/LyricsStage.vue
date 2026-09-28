@@ -4,8 +4,8 @@
 // trên; người dùng tự cuộn (chuột / vuốt / phím) → ngừng tự cuộn, hiện "Về câu đang đọc".
 // Đổi cỡ cửa sổ không tính là tự cuộn: canh lại câu đang đọc. Bấm câu → nghe từ câu đó.
 // Câu đang đọc 21px đậm, câu khác 17px nhạt hơn (anh Việt: 23px đậm cả loạt nhìn nặng).
-// D18: ngay dưới câu đang đọc có "Chia sẻ câu này" · "Video 15 giây" — hiện khi di chuột vào
-// lời đọc hoặc lúc tạm dừng (chỗ luôn dành sẵn nên lời không nhảy khi nút hiện).
+// D18: ngay dưới câu đang đọc có "Chia sẻ câu này" · "Video 15 giây" — chỉ hiện khi di chuột vào
+// lời đọc, kể cả lúc tạm dừng (chỗ luôn dành sẵn nên lời không nhảy khi nút hiện).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Clapperboard, Crosshair, Sparkles } from 'lucide-vue-next'
 import { lyricIndex, lyrics, player, seekTime, tracks } from '../lib/player'
@@ -73,8 +73,7 @@ const next = computed(() => tracks.value[player.current + 1])
               si === p.length - 1 && pi < lyrics.paragraphs.length - 1 && 'pb-4',
             ]"
             @click="pickSentence(s.start)" @keydown.enter="pickSentence(s.start)">{{ s.text }}</p>
-            <div v-if="s.index === lyricIndex" class="-mt-1 h-9 flex items-center gap-2 transition-opacity duration-300 focus-within:opacity-100"
-              :class="player.playing ? 'opacity-0 group-hover/stage:opacity-100' : 'opacity-100'">
+            <div v-if="s.index === lyricIndex" class="-mt-1 h-9 flex items-center gap-2 transition-opacity duration-300 opacity-0 group-hover/stage:opacity-100 focus-within:opacity-100">
               <button class="h-8 pl-2.5 pr-3 rounded-full text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-rose-500/30 bg-gradient-to-r from-orange-500 via-rose-600 to-purple-700 hover:brightness-110"
                 title="Ảnh có lời từ câu này, đăng Facebook, Zalo, Story" @click="openShare(s.index)"><Sparkles class="w-3.5 h-3.5" /> Chia sẻ câu này</button>
               <button class="h-8 px-3 rounded-full border border-rose-500/40 text-rose-600 dark:text-rose-400 bg-background/70 text-xs font-semibold flex items-center gap-1.5 hover:bg-rose-500/10"
