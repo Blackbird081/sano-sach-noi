@@ -1,6 +1,6 @@
 # HANDOFF — Sano (sách nói tiếng Việt)
 
-Cập nhật: 28/09/2026 23:30 · Phiên bản phát hành: **0.1.18** (tag đã push 28/09, CI tạo nháp → công khai) · RC cuối trên máy anh: 0.1.18-rc.22
+Cập nhật: 28/09/2026 23:45 · Phiên bản đang phát hành: **0.1.18** (Latest trên GitHub Releases, công khai 28/09) · `main` = bản phát hành, chưa có gì mới sau đó
 
 Phiên mới: đọc file này + `README.md` + `CHANGELOG.md` là đủ nắm trạng thái.
 
@@ -31,6 +31,9 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 
 ## 3a. Phiên tối 28/09 — D17, D18, phát hành 0.1.18
 
+**Đã phát hành 0.1.18:** test Go gốc + desktop và build frontend qua; CI xanh (build 3 hệ, VirusTotal, smoke);
+đã tải dmg kiểm SHA-256, phiên bản, universal. VirusTotal: Windows 2/75 báo nhầm như cũ, Mac/Linux 0/75.
+
 - **D17** (`videohub`): hàng nút màn nghe; "Tạo video" một hộp, đầu hộp `components/VideoKindTabs.vue` chọn Video ngắn
   (ShareDialog phần video) / Video cả cuốn (BookVideoDialog), cùng cỡ 1060×690, nhớ loại (`lib/video.ts`, `sano.video.kind`).
   Hộp Chia sẻ chỉ còn ảnh. Bánh răng bỏ "Tạo video cả cuốn…".
@@ -44,7 +47,7 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
   riêng trong scratchpad (symlink node_modules) rồi `git worktree remove`. `/Applications/Sano.app` cùng bundle id:
   đang chạy thì `open` RC chỉ đưa app cũ lên trước — phải ⌘Q trước.
 
-## 3. Phiên 28/09 — nhiều tính năng mới trên `main` (26 commit từ `6766b1f`), CHƯA phát hành, CHƯA push
+## 3. Phiên 28/09 — các tính năng của 0.1.18 (đã phát hành)
 
 RC mới nhất đang chạy trên máy anh Việt: `desktop/build/bin/Sano.app` = **0.1.18-rc.15** (build bằng
 `scripts/release/build.sh 0.1.18-rc.N darwin/arm64`, mỗi lần ghi đè cùng chỗ). Đã có `CHANGELOG` 0.1.18 chưa viết.
@@ -92,9 +95,8 @@ RC mới nhất đang chạy trên máy anh Việt: `desktop/build/bin/Sano.app`
    Còn: anh tích Enforce HTTPS; Search Console thêm property Domain `sanobook.com` + nộp sitemap; giữ property cũ 3–6 tháng.
 5. **Chưa kiểm tự động được (cửa sổ hệ điều hành):** Lưu ảnh / Lưu video / AirDrop / Mở thư mục — nhờ anh bấm thử.
    Sao chép ảnh trên Windows / Linux (API trình duyệt) chưa thử máy thật.
-6. **Phát hành 0.1.18**: viết `CHANGELOG.md` ngắn cho người dùng (các mục trên), `VERSION`, link `README.md`, commit
-   `chore: phát hành v0.1.18`, push, tag, CI, công khai (mục 2). **Chưa được lệnh push — hỏi anh trước.**
-7. Đề xuất chưa làm: thêm nút "Tạo video" cạnh "Nghe trên điện thoại" (anh từng không tìm thấy mục trong bánh răng).
+6. ~~Phát hành 0.1.18~~ — XONG 28/09 (mục 3a).
+7. ~~Nút "Tạo video" cạnh "Nghe trên điện thoại"~~ — XONG (D17, D18).
 8. Ghi chú kỹ thuật: bước vẽ khung hình video chạy ở giao diện (đóng hộp vẫn chạy, tắt app thì dừng lượt);
    trong `Tải về/Sano video/` còn video test của phiên này.
 
