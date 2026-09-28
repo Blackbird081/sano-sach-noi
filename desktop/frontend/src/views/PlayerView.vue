@@ -4,13 +4,12 @@
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  Check, ChevronDown, ChevronLeft, Clapperboard, Download, Expand, Share2, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
+  Check, ChevronDown, ChevronLeft, Clapperboard, Download, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
   Image as ImageIcon, Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
 import M4BProgress from '../components/M4BProgress.vue'
-import LyricsPanel from '../components/LyricsPanel.vue'
 import LyricsStage from '../components/LyricsStage.vue'
 import PauseCustomInputs from '../components/PauseCustomInputs.vue'
 import { PAUSE_PRESETS, bookPause, fmtGap, levelLabel, makeSetting, pauseState, setBookPause, type Gaps, type PauseLevel } from '../lib/pause'
@@ -30,8 +29,6 @@ import {
 useM4B()
 
 const actionError = ref('')
-const lyricsOpen = ref(false)
-watch(() => state.playerSlug, () => (lyricsOpen.value = false))
 const tocEl = ref<HTMLElement | null>(null)
 
 // Mục lục tự cuộn tới tiểu mục đang phát (mở màn nghe, chuyển tiểu mục, sang cuốn khác).
@@ -44,15 +41,15 @@ function scrollToCurrent(smooth: boolean) {
 onMounted(() => scrollToCurrent(false))
 watch(() => player.current, () => scrollToCurrent(true))
 watch(() => player.detail?.slug, () => scrollToCurrent(false))
-watch(lyricsOpen, (open) => !open && scrollToCurrent(false))
 
-// Lời đọc phóng to trong khung (wireframe D13): nhớ lựa chọn cho lần mở sau.
-const FRAME_KEY = 'sano.lyricsFrame'
+// Lời đọc phóng to trong khung (wireframe D13): mặc định bật (từ 0.1.18), Thu lại mới về màn
+// nghe thường; nhớ lựa chọn cho lần mở sau. v2: bản cũ mặc định tắt nên không đọc khoá cũ.
+const FRAME_KEY = 'sano.lyricsFrame.v2'
 function loadFrame() {
   try {
-    return localStorage.getItem(FRAME_KEY) === '1'
+    return localStorage.getItem(FRAME_KEY) !== '0'
   } catch {
-    return false
+    return true
   }
 }
 const frameOn = ref(loadFrame())
@@ -225,8 +222,7 @@ async function act(fn: (slug: string) => Promise<void>) {
 </script>
 
 <template>
-  <LyricsPanel v-if="lyricsOpen && player.detail" @close="lyricsOpen = false" />
-  <section v-else class="flex-1 flex min-h-0">
+  <section class="flex-1 flex min-h-0">
     <div class="relative isolate flex-1 flex flex-col p-6 min-w-0 min-h-0">
       <!-- Phóng to (D13): lớp màu bìa thật nhẹ phủ cả cột giữa (bìa phóng to, làm mờ), tan dần về nền app -->
       <div v-if="framed && player.detail" aria-hidden="true" class="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -278,14 +274,8 @@ async function act(fn: (slug: string) => Promise<void>) {
               </p>
               <p class="text-sm text-primary font-medium truncate" :title="track?.title">{{ track?.title }}</p>
             </div>
-            <div class="self-start shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
-              <button class="h-8 rounded-md border border-border bg-background/70 hover:bg-muted hover:text-foreground flex items-center justify-center gap-1.5" :class="compact ? 'w-8' : 'px-2.5'"
-                title="Thu lại màn nghe thường" aria-label="Thu lại" @click="setFrame(false)"><Minimize2 class="w-3.5 h-3.5" /><template v-if="!compact">Thu lại</template></button>
-              <button class="h-8 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 flex items-center justify-center gap-1.5 disabled:opacity-50" :class="compact ? 'w-8' : 'px-2.5'"
-                title="Chia sẻ ảnh có lời từ đoạn hay" aria-label="Chia sẻ ảnh" :disabled="!lyrics" @click="openShare(lyricIndex)"><Share2 class="w-3.5 h-3.5" /><template v-if="!compact">Chia sẻ</template></button>
-              <button class="h-8 w-8 rounded-md border border-border bg-background/70 hover:bg-muted hover:text-foreground grid place-items-center disabled:opacity-50"
-                title="Xem cả lời" aria-label="Xem cả lời" :disabled="!lyrics" @click="lyricsOpen = true"><Expand class="w-3.5 h-3.5" /></button>
-            </div>
+            <button class="self-start shrink-0 h-7 w-7 -mr-1 grid place-items-center rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors"
+              title="Thu lại màn nghe thường" aria-label="Thu lại màn nghe thường" @click="setFrame(false)"><Minimize2 class="w-4 h-4" /></button>
           </div>
           <LyricsStage class="mt-3 flex-1 w-full max-w-2xl" />
         </template>
@@ -314,16 +304,15 @@ async function act(fn: (slug: string) => Promise<void>) {
           </div>
         </div>
         <!-- Chiều cao cố định để không đẩy nút phía dưới; cách xếp Hẹp chỉ 1 dòng.
-             Đầu khung: Phóng to (lời đọc to ngay trong khung, D13) · Xem cả lời (toàn vùng nội dung). -->
+             Bấm vào khung hoặc Phóng to: lời đọc to ngay trong khung (D13). -->
         <div v-if="bookHasLyrics && !framed" class="mt-4 w-full max-w-md shrink-0 rounded-lg border border-border bg-muted/30 px-4 py-3 hover:bg-muted/60">
           <span class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Lời đọc
             <span class="flex items-center gap-3 normal-case font-normal tracking-normal text-primary">
               <button class="flex items-center gap-1 hover:underline" title="Phóng to lời đọc ngay trong khung" @click="setFrame(true)"><Maximize2 class="w-3 h-3" /> Phóng to</button>
-              <button v-if="lyrics" class="hover:underline" @click="lyricsOpen = true">Xem cả lời →</button>
             </span>
           </span>
-          <button class="lyrics-body block w-full text-left disabled:cursor-default" :disabled="!lyrics" @click="lyricsOpen = true">
+          <button class="lyrics-body block w-full text-left disabled:cursor-default" :disabled="!lyrics" title="Phóng to lời đọc" @click="setFrame(true)">
             <template v-if="lyrics">
               <span class="mt-1 text-sm font-medium leading-snug" :class="fit === 'narrow' ? 'h-[1.375em] line-clamp-1' : 'h-[2.75em] line-clamp-2'">{{ lyrics.sentences[lyricIndex]?.text }}</span>
               <span v-if="fit !== 'narrow'" class="mt-0.5 block h-[1.375em] text-sm text-muted-foreground leading-snug line-clamp-1">{{ lyrics.sentences[lyricIndex + 1]?.text }}</span>

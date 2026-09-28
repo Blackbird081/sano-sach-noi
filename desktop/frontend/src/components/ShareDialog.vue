@@ -64,6 +64,7 @@ async function init() {
   }
   const i = Math.min(Math.max(0, shareUI.sentence), ss.length - 1)
   picked.value = [i]
+  centerPicked(i)
   if (shareUI.kind === 'video') autoFill()
   vstate.value = 'idle'
   err.value = ''
@@ -71,7 +72,19 @@ async function init() {
   await prepareCard()
   if (d.coverUrl) cover.value = await loadImage(d.coverUrl)
   redraw()
-  void nextTick(() => listEl.value?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: 'center' }))
+  centerPicked(i)
+}
+// Mở ra là thấy ngay câu đang đọc: cuộn riêng danh sách (không kéo cả hộp) cho câu nằm giữa.
+// Gọi lại sau khi hộp dựng xong và sau khi bìa tải (khung co giãn làm lệch vị trí).
+function centerPicked(i: number) {
+  const go = () => {
+    const list = listEl.value
+    const row = list?.querySelector<HTMLElement>(`[data-i="${i}"]`)
+    if (!list || !row) return
+    const top = row.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop
+    list.scrollTop = Math.max(0, top - (list.clientHeight - row.offsetHeight) / 2)
+  }
+  void nextTick(() => requestAnimationFrame(() => (go(), setTimeout(go, 150))))
 }
 watch(() => shareUI.open, (o) => (o ? void init() : stopPreview()))
 function onKey(e: KeyboardEvent) {
