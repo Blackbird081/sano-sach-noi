@@ -44,6 +44,7 @@ const (
 // Start, dài Dur giây; Silence = đoạn lặng Dur giây (màn tựa, thẻ chương, quãng nghỉ).
 type BookVideoSeg struct {
 	File    string  `json:"file"`
+	Extra   string  `json:"extra"` // mã âm thanh thêm (BookVideoExtras): câu đọc thêm, nhạc hiệu, chuông
 	Start   float64 `json:"start"`
 	Dur     float64 `json:"dur"`
 	Silence bool    `json:"silence"`
@@ -255,6 +256,15 @@ func (a *App) BookVideoFinish(id string, plan BookVideoPlan) error {
 	for i := range plan.Segs {
 		s := &plan.Segs[i]
 		if s.Silence {
+			continue
+		}
+		if s.Extra != "" {
+			p, ok := extraPath(s.Extra)
+			if !ok {
+				bookVideo.mu.Unlock()
+				return errors.New("âm thanh giới thiệu / nhạc hiệu chưa sẵn sàng — thử tạo lại")
+			}
+			s.File = p
 			continue
 		}
 		name := filepath.Base(filepath.FromSlash(s.File))
