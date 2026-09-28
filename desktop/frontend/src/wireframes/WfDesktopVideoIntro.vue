@@ -8,6 +8,7 @@
 // - Câu đọc thêm: dùng chính bộ đọc VieNeu + đúng giọng của cuốn, đọc lúc tạo video (vài giây).
 // - Tiểu mục mở đầu tự có của sách ("Bạn đang nghe sách nói. Cuốn sách: …") được thay bằng lời
 //   giới thiệu mới khi bật, để không đọc trùng.
+// - Sau duyệt: nhạc hiệu nhỏ hơn giọng đọc ~20%; chuông sang chương mặc định tắt.
 // - Nhạc hiệu: bản tổng hợp tạm của Sano (tự tạo, không vướng bản quyền) hoặc file nhạc của người
 //   dùng; khi có nhạc hiệu Sano chính thức thì thay.
 // - Sửa sách → Thông tin & bìa: thêm Dịch giả, Nhà xuất bản (không bắt buộc).
@@ -22,7 +23,7 @@ const view = ref<'video' | 'info'>((q.get('view') as never) || 'video')
 const dark = ref(false)
 const voiceIntro = ref(true)
 const music = ref<'sano' | 'file' | 'none'>('sano')
-const chime = ref(true)
+const chime = ref(false) // anh Việt chốt: chuông mặc định tắt
 const introOn = ref(true)
 const title = 'Chánh niệm, nghệ thuật của sự có mặt'
 const info = ref({ author: 'Bùi Tấn Việt', translator: '', publisher: 'Học Trò Thầy Thành' })

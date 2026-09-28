@@ -22,10 +22,10 @@ function read() {
     return {
       ratio: (v?.ratio === 'tall' ? 'tall' : 'wide') as BVRatio, bg: Number.isInteger(v?.bg) && v.bg >= 0 && v.bg < 5 ? v.bg : 0, intro: v?.intro !== false,
       voice: v?.voice !== false, music: (['sano', 'file', 'none'].includes(v?.music) ? v.music : 'sano') as 'sano' | 'file' | 'none',
-      musicPath: typeof v?.musicPath === 'string' ? v.musicPath : '', chime: v?.chime !== false,
+      musicPath: typeof v?.musicPath === 'string' ? v.musicPath : '', chime: v?.chime2 === true, // chuông mặc định tắt (anh Việt chốt); khoá mới để bỏ lựa chọn bật của bản thử trước
     }
   } catch {
-    return { ratio: 'wide' as BVRatio, bg: 0, intro: true, voice: true, music: 'sano' as const, musicPath: '', chime: true }
+    return { ratio: 'wide' as BVRatio, bg: 0, intro: true, voice: true, music: 'sano' as const, musicPath: '', chime: false }
   }
 }
 const saved = read()
@@ -39,7 +39,7 @@ const musicPath = ref(saved.musicPath)
 const chimeOn = ref(saved.chime)
 watch([ratio, bg, introOn, voiceOn, music, musicPath, chimeOn], () => {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ratio: ratio.value, bg: bg.value, intro: introOn.value, voice: voiceOn.value, music: music.value, musicPath: musicPath.value, chime: chimeOn.value }))
+    localStorage.setItem(KEY, JSON.stringify({ ratio: ratio.value, bg: bg.value, intro: introOn.value, voice: voiceOn.value, music: music.value, musicPath: musicPath.value, chime2: chimeOn.value }))
   } catch {
     // không lưu được thì thôi
   }

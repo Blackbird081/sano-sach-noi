@@ -3,7 +3,7 @@ package main
 // Âm thanh thêm cho video cả cuốn (wireframe D16, mở đầu kiểu Fonos): câu đọc thêm
 // ("Bạn đang nghe sách nói, tạo bằng Sano", giới thiệu sách, lời kết) đọc bằng bộ đọc
 // + đúng giọng của cuốn; nhạc hiệu (bản tổng hợp tạm của Sano, hoặc file nhạc người dùng
-// chọn, cắt ~4,5 giây, lên nhẹ rồi tắt dần); tiếng chuông sang chương. Mỗi thứ ra một
+// chọn, cắt ~4,5 giây, lên nhẹ rồi tắt dần, nhỏ hơn giọng đọc ~20%); tiếng chuông sang chương. Mỗi thứ ra một
 // file mp3 trong ~/Sano/.tam/video-them (nghe thử trong hộp thoại) kèm mã để
 // BookVideoFinish ghép vào; cùng nội dung thì dùng lại, không đọc lại.
 
@@ -169,10 +169,10 @@ func (a *App) BookVideoExtras(req VideoExtrasRequest) ([]VideoExtra, error) {
 	// Nhạc hiệu.
 	switch req.Music {
 	case "sano":
-		id := extraID("music", "sano-v1")
+		id := extraID("music", "sano-v2")
 		path := filepath.Join(dir, "nhac-"+id+".mp3")
 		if !fileExists(path) {
-			if err := synth(ffmpeg, path, sanoJingleExpr, 4.5, "aecho=0.8:0.6:70|140:0.25|0.15,afade=t=in:d=0.35,afade=t=out:st=2.6:d=1.9,loudnorm=I=-20:TP=-2"); err != nil {
+			if err := synth(ffmpeg, path, sanoJingleExpr, 4.5, "aecho=0.8:0.6:70|140:0.25|0.15,afade=t=in:d=0.35,afade=t=out:st=2.6:d=1.9,loudnorm=I=-20:TP=-2,volume=0.8"); err != nil {
 				return nil, fmt.Errorf("tạo nhạc hiệu: %w", err)
 			}
 		}
@@ -185,11 +185,11 @@ func (a *App) BookVideoExtras(req VideoExtrasRequest) ([]VideoExtra, error) {
 		if err != nil || info.IsDir() || !isAudioFile(src) {
 			return nil, errors.New("không đọc được file nhạc đã chọn")
 		}
-		id := extraID("music-file", src, strconv.FormatInt(info.ModTime().UnixNano(), 10), strconv.FormatInt(info.Size(), 10))
+		id := extraID("music-file-v2", src, strconv.FormatInt(info.ModTime().UnixNano(), 10), strconv.FormatInt(info.Size(), 10))
 		path := filepath.Join(dir, "nhac-"+id+".mp3")
 		if !fileExists(path) {
 			if err := runQuietBG(ffmpeg, dir, []string{"-hide_banner", "-loglevel", "error", "-y", "-t", "5", "-i", src, "-vn",
-				"-af", "aresample=44100,aformat=channel_layouts=mono,afade=t=in:d=0.4,afade=t=out:st=3:d=2,loudnorm=I=-20:TP=-2",
+				"-af", "aresample=44100,aformat=channel_layouts=mono,afade=t=in:d=0.4,afade=t=out:st=3:d=2,loudnorm=I=-20:TP=-2,volume=0.8",
 				"-c:a", "libmp3lame", "-b:a", "160k", path}); err != nil {
 				return nil, fmt.Errorf("đọc file nhạc: %w", err)
 			}
