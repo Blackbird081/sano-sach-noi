@@ -16,6 +16,9 @@
 // "<Tên sách> - <Chương>" để không đè video cả cuốn.
 // Bản làm thật (thêm sau duyệt, anh Việt yêu cầu): nghe thử trong danh sách câu — ▶ ở từng câu
 // nghe tiếp từ câu đó (dò đoạn hay), nút "Nghe đoạn đã chọn"; câu đang đọc tô đỏ.
+// Bản làm thật (anh Việt yêu cầu): dưới ô xem trước có trình "Nghe thử như video" — phát nối liền
+// đúng dòng thời gian (trích đoạn → màn tựa → thẻ chương → cả cuốn → màn kết) ngay trong hộp thoại,
+// hình đổi theo câu, tua được; không cần tạo video.
 // Wireframe tĩnh: dữ liệu giả, KHÔNG gọi API.
 import { computed, ref } from 'vue'
 import { Check, ChevronDown, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Mic, Sparkles, Subtitles, Sun, Moon, X } from 'lucide-vue-next'

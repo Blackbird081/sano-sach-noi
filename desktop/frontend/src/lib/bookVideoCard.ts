@@ -133,8 +133,8 @@ function coverShadow(ctx: Ctx, o: SceneCommon, x: number, y: number, w: number, 
   drawBook(ctx, o, x, y, w, h, r)
 }
 
-/** Vẽ một cảnh; `preview.progress` (0–1) tô phần sáng cho bản xem trước. */
-export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, preview: { progress?: number } = {}): SceneResult {
+/** Vẽ một cảnh; bản xem trước tô phần sáng: `progress` (sóng âm trích đoạn), `bar` (tiến độ cả cuốn), 0–1. */
+export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, preview: { progress?: number; bar?: number } = {}): SceneResult {
   const { w: W, h: H, bw, bh } = sceneSize(o.ratio, s.kind)
   canvas.width = W
   canvas.height = H
@@ -236,7 +236,7 @@ export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, p
     ctx.textAlign = 'left'
     block(ctx, s.chapter, x, safeBottom / 2 - 24, w, wide ? 34 : 30, { maxLines: 3, maxH: 130, min: 18, align: 'center', lh: 1.2 })
     const bar = { x: 30, y: bh - 30, w: bw - 60, h: 4 }
-    progressBar(ctx, bar.x, bar.y, bar.w, s.ticks, o.totalLabel)
+    progressBar(ctx, bar.x, bar.y, bar.w, s.ticks, o.totalLabel, preview.bar)
     res.bar = px(bar)
   } else if (s.kind === 'main') {
     if (wide) {
@@ -277,7 +277,7 @@ export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, p
       block(ctx, o.title, x, safeBottom - 30, tw, 12.5, { weight: 600, maxLines: 1 })
     }
     const bar = { x: 30, y: bh - 30, w: bw - 60, h: 4 }
-    progressBar(ctx, bar.x, bar.y, bar.w, s.ticks, o.totalLabel)
+    progressBar(ctx, bar.x, bar.y, bar.w, s.ticks, o.totalLabel, preview.bar)
     res.bar = px(bar)
   } else {
     // Màn kết

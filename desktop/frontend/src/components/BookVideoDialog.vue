@@ -3,15 +3,16 @@
 // (giống file xuất). Phải: phần sách, trích đoạn mở đầu, khung, nền, file kèm; lúc tạo
 // hiện tiến độ theo bước; xong: mở thư mục, chép mô tả YouTube.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Play, Square, Subtitles, Volume2, X } from 'lucide-vue-next'
+import { Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Pause, Play, Square, Subtitles, Volume2, X } from 'lucide-vue-next'
 import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
-import { bv, bvBusy, cancelBookVideo, chapterAt, clock, startBookVideo, CHAPTER_SEC, END_SEC, TITLE_SEC } from '../lib/bookVideo'
+import { bv, bvBusy, buildTimeline, cancelBookVideo, chapterAt, clock, quickLyrics, startBookVideo, CHAPTER_SEC, END_SEC, TITLE_SEC, type BookVideoOptions, type Timeline } from '../lib/bookVideo'
+import { useVideoPreview } from '../lib/videoPreview'
 import { drawScene, type BVRatio, type Scene } from '../lib/bookVideoCard'
 import { BACKGROUNDS, audioBars, loadImage, prepareCard } from '../lib/shareCard'
 import { bookTexts, copyText, errText, openBookVideoFolder, type SectionText } from '../lib/backend'
 import { buildLyrics } from '../lib/lyrics'
-import { lyricIndex, pick, player } from '../lib/player'
+import { lyricIndex, player } from '../lib/player'
 
 const KEY = 'sano.bookVideo'
 function read() {
@@ -121,33 +122,93 @@ watch(introTrack, () => pv.stop())
 watch(() => pv.current.value, (i) => {
   if (i >= 0 && pv.mode.value === 'from') listEl.value?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 })
-watch(() => bv.open, (o) => !o && stopListen())
+watch(() => bv.open, (o) => {
+  if (!o) {
+    pv.stop()
+    vp.pause()
+  }
+})
 
-// Nghe thử như video (không cần tạo): trích đoạn → lặng như màn tựa → trình nghe chính phát
-// từ đầu phần đã chọn (có chữ chạy); hộp thoại tự đóng để nghe.
-const listening = ref<'idle' | 'intro' | 'gap'>('idle')
-let gapTimer = 0
-function startBook() {
-  listening.value = 'idle'
-  pick(span.value.from)
-  bv.open = false
+// Nghe thử như video — ngay trong hộp thoại (không tạo video, không rời hộp): phát nối liền
+// đúng dòng thời gian của video; ô xem trước vẽ khung hình theo giờ đang phát, tua được.
+const vp = useVideoPreview()
+const live = ref(false) // ô xem trước đang theo trình nghe thử
+let tl: Timeline | null = null
+function options(): BookVideoOptions {
+  return {
+    from: span.value.from, to: span.value.to, ratio: ratio.value, bg: bg.value, extras: { ...extras.value },
+    intro: introOn.value && introPicked.value.length ? { track: introTrack.value, from: lo.value, to: hi.value } : null,
+  }
+}
+function buildPreview() {
+  const b = d.value
+  if (!b) return null
+  const lyr = quickLyrics(b, texts.value)
+  // trích đoạn: dùng đúng giờ câu đang hiện trong danh sách chọn
+  if (introLyrics.value) lyr.set(introTrack.value, introLyrics.value)
+  tl = buildTimeline(b, options(), lyr, bars.value.length ? bars.value : Array.from({ length: 48 }, () => 0.35))
+  vp.load(tl.segs)
+  return tl
 }
 function listenLikeVideo() {
-  stopListen()
-  if (introOn.value && introPicked.value.length) {
-    listening.value = 'intro'
-    void pv.play(lo.value, hi.value, () => {
-      listening.value = 'gap'
-      gapTimer = window.setTimeout(startBook, TITLE_SEC * 1000)
-    })
-  } else startBook()
+  const b = d.value
+  if (!b) return
+  pv.stop()
+  if (!live.value || !tl) buildPreview()
+  live.value = true
+  const urls = new Map(b.tracks.map((t) => [t.file, t.url]))
+  vp.play(vp.pos.value, (f) => urls.get(f) ?? f)
 }
-// Bấm ▶ câu khác / dừng giữa trích đoạn → thôi chuỗi nghe thử như video.
-watch(() => pv.playing.value, (p) => !p && listening.value === 'intro' && (listening.value = 'idle'))
 function stopListen() {
-  clearTimeout(gapTimer)
-  if (listening.value !== 'idle') pv.stop()
-  listening.value = 'idle'
+  vp.stop()
+  live.value = false
+  tl = null
+  void nextTick(redraw)
+}
+// Đổi lựa chọn → dòng thời gian khác: dừng nghe thử (bấm lại để nghe bản mới).
+watch([span, introOn, introPicked, introTrack, ratio], () => live.value && stopListen())
+watch(() => pv.playing.value, (p) => p && vp.playing.value && vp.pause()) // ▶ ở một câu: tạm dừng nghe thử
+let lastDraw = 0
+let lastFrame = -1
+watch(() => vp.pos.value, () => {
+  if (!live.value) return
+  const now = performance.now()
+  const k = frameAt(vp.pos.value)
+  if (k === lastFrame && now - lastDraw < 120) return
+  lastDraw = now
+  lastFrame = k
+  drawLive(k)
+})
+function frameAt(t: number) {
+  const f = tl?.frames ?? []
+  let lo2 = 0
+  let hi2 = f.length - 1
+  while (lo2 < hi2) {
+    const m = (lo2 + hi2 + 1) >> 1
+    if (f[m].at <= t) lo2 = m
+    else hi2 = m - 1
+  }
+  return lo2
+}
+function drawLive(k = frameAt(vp.pos.value)) {
+  const b = d.value
+  const f = tl?.frames[k]
+  if (!canvas.value || !b || !f || !tl) return
+  const t = vp.pos.value
+  const introP = tl.introDur ? Math.min(1, t / tl.introDur) : 0
+  const barP = tl.bookEnd > tl.bookStart ? Math.min(1, Math.max(0, (t - tl.bookStart) / (tl.bookEnd - tl.bookStart))) : 0
+  drawScene(canvas.value, { ratio: ratio.value, bg: bg.value, cover: cover.value, title: b.title, voice: b.voice, totalLabel: tl.totalLabel }, f.scene, { progress: introP, bar: barP })
+}
+const liveLabel = computed(() => {
+  if (!live.value || !tl) return ''
+  const f = tl.frames[frameAt(vp.pos.value)]?.scene
+  if (!f) return ''
+  return { intro: 'Trích đoạn', title: 'Màn tựa', chapter: 'Thẻ chương', main: f.kind === 'main' ? f.section : '', end: 'Màn kết', thumb: '' }[f.kind]
+})
+function seekTo(e: MouseEvent) {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  vp.seek(((e.clientX - r.left) / r.width) * vp.total.value)
+  drawLive()
 }
 async function init() {
   const b = d.value
@@ -244,10 +305,11 @@ function sample(): Scene {
 function redraw() {
   const b = d.value
   if (!canvas.value || !b) return
+  if (live.value) return drawLive()
   drawScene(canvas.value, { ratio: ratio.value, bg: bg.value, cover: cover.value, title: b.title, voice: b.voice, totalLabel: clock(bookSec.value) }, sample(), { progress: tab.value === 'intro' ? 0.4 : undefined })
 }
 watch([tab, ratio, bg, span, introPicked, introTrack, canvas, texts], () => void nextTick(redraw))
-const previewWide = computed(() => ratio.value === 'wide' || tab.value === 'thumb')
+const previewWide = computed(() => ratio.value === 'wide' || (tab.value === 'thumb' && !live.value))
 
 // ── Ước lượng ──
 const totalSec = computed(() => bookSec.value + (introOn.value ? introDur.value : 0) + TITLE_SEC + END_SEC + chapterCount.value * CHAPTER_SEC)
@@ -319,11 +381,28 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
   <div v-if="bv.open && d" class="absolute inset-0 bg-background/70 backdrop-blur-sm grid place-items-center z-20" @mousedown.self="close">
     <div role="dialog" aria-modal="true" aria-labelledby="bv-title" class="relative w-[1060px] max-w-[calc(100vw-2rem)] h-[690px] max-h-[calc(100vh-2rem)] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl flex overflow-hidden">
       <!-- Trái: xem trước -->
-      <div class="w-[540px] shrink-0 bg-muted/50 flex flex-col items-center justify-center gap-3 p-5 min-h-0">
+      <div class="w-[540px] max-w-[48%] shrink-0 bg-muted/50 flex flex-col items-center justify-center gap-3 p-5 min-h-0">
         <div class="flex gap-1 p-1 rounded-lg bg-muted text-xs shrink-0">
-          <button v-for="s in tabs" :key="s.key" class="h-7 px-2.5 rounded-md" :class="[tab === s.key ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground', s.key === 'intro' && !introOn && 'line-through opacity-50']" @click="tab = s.key">{{ s.label }}</button>
+          <button v-for="s in tabs" :key="s.key" class="h-7 px-2.5 rounded-md" :class="[tab === s.key && !live ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground', s.key === 'intro' && !introOn && 'line-through opacity-50']" @click="live && stopListen(); tab = s.key">{{ s.label }}</button>
         </div>
-        <canvas ref="canvas" class="rounded-xl shadow-2xl object-contain shrink min-h-0" :class="previewWide ? 'w-[500px] h-[281px]' : 'w-[264px] h-[470px] max-h-[calc(100vh-11rem)]'" aria-label="Xem trước cảnh video"></canvas>
+        <canvas ref="canvas" class="rounded-xl shadow-2xl object-contain shrink min-h-0" :class="previewWide ? 'w-[500px] max-w-full h-auto' : 'h-[470px] max-h-[calc(100vh-13rem)] w-auto'" aria-label="Xem trước cảnh video"></canvas>
+        <!-- Nghe thử như video: phát / dừng, tua, giờ -->
+        <div class="w-full max-w-[500px] shrink-0 flex items-center gap-2.5">
+          <button class="h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground grid place-items-center shadow disabled:opacity-50" :disabled="!d.tracks.length || busy"
+            :aria-label="vp.playing.value ? 'Dừng nghe thử' : 'Nghe thử như video'" :title="vp.playing.value ? 'Dừng nghe thử' : 'Nghe thử như video — không cần tạo'" @click="vp.playing.value ? vp.pause() : listenLikeVideo()">
+            <Pause v-if="vp.playing.value" class="w-4 h-4" /><Play v-else class="w-4 h-4 ml-0.5" />
+          </button>
+          <div class="flex-1 min-w-0">
+            <div class="h-1.5 rounded-full bg-muted-foreground/20 cursor-pointer relative" role="slider" aria-label="Vị trí nghe thử" :aria-valuenow="Math.round(vp.pos.value)" @click="live ? seekTo($event) : (listenLikeVideo(), vp.pause(), seekTo($event))">
+              <div class="absolute inset-y-0 left-0 rounded-full bg-primary" :style="{ width: (vp.total.value ? (vp.pos.value / vp.total.value) * 100 : 0) + '%' }"></div>
+            </div>
+            <div class="mt-1 flex justify-between gap-2 text-[11px] text-muted-foreground tabular-nums">
+              <span class="truncate">{{ live ? liveLabel : 'Nghe thử như video — bấm ▶, không cần tạo' }}</span>
+              <span class="shrink-0">{{ clock(vp.pos.value) }} / {{ clock(live ? vp.total.value : totalSec) }}</span>
+            </div>
+          </div>
+          <button v-if="live" class="h-8 w-8 shrink-0 rounded-md grid place-items-center text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Thôi nghe thử" title="Thôi nghe thử" @click="stopListen"><Square class="w-3.5 h-3.5" /></button>
+        </div>
         <p class="text-[11px] text-muted-foreground text-center max-w-[500px] shrink-0">
           {{ { intro: 'Trích đoạn: câu đổi theo lời đọc, sóng âm sáng dần — người xem nghe thử trước khi vào sách.', title: `Màn tựa ${TITLE_SEC} giây.`, main: 'Suốt cuốn: câu đang đọc chữ to, câu kế nhạt; tên chương; thanh tiến độ cả cuốn có vạch chương, sáng dần theo thời gian. Mỗi chương mở bằng thẻ tên chương.', end: `Màn kết ${END_SEC} giây, kêu gọi dùng Sano.`, thumb: 'Ảnh thumbnail 1280×720 (file riêng, luôn khung ngang): chữ to, đọc được cả khi YouTube thu nhỏ.' }[tab] }}
         </p>
@@ -371,7 +450,7 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
                 </select>
                 <button class="h-8 px-2.5 rounded-md border text-xs flex items-center gap-1.5 shrink-0" :class="pv.playing.value && pv.mode.value === 'span' ? 'border-primary text-primary bg-primary/5' : 'border-border hover:bg-muted'"
                   :disabled="!introPicked.length" @click="pv.playing.value && pv.mode.value === 'span' ? pv.stop() : pv.play(lo, hi)">
-                  <component :is="pv.playing.value && pv.mode.value === 'span' ? Square : Play" class="w-3.5 h-3.5" /> Nghe đoạn đã chọn
+                  <component :is="pv.playing.value && pv.mode.value === 'span' ? Square : Play" class="w-3.5 h-3.5" /> Nghe đoạn
                 </button>
                 <span class="text-muted-foreground tabular-nums shrink-0">{{ introPicked.length }}/{{ MAX_INTRO }} câu · {{ Math.round(introDur) }} giây</span>
               </div>
@@ -464,18 +543,8 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
 
         <div class="shrink-0 border-t border-border px-5 py-3.5">
           <template v-if="!busy && bv.step !== 'done'">
-            <div class="flex gap-2">
-              <Button variant="outline" class="shrink-0" :class="listening !== 'idle' ? 'border-primary text-primary bg-primary/5' : ''" :disabled="!d.tracks.length"
-                title="Nghe theo đúng thứ tự của video: trích đoạn, rồi cả phần sách từ đầu — không cần tạo video" @click="listening === 'idle' ? listenLikeVideo() : stopListen()">
-                <component :is="listening === 'idle' ? Play : Square" class="w-4 h-4" /> {{ listening === 'idle' ? 'Nghe thử như video' : 'Dừng nghe thử' }}
-              </Button>
-              <Button class="flex-1" :disabled="!d.tracks.length" @click="create"><Clapperboard class="w-4 h-4" /> Tạo video {{ Math.round(totalSec / 60) }} phút</Button>
-            </div>
-            <p class="mt-2 text-[11px] text-muted-foreground text-center">
-              <template v-if="listening === 'intro'">Đang nghe trích đoạn · sau đó phát phần sách từ đầu ở màn nghe</template>
-              <template v-else-if="listening === 'gap'">Hết trích đoạn · {{ TITLE_SEC }} giây nữa phát phần sách từ đầu…</template>
-              <template v-else>MP4 {{ ratio === 'wide' ? '1920×1080' : '1080×1920' }} · khoảng {{ estMB }} MB · tạo trên máy, không cần mạng.</template>
-            </p>
+            <Button class="w-full" :disabled="!d.tracks.length" @click="create"><Clapperboard class="w-4 h-4" /> Tạo video {{ Math.round(totalSec / 60) }} phút</Button>
+            <p class="mt-2 text-[11px] text-muted-foreground text-center">MP4 {{ ratio === 'wide' ? '1920×1080' : '1080×1920' }} · khoảng {{ estMB }} MB · tạo trên máy, không cần mạng.</p>
           </template>
           <Button v-else-if="busy" variant="outline" class="w-full" @click="cancelBookVideo">Huỷ</Button>
           <div v-else class="flex gap-2">

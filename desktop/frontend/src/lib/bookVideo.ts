@@ -122,9 +122,150 @@ function srtTime(sec: number) {
   return `${p(h)}:${p(m)}:${p(s)},${p(ms % 1000, 3)}`
 }
 
-interface Frame {
+export interface Frame {
   scene: Scene
   sec: number
+  at: number // giây bắt đầu trong video
+}
+
+export interface Timeline {
+  segs: BookVideoSeg[]
+  frames: Frame[]
+  srt: { a: number; b: number; t: string }[]
+  marks: { t: number; label: string }[]
+  introDur: number
+  bookStart: number
+  bookEnd: number
+  total: number
+  totalLabel: string
+  minutes: number
+  badge: string
+  outName: string
+  partial: boolean
+  part: string
+}
+
+/** Đầu và độ dài trích đoạn (giây trong tiểu mục) theo giờ câu đã tính. */
+export function introSpan(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>) {
+  if (!o.intro) return null
+  const it = d.tracks[o.intro.track]
+  const ss = lyr.get(o.intro.track)?.sentences ?? []
+  const a = ss[o.intro.from]?.start ?? 0
+  const end = o.intro.to + 1 < ss.length ? ss[o.intro.to + 1].start : it.durationSec
+  return { track: it, start: a, dur: Math.max(1, end - a) }
+}
+
+/**
+ * Dòng thời gian của video: đoạn tiếng + khung hình (dùng chung cho Tạo video và Nghe thử
+ * như video trong hộp thoại, nên nghe thử khớp đúng video sẽ tạo).
+ */
+export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>, introBars: number[]): Timeline {
+  const range = d.tracks.slice(o.from, o.to + 1)
+  const segs: BookVideoSeg[] = []
+  const frames: Frame[] = []
+  const srt: Timeline['srt'] = []
+  const marks: Timeline['marks'] = []
+  let t = 0
+  let ft = 0 // giờ bắt đầu khung hình kế
+  const frame = (scene: Scene, sec: number) => {
+    frames.push({ scene, sec, at: ft })
+    ft += sec
+  }
+  const silence = (dur: number) => segs.push({ file: '', start: 0, dur, silence: true })
+  let introDur = 0
+  const sp = introSpan(d, o, lyr)
+  if (o.intro && sp) {
+    const ss = lyr.get(o.intro.track)?.sentences ?? []
+    const endAt = (i: number) => (i + 1 < ss.length ? ss[i + 1].start : sp.track.durationSec)
+    introDur = sp.dur
+    const pick = ss.slice(o.intro.from, o.intro.to + 1)
+    const reserve = Math.max(1, ...pick.map((x) => introLines(o.ratio, x.text)))
+    segs.push({ file: sp.track.file, start: sp.start, dur: introDur, silence: false })
+    pick.forEach((x, k) => {
+      const sec = endAt(o.intro!.from + k) - x.start
+      frame({ kind: 'intro', line: x.text, bars: introBars, reserve }, sec)
+      srt.push({ a: t, b: t + sec, t: x.text })
+      t += sec
+    })
+    t = introDur
+    ft = introDur
+    marks.push({ t: 0, label: 'Trích đoạn' })
+  }
+  const bookSec = range.reduce((n, x) => n + x.durationSec, 0)
+  const minutes = Math.max(1, Math.round(bookSec / 60))
+  const chapters = range.filter((_, k) => chapterAt(d, o.from + k, o.from)).length
+  const meta = `Giọng ${d.voice} · ${minutes} phút${chapters ? ` · ${chapters} chương` : ''}`
+  // Vài chương: ghi "Nghe thử", tên file / thư mục kèm tên chương để không đè video cả cuốn.
+  const partial = o.from > 0 || o.to < d.tracks.length - 1
+  const badge = partial ? 'NGHE THỬ SÁCH NÓI' : 'SÁCH NÓI ĐẦY ĐỦ'
+  const names = range.map((_, k) => chapterAt(d, o.from + k, o.from)).filter(Boolean)
+  const part = names.length > 1 ? `${names[0]} đến ${names[names.length - 1]}` : names[0] || range[0]?.title || ''
+  const outName = partial ? `${d.title} - ${part}` : d.title
+  frame({ kind: 'title', meta, badge }, TITLE_SEC)
+  silence(TITLE_SEC)
+  t += TITLE_SEC
+  const bookStart = t
+
+  // vạch chương: tính trước theo cùng cách cộng thời gian
+  const gaps = gapsFor(d.slug)
+  const ticks: number[] = []
+  const plan: { i: number; chapter: string; gap: number }[] = []
+  {
+    let x = 0
+    range.forEach((tr, k) => {
+      const i = o.from + k
+      const ch = chapterAt(d, i, o.from)
+      if (ch) {
+        ticks.push(x)
+        x += CHAPTER_SEC
+      }
+      x += tr.durationSec
+      const nextCh = k + 1 < range.length && !!chapterAt(d, i + 1, o.from)
+      const gap = k + 1 < range.length ? (nextCh ? gaps.chapter : gaps.section) : 0
+      x += gap
+      plan.push({ i, chapter: ch, gap })
+    })
+    for (let n = 0; n < ticks.length; n++) ticks[n] = x ? ticks[n] / x : 0
+  }
+  let curChapter = ''
+  for (const { i, chapter, gap } of plan) {
+    const tr = d.tracks[i]
+    if (chapter) {
+      curChapter = chapter
+      frame({ kind: 'chapter', chapter, ticks }, CHAPTER_SEC)
+      silence(CHAPTER_SEC)
+      marks.push({ t, label: chapter })
+      t += CHAPTER_SEC
+    } else if (i === o.from && !marks.length) marks.push({ t, label: tr.title })
+    segs.push({ file: tr.file, start: 0, dur: tr.durationSec, silence: false })
+    const ss = lyr.get(i)?.sentences ?? []
+    const chLabel = curChapter || tr.chapter || d.title
+    if (!ss.length) frame({ kind: 'main', chapter: chLabel, section: tr.title, line: tr.title, next: '', ticks }, tr.durationSec + gap)
+    ss.forEach((x, k) => {
+      const a0 = k === 0 ? 0 : x.start
+      const b0 = k + 1 < ss.length ? ss[k + 1].start : tr.durationSec
+      frame({ kind: 'main', chapter: chLabel, section: tr.title, line: x.text, next: ss[k + 1]?.text ?? '', ticks }, Math.max(0.05, b0 - a0) + (k === ss.length - 1 ? gap : 0))
+      srt.push({ a: t + x.start, b: t + b0, t: x.text })
+    })
+    t += tr.durationSec
+    if (gap) {
+      silence(gap)
+      t += gap
+    }
+    ft = t // khung hình bám đúng giờ tiếng (tránh cộng dồn sai số)
+  }
+  const bookEnd = t
+  frame({ kind: 'end' }, END_SEC)
+  silence(END_SEC)
+  t += END_SEC
+  return { segs, frames, srt, marks, introDur, bookStart, bookEnd, total: t, totalLabel: clock(bookSec), minutes, badge, outName, partial, part }
+}
+
+/** Lời ước lượng (không dò khoảng lặng) — đủ nhanh cho Nghe thử như video. */
+export function quickLyrics(d: BookDetail, texts: { text: string; script: string }[]) {
+  const m = new Map<number, Lyrics | null>()
+  d.tracks.forEach((t, i) => m.set(i, texts[i]?.text ? buildLyrics(texts[i].text, texts[i].script, t.durationSec) : null))
+  return m
 }
 
 /** Chạy cả lượt: dò lời → vẽ khung hình → Go ghép + mã hoá (tiến độ qua sự kiện). */
@@ -154,101 +295,11 @@ export async function startBookVideo(d: BookDetail, o: BookVideoOptions) {
     }
 
     // 2. Dòng thời gian.
-    const segs: BookVideoSeg[] = []
-    const frames: Frame[] = []
-    const srt: { a: number; b: number; t: string }[] = []
-    const marks: { t: number; label: string }[] = []
-    let t = 0
-    const silence = (dur: number) => segs.push({ file: '', start: 0, dur, silence: true })
-    let introDur = 0
-    let introBars: number[] = []
-    if (o.intro) {
-      const it = d.tracks[o.intro.track]
-      const ss = lyr.get(o.intro.track)?.sentences ?? []
-      const a = ss[o.intro.from]?.start ?? 0
-      const endAt = (i: number) => (i + 1 < ss.length ? ss[i + 1].start : it.durationSec)
-      introDur = Math.max(1, endAt(o.intro.to) - a)
-      introBars = await audioBars(it.url, a, a + introDur, 48).catch(() => Array.from({ length: 48 }, () => 0.35))
-      const pick = ss.slice(o.intro.from, o.intro.to + 1)
-      const reserve = Math.max(1, ...pick.map((s) => introLines(o.ratio, s.text)))
-      segs.push({ file: it.file, start: a, dur: introDur, silence: false })
-      pick.forEach((s, k) => {
-        const sec = endAt(o.intro!.from + k) - s.start
-        frames.push({ scene: { kind: 'intro', line: s.text, bars: introBars, reserve }, sec })
-        srt.push({ a: t, b: t + sec, t: s.text })
-        t += sec
-      })
-      t = introDur
-      marks.push({ t: 0, label: 'Trích đoạn' })
-    }
-    const bookSec = range.reduce((n, x) => n + x.durationSec, 0)
-    const minutes = Math.max(1, Math.round(bookSec / 60))
-    const chapters = range.filter((_, k) => chapterAt(d, o.from + k, o.from)).length
-    common.totalLabel = clock(bookSec)
-    const meta = `Giọng ${d.voice} · ${minutes} phút${chapters ? ` · ${chapters} chương` : ''}`
-    // Vài chương: ghi "Nghe thử", tên file / thư mục kèm tên chương để không đè video cả cuốn.
-    const partial = o.from > 0 || o.to < d.tracks.length - 1
-    const badge = partial ? 'NGHE THỬ SÁCH NÓI' : 'SÁCH NÓI ĐẦY ĐỦ'
-    const names = range.map((_, k) => chapterAt(d, o.from + k, o.from)).filter(Boolean)
-    const part = names.length > 1 ? `${names[0]} đến ${names[names.length - 1]}` : names[0] || range[0].title
-    const outName = partial ? `${d.title} - ${part}` : d.title
-    frames.push({ scene: { kind: 'title', meta, badge }, sec: TITLE_SEC })
-    silence(TITLE_SEC)
-    t += TITLE_SEC
-    const bookStart = t
-
-    // vạch chương: tính trước theo cùng cách cộng thời gian
-    const gaps = gapsFor(d.slug)
-    const ticks: number[] = []
-    const plan: { i: number; chapter: string; gap: number }[] = []
-    {
-      let x = 0
-      range.forEach((tr, k) => {
-        const i = o.from + k
-        const ch = chapterAt(d, i, o.from)
-        if (ch) {
-          ticks.push(x)
-          x += CHAPTER_SEC
-        }
-        x += tr.durationSec
-        const nextCh = k + 1 < range.length && !!chapterAt(d, i + 1, o.from)
-        const gap = k + 1 < range.length ? (nextCh ? gaps.chapter : gaps.section) : 0
-        x += gap
-        plan.push({ i, chapter: ch, gap })
-      })
-      const total = x
-      for (let n = 0; n < ticks.length; n++) ticks[n] = total ? ticks[n] / total : 0
-    }
-    let curChapter = ''
-    for (const { i, chapter, gap } of plan) {
-      const tr = d.tracks[i]
-      if (chapter) {
-        curChapter = chapter
-        frames.push({ scene: { kind: 'chapter', chapter, ticks }, sec: CHAPTER_SEC })
-        silence(CHAPTER_SEC)
-        marks.push({ t, label: chapter })
-        t += CHAPTER_SEC
-      } else if (i === o.from && !marks.length) marks.push({ t, label: tr.title })
-      segs.push({ file: tr.file, start: 0, dur: tr.durationSec, silence: false })
-      const ss = lyr.get(i)?.sentences ?? []
-      const chLabel = curChapter || tr.chapter || d.title
-      if (!ss.length) frames.push({ scene: { kind: 'main', chapter: chLabel, section: tr.title, line: tr.title, next: '', ticks }, sec: tr.durationSec + gap })
-      ss.forEach((s, k) => {
-        const a = k === 0 ? 0 : s.start
-        const b = k + 1 < ss.length ? ss[k + 1].start : tr.durationSec
-        frames.push({ scene: { kind: 'main', chapter: chLabel, section: tr.title, line: s.text, next: ss[k + 1]?.text ?? '', ticks }, sec: Math.max(0.05, b - a) + (k === ss.length - 1 ? gap : 0) })
-        srt.push({ a: t + s.start, b: t + b, t: s.text })
-      })
-      t += tr.durationSec
-      if (gap) {
-        silence(gap)
-        t += gap
-      }
-    }
-    const bookEnd = t
-    frames.push({ scene: { kind: 'end' }, sec: END_SEC })
-    silence(END_SEC)
-    t += END_SEC
+    const sp = introSpan(d, o, lyr)
+    const introBars = sp ? await audioBars(sp.track.url, sp.start, sp.start + sp.dur, 48).catch(() => Array.from({ length: 48 }, () => 0.35)) : []
+    const tl = buildTimeline(d, o, lyr, introBars)
+    const { segs, frames, srt, marks, introDur, bookStart, bookEnd, minutes, badge, outName, partial, part } = tl
+    common.totalLabel = tl.totalLabel
 
     // 3. Vẽ + gửi khung hình.
     if (cancelled) return
