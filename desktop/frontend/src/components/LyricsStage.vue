@@ -1,35 +1,41 @@
 <script setup lang="ts">
 // Lời đọc phóng to trong khung màn nghe (wireframe D13): mỗi câu một khối kiểu lời bài hát,
 // câu đang đọc đậm, câu khác nhạt, mép trên / dưới mờ dần. Tự cuộn giữ câu đang đọc ở ~1/3
-// trên; người dùng tự cuộn → ngừng tự cuộn, hiện "Về câu đang đọc". Bấm câu → nghe từ câu đó.
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+// trên; người dùng tự cuộn (chuột / vuốt / phím) → ngừng tự cuộn, hiện "Về câu đang đọc".
+// Đổi cỡ cửa sổ không tính là tự cuộn: canh lại câu đang đọc. Bấm câu → nghe từ câu đó.
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Crosshair } from 'lucide-vue-next'
 import { lyricIndex, lyrics, player, seekTime, tracks } from '../lib/player'
 
 const box = ref<HTMLElement | null>(null)
 const follow = ref(true)
-let auto = false // đang cuộn do app (không tính là người dùng tự cuộn)
-let autoTimer = 0
 
 function scrollToCurrent(smooth = true) {
   void nextTick(() => {
     const el = box.value?.querySelector<HTMLElement>(`[data-i="${lyricIndex.value}"]`)
     if (!el || !box.value) return
-    auto = true
     box.value.scrollTo({ top: el.offsetTop - box.value.clientHeight / 3, behavior: smooth ? 'smooth' : 'auto' })
-    window.clearTimeout(autoTimer)
-    autoTimer = window.setTimeout(() => (auto = false), smooth ? 900 : 100)
   })
 }
 function userScrolled() {
-  if (!auto) follow.value = false
+  follow.value = false
+}
+const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End']
+function keyScrolled(e: KeyboardEvent) {
+  if (SCROLL_KEYS.includes(e.key)) userScrolled()
 }
 function backToCurrent() {
   follow.value = true
   scrollToCurrent()
 }
 
-onMounted(() => scrollToCurrent(false))
+let ro: ResizeObserver | null = null
+onMounted(() => {
+  scrollToCurrent(false)
+  ro = new ResizeObserver(() => follow.value && scrollToCurrent(false))
+  if (box.value) ro.observe(box.value)
+})
+onBeforeUnmount(() => ro?.disconnect())
 watch(lyricIndex, () => follow.value && scrollToCurrent())
 watch(
   () => player.current,
@@ -50,7 +56,7 @@ const next = computed(() => tracks.value[player.current + 1])
 <template>
   <div class="relative min-h-0 flex flex-col">
     <div ref="box" class="flex-1 min-h-0 overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_bottom,transparent,black_14%,black_80%,transparent)]"
-      @scroll.passive="userScrolled">
+      @wheel.passive="userScrolled" @touchmove.passive="userScrolled" @keydown="keyScrolled">
       <div v-if="lyrics" class="py-[16%] space-y-2.5">
         <template v-for="(p, pi) in lyrics.paragraphs" :key="pi">
           <p v-for="(s, si) in p" :key="s.index" :data-i="s.index" role="button" tabindex="0" title="Nghe từ câu này"
