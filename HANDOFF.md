@@ -1,6 +1,6 @@
 # HANDOFF — Sano (sách nói tiếng Việt)
 
-Cập nhật: 28/09/2026 13:38 · Phiên bản đang phát hành: **0.1.17** (Latest trên GitHub Releases) · trên `main` có 2 sửa lỗi chưa phát hành (mục 3)
+Cập nhật: 28/09/2026 21:32 · Phiên bản đang phát hành: **0.1.17** (Latest trên GitHub Releases) · trên `main` có nhiều tính năng chưa phát hành (mục 3), RC máy anh: 0.1.18-rc.15
 
 Phiên mới: đọc file này + `README.md` + `CHANGELOG.md` là đủ nắm trạng thái.
 
@@ -29,26 +29,65 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Phát hành: cập nhật `VERSION`, `CHANGELOG.md` (ngắn, hộp cập nhật của bản cũ hiện đoạn này), link tải trong `README.md` → commit `chore: phát hành vX.Y.Z` → push `main` → `git tag -a vX.Y.Z` + push tag → chờ CI → `gh release edit vX.Y.Z --draft=false --latest`.
 - VirusTotal luôn báo 2 phần mềm nhầm bản Windows (đã có từ 0.1.16, file Go chưa ký), không chặn phát hành.
 
-## 3. Phiên 28/09 — 2 sửa lỗi trên `main`, CHƯA phát hành, CHƯA push
+## 3. Phiên 28/09 — nhiều tính năng mới trên `main` (26 commit từ `6766b1f`), CHƯA phát hành, CHƯA push
 
-- `0eed810` **Mục lục màn nghe hiện tên chương**: `PlayerView.vue` chèn dòng tên chương (chữ nhỏ, in hoa) trước tiểu mục
-  đầu mỗi chương theo cờ `chapterStart` backend đã có; chương đang nghe tô màu chính; chương 1 tiểu mục trùng tên không lặp.
-- `3dfdc6d` **Giọng Thiền Tâm Đức đọc "chánh" thành "tránh"** (chánh niệm, chánh kiến…). Gốc: bộ phiên âm sea_g2p của
-  VieNeu gộp ch/tr thành cùng âm `tʃ`, model tự chọn; chỉ giọng này chọn sai (anh Việt nghe tai: Hải Đăng, Ngọc Huyền vẫn đúng).
-  Sửa: `scripts/tts/audio_gen.py` có bảng `PHONEME_OVERRIDES` **theo giọng** (từ → phiên âm IPA), bọc
-  `vieneu.v3turbo.phonemize_text_with_emotions`; hiện chỉ `"Thiền Tâm Đức": {"chánh": "tʃˈeɜɲ"}` (anh Việt đã nghe duyệt).
-  Giọng khác không đụng. App tự đồng bộ script khi nội dung khác (`EnsureScripts`).
-  **Bài học:** Whisper (mlx-whisper large-v3-turbo, `uvx --offline --from mlx-whisper mlx_whisper`) nghe ch/tr của giọng
-  VieNeu KHÔNG tin được — ghi "tránh" cho mọi giọng dù tai người nghe đúng. Kết luận âm phải dựng mp3 gửi anh nghe.
-- Bản RC đã build và chạy trên máy: `desktop/build/bin/Sano.app` = 0.1.18-rc.4 (có cả 2 sửa).
+RC mới nhất đang chạy trên máy anh Việt: `desktop/build/bin/Sano.app` = **0.1.18-rc.15** (build bằng
+`scripts/release/build.sh 0.1.18-rc.N darwin/arm64`, mỗi lần ghi đè cùng chỗ). Đã có `CHANGELOG` 0.1.18 chưa viết.
 
-### Việc dở dang lúc handoff — phiên sau làm tiếp
+### Đã làm (theo thứ tự, wireframe đã duyệt ở `desktop/frontend/src/wireframes/`, mở `?wireframe=<tên>`)
 
-1. ~~Đọc lại cuốn "Chánh niệm, nghệ thuật của sự có mặt"~~ **ĐÃ XONG** (13:39): 21/39 mục có chữ "chánh" đã đọc lại
-   bằng script mới qua `ApplySection` + `Repack` (mp3, metadata, zip đều cập nhật). Chương trình tạm đã xoá. Còn lại:
-   anh Việt nghe thử mục "Vì sao có bản nghe này" trong app xác nhận "chánh niệm" đúng tai.
-2. **Phát hành 0.1.18**: `VERSION`, `CHANGELOG.md` (2 mục trên, viết ngắn cho người dùng), link tải `README.md`, commit
-   `chore: phát hành v0.1.18`, push, tag, chờ CI, công khai (mục 2). Chưa được lệnh push — hỏi anh trước.
+- **Sửa lỗi sáng 28/09:** mục lục hiện tên chương (`0eed810`); Thiền Tâm Đức đọc đúng "chánh" (`3dfdc6d`, bảng
+  `PHONEME_OVERRIDES` theo giọng trong `scripts/tts/audio_gen.py`). Sách "Chánh niệm" đã đọc lại 21/39 mục.
+- **D13 Phóng to lời đọc trong khung** (`lyricsframe`): khung Lời đọc → "Phóng to": hàng trên bìa nhỏ + tên sách,
+  lời đọc to đậm (`components/LyricsStage.vue`), nền phủ nhẹ màu bìa, logo "Sano · Sách nói" giữa thanh trên.
+  Mục lục: thanh tiến độ cả cuốn, tên tiểu mục 2 dòng, đầu mục lục đứng yên. Nhớ chế độ (`sano.lyricsFrame`).
+- **D14 Chia sẻ đoạn hay** (`share`): nút Chia sẻ ở Phóng to / Xem cả lời → `components/ShareDialog.vue`.
+  Ảnh có lời (≤4 câu) / video có tiếng đọc (≤8 câu, ≤30 giây, mở ra tự chọn ~15 giây). Mặc định Dọc 9:16 +
+  nền Hoàng hôn. Thẻ vẽ bằng canvas `lib/shareCard.ts` (xem trước = file xuất, 1080px), chân thẻ
+  "Sano · Tự tạo sách nói · sanobook.com". Video: `desktop/share.go` (ffmpeg, cột sóng âm sáng dần bằng mặt nạ
+  trượt). Sao chép ảnh vào clipboard Mac `clipboard_darwin.go` (máy khác dùng API trình duyệt). Lưu / AirDrop.
+- **D15 Tạo video cả cuốn** (`bookvideo`): bánh răng màn nghe → "Tạo video cả cuốn…" → `components/BookVideoDialog.vue`.
+  Trích đoạn hay nhất (tuỳ chọn) → màn tựa → thẻ chương → câu đang đọc chữ to + câu kế nhạt + tiến độ có vạch
+  chương → màn kết sanobook.com. Ngang 16:9 1920×1080 (mặc định) / dọc; cả cuốn hoặc vài chương ("NGHE THỬ",
+  thư mục riêng). Kèm thumbnail 1280×720, `phu-de.srt`, `mo-ta-youtube.txt` (mốc chương). Lưu vào
+  `Tải về/Sano video/<Tên>`. Dòng thời gian `lib/bookVideo.ts` (`buildTimeline`, dùng chung cho tạo + nghe thử),
+  vẽ cảnh `lib/bookVideoCard.ts`, Go `desktop/bookvideo.go` (mỗi đoạn tiếng → WAV đúng số giây rồi nối; khung
+  hình JPEG gửi dần; mặt nạ trượt cho sóng âm / tiến độ). Đo: cuốn 29 phút → 64 MB, 3 phút tạo.
+- **Nghe thử trong hộp chọn câu** (`lib/previewAudio.ts`): ▶ từng câu nghe tiếp, "Nghe đoạn". **Nghe thử như video**
+  ngay trong hộp D15 (`lib/videoPreview.ts`): phát nối liền cả dòng thời gian, ô xem trước vẽ theo giờ, tua được.
+- **D16 Mở đầu kiểu Fonos** (`videointro`): "Bạn đang nghe sách nói, tạo bằng Sano" → nhạc hiệu → giới thiệu sách
+  (tên, tác giả, dịch giả, NXB) → nội dung; màn kết lời kết + nhạc; chuông sang chương (mặc định TẮT). Bật lời
+  giới thiệu thì bỏ tiểu mục mở đầu tự có ("Cuốn sách: …"). Câu đọc bằng bộ đọc + giọng của cuốn,
+  nhạc hiệu Sano tạm tự tổng hợp (aevalsrc, không bản quyền, nhỏ hơn 20% = −2 dB) hoặc file người dùng:
+  `desktop/videoextras.go` (đệm `~/Sano/.tam/video-them`, mã → file, không nhận đường dẫn từ giao diện).
+  Sửa sách → Thông tin & bìa có thêm **Dịch giả, Nhà xuất bản** (`library.Book/Info`, metadata + manifest zip).
+- **Sửa giờ câu (quan trọng, ảnh hưởng cả màn nghe):** `lib/lyrics.ts` `alignSentences` ghép câu chữ gốc với câu lời
+  đọc theo nội dung — trước đây tiểu mục có dấu ":" (0.1.17 đọc thành ngắt câu) lệch cả tiểu mục một câu
+  (6/39 mục cuốn Chánh niệm). `sentenceBounds` cắt trích đoạn ở giữa khoảng lặng thật (hết dính chữ câu kế).
+
+### Việc dở dang — phiên sau làm tiếp
+
+1. **Chờ anh Việt chọn cách đọc tên** (đã gửi mp3): "Sano" / "Sa-nô" (đang dùng) / "Xa Nô"; "sanobook.com" /
+   "Sa-nô búc chấm com" (đang dùng). Sửa ở `BookVideoDialog.vue` hằng `BRAND.say`, `END_LINE.say`.
+2. **Âm lượng nhạc hiệu:** đang −2 dB (−20% biên độ, nghe nhỏ ~13%). Anh hỏi lại "đã giảm 20% chưa" — nếu muốn
+   nghe rõ nhỏ 20% thì −3,2 dB (`volume=0.69` trong `videoextras.go`, đổi mã `sano-v3` để tạo lại). Chờ anh nghe rc.15.
+3. **Nhạc hiệu chính thức:** anh Việt sẽ đặt làm / mua; khi có thì nhúng file thay bản tổng hợp tạm.
+4. **Đổi tên miền sanobook.com:** anh đã mua, sắp trỏ. Còn 28 chỗ `tanviet12.github.io` (README, CHANGELOG,
+   AboutView, docs/.vitepress…) — đổi khi anh báo đã trỏ xong. Thẻ chia sẻ / video đã ghi sanobook.com.
+5. **Chưa kiểm tự động được (cửa sổ hệ điều hành):** Lưu ảnh / Lưu video / AirDrop / Mở thư mục — nhờ anh bấm thử.
+   Sao chép ảnh trên Windows / Linux (API trình duyệt) chưa thử máy thật.
+6. **Phát hành 0.1.18**: viết `CHANGELOG.md` ngắn cho người dùng (các mục trên), `VERSION`, link `README.md`, commit
+   `chore: phát hành v0.1.18`, push, tag, CI, công khai (mục 2). **Chưa được lệnh push — hỏi anh trước.**
+7. Đề xuất chưa làm: thêm nút "Tạo video" cạnh "Nghe trên điện thoại" (anh từng không tìm thấy mục trong bánh răng).
+8. Ghi chú kỹ thuật: bước vẽ khung hình video chạy ở giao diện (đóng hộp vẫn chạy, tắt app thì dừng lượt);
+   trong `Tải về/Sano video/` còn video test của phiên này.
+
+### QA / test phiên này
+
+- Test bằng `agent-browser` trên `wails dev` với thư viện tạm: `SANO_HOME=<scratch>/sanohome wails dev` (đã chép
+  cuốn Chánh niệm sang). Tắt dev đúng tiến trình: `kill` con của `pgrep -f "wails dev"` — **không** `pkill` theo tên
+  Sano.app (dev và RC cùng đường dẫn, từng lỡ tắt app của anh).
+- Âm thanh: đo bằng `ffmpeg silencedetect/volumedetect`, không tin Whisper cho ch/tr; kết luận âm gửi mp3 anh nghe.
 
 ## 4. Đã làm trong phiên 27/09 (0.1.16 → 0.1.17)
 
