@@ -266,6 +266,22 @@ export interface UpdateStatus {
   applyOnQuit: boolean
 }
 
+/** Video chia sẻ: ảnh thẻ từng câu + đoạn tiếng [start, end) của tiểu mục (khớp ShareVideoRequest bên Go). */
+export interface ShareVideoRequest {
+  slug: string
+  file: string
+  start: number
+  end: number
+  frames: { png: string; sec: number }[]
+  /** Ảnh các cột sóng âm sáng (base64) — ffmpeg tô dần từ trái sang theo thời gian. */
+  wavePNG: string
+  waveX: number
+  waveY: number
+  waveW: number
+  waveH: number
+  title: string
+}
+
 interface GoApp {
   Version(): Promise<string>
   CheckUpdate(): Promise<UpdateInfo>
@@ -325,6 +341,14 @@ interface GoApp {
   ExportM4B(slug: string, sectionSec: number, chapterSec: number, ask: boolean): Promise<M4BStatus | null>
   CanAirDrop(): Promise<boolean>
   AirDropM4B(): Promise<void>
+  SaveShareImage(png: string, title: string): Promise<string>
+  CopyShareImage(png: string): Promise<void>
+  CanCopyImage(): Promise<boolean>
+  AirDropShareImage(png: string, title: string): Promise<void>
+  MakeShareVideo(req: ShareVideoRequest): Promise<number>
+  CancelShareVideo(): Promise<void>
+  SaveShareVideo(): Promise<string>
+  AirDropShareVideo(): Promise<void>
   CancelM4B(): Promise<void>
   M4BStatus(): Promise<M4BStatus | null>
   RevealM4B(): Promise<void>
@@ -921,4 +945,30 @@ export async function deleteBookPronunciation(slug: string, word: string): Promi
 export async function countWords(path: string, words: string[]): Promise<Record<string, number>> {
   if (!words.length) return {}
   return (await goApp()?.CountWords(path, words)) ?? {}
+}
+
+// ── Chia sẻ đoạn hay (D14) ──
+export async function saveShareImage(png: string, title: string): Promise<string> {
+  return need().SaveShareImage(png, title)
+}
+/** Chép ảnh vào clipboard: phần Go trên Mac, API trình duyệt ở máy khác. */
+export async function copyShareImage(png: string, blob: Blob): Promise<void> {
+  const app = goApp()
+  if (app && (await app.CanCopyImage())) return app.CopyShareImage(png)
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+}
+export async function airDropShareImage(png: string, title: string): Promise<void> {
+  return need().AirDropShareImage(png, title)
+}
+export async function makeShareVideo(req: ShareVideoRequest): Promise<number> {
+  return need().MakeShareVideo(req)
+}
+export async function cancelShareVideo(): Promise<void> {
+  await goApp()?.CancelShareVideo()
+}
+export async function saveShareVideo(): Promise<string> {
+  return need().SaveShareVideo()
+}
+export async function airDropShareVideo(): Promise<void> {
+  return need().AirDropShareVideo()
 }

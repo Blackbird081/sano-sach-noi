@@ -3,7 +3,8 @@
 // đang đọc ở ~1/3 trên. Người dùng tự cuộn → ngừng tự cuộn, hiện "Về câu đang đọc".
 // Bấm một câu → nghe từ câu đó. Vị trí chữ là ước lượng (lib/lyrics.ts).
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Crosshair, Gauge, Minimize2, Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Type } from 'lucide-vue-next'
+import { Crosshair, Gauge, Minimize2, Pause, Play, RotateCcw, RotateCw, Share2, SkipBack, SkipForward, Type } from 'lucide-vue-next'
+import { openShare } from '../lib/share'
 import BookCover from '@/components/sano/BookCover.vue'
 import { fmtClock } from '../lib/position'
 import {
@@ -88,6 +89,9 @@ function cycleSpeed() {
           {{ player.detail?.title }}<template v-if="player.detail?.voice"> · Giọng {{ player.detail.voice }}</template>
         </p>
       </div>
+      <button v-if="lyrics" class="h-8 px-2.5 rounded-md text-xs text-primary bg-primary/10 hover:bg-primary/15 flex items-center gap-1.5" title="Chia sẻ đoạn hay: ảnh hoặc video có lời" @click="openShare(lyricIndex)">
+        <Share2 class="w-4 h-4" /> Chia sẻ
+      </button>
       <button class="h-8 px-2.5 rounded-md text-xs text-muted-foreground hover:bg-muted flex items-center gap-1.5" @click="toggleBig">
         <Type class="w-4 h-4" /> {{ big ? 'Chữ vừa' : 'Chữ lớn' }}
       </button>

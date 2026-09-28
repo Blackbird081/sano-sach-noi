@@ -4,7 +4,7 @@
 // lib/player.ts (dùng chung với thanh nghe nhỏ) nên rời màn này vẫn nghe tiếp.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  Check, ChevronDown, ChevronLeft, Download, Expand, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
+  Check, ChevronDown, ChevronLeft, Download, Expand, Share2, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
   Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ import { go, state } from '../lib/store'
 import { openEdit } from '../lib/edit'
 import { m4bBusy, startM4B, useM4B } from '../lib/m4b'
 import { openPhone } from '../lib/phone'
+import { openShare } from '../lib/share'
 import {
   SPEEDS as speeds, bookHasLyrics, forgetBook, lyricIndex, lyrics, pause, pctTrack, pick, player, seek, seekFrac, setSpeed as applySpeed, skip, toggle, totalSec,
   track, tracks,
@@ -279,6 +280,8 @@ async function act(fn: (slug: string) => Promise<void>) {
             <div class="self-start shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
               <button class="h-8 rounded-md border border-border bg-background/70 hover:bg-muted hover:text-foreground flex items-center justify-center gap-1.5" :class="compact ? 'w-8' : 'px-2.5'"
                 title="Thu lại màn nghe thường" aria-label="Thu lại" @click="setFrame(false)"><Minimize2 class="w-3.5 h-3.5" /><template v-if="!compact">Thu lại</template></button>
+              <button class="h-8 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 flex items-center justify-center gap-1.5 disabled:opacity-50" :class="compact ? 'w-8' : 'px-2.5'"
+                title="Chia sẻ đoạn hay: ảnh hoặc video có lời" aria-label="Chia sẻ" :disabled="!lyrics" @click="openShare(lyricIndex)"><Share2 class="w-3.5 h-3.5" /><template v-if="!compact">Chia sẻ</template></button>
               <button class="h-8 w-8 rounded-md border border-border bg-background/70 hover:bg-muted hover:text-foreground grid place-items-center disabled:opacity-50"
                 title="Xem cả lời" aria-label="Xem cả lời" :disabled="!lyrics" @click="lyricsOpen = true"><Expand class="w-3.5 h-3.5" /></button>
             </div>
