@@ -51,7 +51,7 @@ export function useVideoPreview() {
       return
     }
     silentMode = false
-    const url = trackUrl(s.file)
+    const url = trackUrl(s.extra ? 'extra:' + s.extra : s.file)
     if (!audio.src.endsWith(url)) audio.src = url
     audio.currentTime = s.start + offset
     try {

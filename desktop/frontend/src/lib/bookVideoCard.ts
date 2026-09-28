@@ -18,7 +18,7 @@ export interface SceneCommon {
 
 export type Scene =
   | { kind: 'intro'; line: string; bars: number[]; reserve: number } // reserve: số dòng dành chỗ (câu dài nhất) để sóng âm đứng yên
-  | { kind: 'title'; meta: string; badge: string } // badge: SÁCH NÓI ĐẦY ĐỦ / NGHE THỬ SÁCH NÓI
+  | { kind: 'title'; meta: string; badge: string; credits?: string } // badge: SÁCH NÓI ĐẦY ĐỦ / NGHE THỬ SÁCH NÓI; credits: tác giả, dịch giả, NXB
   | { kind: 'chapter'; chapter: string; ticks: number[] }
   | { kind: 'main'; chapter: string; section: string; line: string; next: string; ticks: number[] }
   | { kind: 'end' }
@@ -213,7 +213,8 @@ export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, p
         text(ctx, s.badge, tx, y + 10, `700 11px ${sans}`, 'rgba(255,255,255,0.72)', 2.4)
         y += 20
         y += block(ctx, o.title, tx, y, tw, 34, { family: 'Georgia, serif', lh: 1.15, maxLines: 4, maxH: 170, min: 20 }) + 12
-        block(ctx, s.meta, tx, y, tw, 13, { weight: 400, color: 'rgba(255,255,255,0.82)', maxLines: 2 })
+        if (s.kind === 'title' && s.credits) y += block(ctx, s.credits, tx, y, tw, 13, { weight: 500, color: 'rgba(255,255,255,0.92)', maxLines: 2 }) + 4
+        block(ctx, s.meta, tx, y, tw, 13, { weight: 400, color: 'rgba(255,255,255,0.78)', maxLines: 2 })
       }
     } else {
       const cw = 172
@@ -226,7 +227,8 @@ export function drawScene(canvas: HTMLCanvasElement, o: SceneCommon, s: Scene, p
       ctx.textAlign = 'left'
       y += 14
       y += block(ctx, o.title, 28, y, bw - 56, 30, { family: 'Georgia, serif', lh: 1.15, maxLines: 4, maxH: 150, min: 18, align: 'center' }) + 10
-      block(ctx, s.meta, 28, y, bw - 56, 13, { weight: 400, color: 'rgba(255,255,255,0.82)', maxLines: 2, align: 'center' })
+      if (s.kind === 'title' && s.credits) y += block(ctx, s.credits, 28, y, bw - 56, 13, { weight: 500, color: 'rgba(255,255,255,0.92)', maxLines: 2, align: 'center' }) + 4
+      block(ctx, s.meta, 28, y, bw - 56, 13, { weight: 400, color: 'rgba(255,255,255,0.78)', maxLines: 2, align: 'center' })
     }
   } else if (s.kind === 'chapter') {
     const x = wide ? 70 : 32

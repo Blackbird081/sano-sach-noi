@@ -166,6 +166,8 @@ export interface LibraryBook {
   slug: string
   title: string
   author: string
+  translator?: string // dịch giả (D16)
+  publisher?: string // nhà xuất bản (D16)
   category: string // trống = chưa phân loại
   series: string // tên bộ sách; trống = sách lẻ
   volume: number // số tập trong bộ (0 khi là sách lẻ)
@@ -200,6 +202,8 @@ export interface BookDetail extends LibraryBook {
 export interface BookInfo {
   title: string
   author: string
+  translator: string
+  publisher: string
   category: string
   series: string
   volume: number // 0 = tập kế tiếp
@@ -285,6 +289,7 @@ export interface ShareVideoRequest {
 /** Video cả cuốn (D15) — khớp BookVideoPlan / BookVideoStatus bên Go. */
 export interface BookVideoSeg {
   file: string
+  extra?: string // mã âm thanh thêm (câu đọc thêm, nhạc hiệu, chuông)
   start: number
   dur: number
   silence: boolean
@@ -322,6 +327,21 @@ export interface BookVideoStatus {
   bytes: number
   durSec: number
   started: number
+}
+
+/** Âm thanh thêm cho video (D16) — khớp VideoExtra bên Go. */
+export interface VideoExtra {
+  id: string
+  key: 'brand' | 'info' | 'end' | 'music' | 'chime'
+  url: string
+  durSec: number
+}
+export interface VideoExtrasRequest {
+  slug: string
+  lines: { key: string; text: string }[]
+  music: 'sano' | 'file' | 'none'
+  musicPath: string
+  chime: boolean
 }
 
 interface GoApp {
@@ -397,6 +417,8 @@ interface GoApp {
   BookVideoCancel(): Promise<void>
   BookVideoState(): Promise<BookVideoStatus | null>
   OpenBookVideoFolder(): Promise<void>
+  BookVideoExtras(req: VideoExtrasRequest): Promise<VideoExtra[]>
+  PickMusicFile(): Promise<string>
   CancelM4B(): Promise<void>
   M4BStatus(): Promise<M4BStatus | null>
   RevealM4B(): Promise<void>
@@ -1039,4 +1061,10 @@ export async function bookVideoState(): Promise<BookVideoStatus | null> {
 }
 export async function openBookVideoFolder(): Promise<void> {
   return need().OpenBookVideoFolder()
+}
+export async function bookVideoExtras(req: VideoExtrasRequest): Promise<VideoExtra[]> {
+  return (await need().BookVideoExtras(req)) ?? []
+}
+export async function pickMusicFile(): Promise<string> {
+  return need().PickMusicFile()
 }

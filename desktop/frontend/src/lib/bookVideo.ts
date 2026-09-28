@@ -25,6 +25,31 @@ export interface BookVideoOptions {
   ratio: BVRatio
   bg: number
   extras: { thumb: boolean; srt: boolean; desc: boolean }
+  opening?: Opening // D16: lời giới thiệu có giọng đọc, nhạc hiệu, chuông sang chương
+}
+
+/** Một file âm thanh thêm đã tạo (BookVideoExtras). */
+export interface ExtraClip {
+  id: string
+  url: string
+  dur: number
+}
+export interface Opening {
+  brand?: ExtraClip // "Bạn đang nghe sách nói, tạo bằng Sano."
+  info?: ExtraClip // tên sách, tác giả, dịch giả, NXB
+  end?: ExtraClip // "Tạo sách nói của bạn tại sanobook.com."
+  music?: ExtraClip // nhạc hiệu
+  chime?: ExtraClip // chuông sang chương
+  skipIntroTrack: boolean // bỏ tiểu mục mở đầu tự có ("Bạn đang nghe sách nói. Cuốn sách: …")
+}
+
+/** Tác giả · Dịch giả · Nhà xuất bản (trường trống thì bỏ). */
+export function creditsOf(d: BookDetail) {
+  return [d.author && `Tác giả ${d.author}`, d.translator && `Dịch giả ${d.translator}`, d.publisher && `NXB ${d.publisher}`].filter(Boolean).join(' · ')
+}
+/** Tiểu mục đầu là lời mở đầu tự có của Sano ("Cuốn sách: …")? */
+export function isIntroTrack(d: BookDetail, texts: { text: string }[], i: number) {
+  return i === 0 && /(^|\/)ch01-sec01\.mp3$/.test(d.tracks[0]?.file ?? '') && /^Cuốn sách:/m.test(texts[0]?.text ?? '')
 }
 
 type Step = 'idle' | 'prep' | 'frames' | 'audio' | 'video' | 'files' | 'done' | 'error'
@@ -163,9 +188,13 @@ export function introSpan(d: BookDetail, o: BookVideoOptions, lyr: Map<number, L
  * như video trong hộp thoại, nên nghe thử khớp đúng video sẽ tạo).
  */
 export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>, introBars: number[], sils?: Silences): Timeline {
-  const range = d.tracks.slice(o.from, o.to + 1)
+  const op = o.opening
+  // Có lời giới thiệu mới thì bỏ tiểu mục mở đầu tự có của sách (không đọc trùng).
+  const first = op?.skipIntroTrack && o.from === 0 && o.to > 0 ? 1 : o.from
+  const range = d.tracks.slice(first, o.to + 1)
   const segs: BookVideoSeg[] = []
   const frames: Frame[] = []
+  const extra = (c: ExtraClip) => segs.push({ file: '', extra: c.id, start: 0, dur: c.dur, silence: false })
   const srt: Timeline['srt'] = []
   const marks: Timeline['marks'] = []
   let t = 0
@@ -195,18 +224,34 @@ export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<numbe
   }
   const bookSec = range.reduce((n, x) => n + x.durationSec, 0)
   const minutes = Math.max(1, Math.round(bookSec / 60))
-  const chapters = range.filter((_, k) => chapterAt(d, o.from + k, o.from)).length
+  const chapters = range.filter((_, k) => chapterAt(d, first + k, first)).length
   const meta = `Giọng ${d.voice} · ${minutes} phút${chapters ? ` · ${chapters} chương` : ''}`
   // Vài chương: ghi "Nghe thử", tên file / thư mục kèm tên chương để không đè video cả cuốn.
   const partial = o.from > 0 || o.to < d.tracks.length - 1
   const badge = partial ? 'NGHE THỬ SÁCH NÓI' : 'SÁCH NÓI ĐẦY ĐỦ'
-  const names = range.map((_, k) => chapterAt(d, o.from + k, o.from)).filter(Boolean)
+  const names = range.map((_, k) => chapterAt(d, first + k, first)).filter(Boolean)
   const part = names.length > 1 ? `${names[0]} đến ${names[names.length - 1]}` : names[0] || range[0]?.title || ''
   const outName = partial ? `${d.title} - ${part}` : d.title
-  frame({ kind: 'title', meta, badge }, TITLE_SEC)
-  silence(TITLE_SEC)
-  t += TITLE_SEC
+  // Màn tựa: giọng đọc thương hiệu → nhạc hiệu → giọng đọc giới thiệu sách (D16, kiểu Fonos);
+  // tắt hết thì lặng TITLE_SEC như cũ.
+  const titleParts: [ExtraClip | undefined, number][] = [[op?.brand, 0.25], [op?.music, 0.15], [op?.info, 0.6]]
+  let titleSec = 0
+  for (const [c, pad] of titleParts) {
+    if (!c) continue
+    extra(c)
+    silence(pad)
+    titleSec += c.dur + pad
+  }
+  if (!titleSec) {
+    silence(TITLE_SEC)
+    titleSec = TITLE_SEC
+  }
+  frame({ kind: 'title', meta, badge, credits: creditsOf(d) }, titleSec)
+  t += titleSec
   const bookStart = t
+  // Thẻ chương: chuông ngắn + lặng cho đủ ~1,5 giây; không chuông thì lặng CHAPTER_SEC.
+  const chimePad = op?.chime ? Math.max(0.3, 1.5 - op.chime.dur) : 0
+  const chapSec = op?.chime ? op.chime.dur + chimePad : CHAPTER_SEC
 
   // vạch chương: tính trước theo cùng cách cộng thời gian
   const gaps = gapsFor(d.slug)
@@ -215,14 +260,14 @@ export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<numbe
   {
     let x = 0
     range.forEach((tr, k) => {
-      const i = o.from + k
-      const ch = chapterAt(d, i, o.from)
+      const i = first + k
+      const ch = chapterAt(d, i, first)
       if (ch) {
         ticks.push(x)
-        x += CHAPTER_SEC
+        x += chapSec
       }
       x += tr.durationSec
-      const nextCh = k + 1 < range.length && !!chapterAt(d, i + 1, o.from)
+      const nextCh = k + 1 < range.length && !!chapterAt(d, i + 1, first)
       const gap = k + 1 < range.length ? (nextCh ? gaps.chapter : gaps.section) : 0
       x += gap
       plan.push({ i, chapter: ch, gap })
@@ -234,11 +279,14 @@ export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<numbe
     const tr = d.tracks[i]
     if (chapter) {
       curChapter = chapter
-      frame({ kind: 'chapter', chapter, ticks }, CHAPTER_SEC)
-      silence(CHAPTER_SEC)
+      frame({ kind: 'chapter', chapter, ticks }, chapSec)
+      if (op?.chime) {
+        extra(op.chime)
+        silence(chimePad)
+      } else silence(CHAPTER_SEC)
       marks.push({ t, label: chapter })
-      t += CHAPTER_SEC
-    } else if (i === o.from && !marks.length) marks.push({ t, label: tr.title })
+      t += chapSec
+    } else if (i === first && !marks.length) marks.push({ t, label: tr.title })
     segs.push({ file: tr.file, start: 0, dur: tr.durationSec, silence: false })
     const ss = lyr.get(i)?.sentences ?? []
     const chLabel = curChapter || tr.chapter || d.title
@@ -257,9 +305,24 @@ export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<numbe
     ft = t // khung hình bám đúng giờ tiếng (tránh cộng dồn sai số)
   }
   const bookEnd = t
-  frame({ kind: 'end' }, END_SEC)
-  silence(END_SEC)
-  t += END_SEC
+  // Màn kết: giọng đọc lời kết → nhạc hiệu tắt dần; tắt hết thì lặng END_SEC.
+  let endSec = 0
+  if (op?.end || op?.music) {
+    silence(0.5)
+    endSec = 0.5
+    for (const c of [op?.end, op?.music]) {
+      if (!c) continue
+      extra(c)
+      endSec += c.dur
+    }
+    silence(0.5)
+    endSec += 0.5
+  } else {
+    silence(END_SEC)
+    endSec = END_SEC
+  }
+  frame({ kind: 'end' }, endSec)
+  t += endSec
   return { segs, frames, srt, marks, introDur, bookStart, bookEnd, total: t, totalLabel: clock(bookSec), minutes, badge, outName, partial, part }
 }
 
@@ -338,6 +401,7 @@ export async function startBookVideo(d: BookDetail, o: BookVideoOptions) {
     }
     const desc = [
       partial ? `${d.title} — Nghe thử sách nói (${part}), giọng ${d.voice}.` : `${d.title} — Sách nói đầy đủ, giọng ${d.voice}.`,
+      ...(creditsOf(d) ? [creditsOf(d) + '.'] : []),
       '',
       ...marks.map((m, k) => `${clock(k === 0 ? 0 : m.t)} ${m.label}`),
       '',

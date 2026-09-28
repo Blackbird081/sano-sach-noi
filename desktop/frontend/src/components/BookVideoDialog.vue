@@ -3,14 +3,15 @@
 // (giống file xuất). Phải: phần sách, trích đoạn mở đầu, khung, nền, file kèm; lúc tạo
 // hiện tiến độ theo bước; xong: mở thư mục, chép mô tả YouTube.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Pause, Play, Square, Subtitles, Volume2, X } from 'lucide-vue-next'
+import { Bell, Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Mic, Music, Pause, Pencil, Play, Square, Subtitles, Upload, Volume2, X } from 'lucide-vue-next'
 import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
-import { bv, bvBusy, buildTimeline, cancelBookVideo, chapterAt, clock, quickLyrics, startBookVideo, CHAPTER_SEC, END_SEC, TITLE_SEC, type BookVideoOptions, type Timeline } from '../lib/bookVideo'
+import { bv, bvBusy, buildTimeline, cancelBookVideo, chapterAt, clock, creditsOf, isIntroTrack, quickLyrics, startBookVideo, CHAPTER_SEC, END_SEC, TITLE_SEC, type BookVideoOptions, type Opening, type Timeline } from '../lib/bookVideo'
 import { useVideoPreview } from '../lib/videoPreview'
 import { drawScene, type BVRatio, type Scene } from '../lib/bookVideoCard'
 import { BACKGROUNDS, audioBars, loadImage, prepareCard } from '../lib/shareCard'
-import { bookTexts, copyText, errText, openBookVideoFolder, type SectionText } from '../lib/backend'
+import { bookTexts, bookVideoExtras, copyText, errText, openBookVideoFolder, pickMusicFile, type SectionText, type VideoExtra } from '../lib/backend'
+import { openEdit } from '../lib/edit'
 import { buildLyrics, decodeSilences, sentenceBounds, snapToSilences } from '../lib/lyrics'
 import { lyricIndex, player } from '../lib/player'
 
@@ -18,18 +19,27 @@ const KEY = 'sano.bookVideo'
 function read() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    return { ratio: (v?.ratio === 'tall' ? 'tall' : 'wide') as BVRatio, bg: Number.isInteger(v?.bg) && v.bg >= 0 && v.bg < 5 ? v.bg : 0, intro: v?.intro !== false }
+    return {
+      ratio: (v?.ratio === 'tall' ? 'tall' : 'wide') as BVRatio, bg: Number.isInteger(v?.bg) && v.bg >= 0 && v.bg < 5 ? v.bg : 0, intro: v?.intro !== false,
+      voice: v?.voice !== false, music: (['sano', 'file', 'none'].includes(v?.music) ? v.music : 'sano') as 'sano' | 'file' | 'none',
+      musicPath: typeof v?.musicPath === 'string' ? v.musicPath : '', chime: v?.chime !== false,
+    }
   } catch {
-    return { ratio: 'wide' as BVRatio, bg: 0, intro: true }
+    return { ratio: 'wide' as BVRatio, bg: 0, intro: true, voice: true, music: 'sano' as const, musicPath: '', chime: true }
   }
 }
 const saved = read()
 const ratio = ref<BVRatio>(saved.ratio)
 const bg = ref(saved.bg)
 const introOn = ref(saved.intro)
-watch([ratio, bg, introOn], () => {
+// D16 — mở đầu & chuyển cảnh kiểu Fonos
+const voiceOn = ref(saved.voice)
+const music = ref<'sano' | 'file' | 'none'>(saved.music === 'file' && !saved.musicPath ? 'sano' : saved.music)
+const musicPath = ref(saved.musicPath)
+const chimeOn = ref(saved.chime)
+watch([ratio, bg, introOn, voiceOn, music, musicPath, chimeOn], () => {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ratio: ratio.value, bg: bg.value, intro: introOn.value }))
+    localStorage.setItem(KEY, JSON.stringify({ ratio: ratio.value, bg: bg.value, intro: introOn.value, voice: voiceOn.value, music: music.value, musicPath: musicPath.value, chime: chimeOn.value }))
   } catch {
     // không lưu được thì thôi
   }
@@ -139,6 +149,8 @@ watch(() => bv.open, (o) => {
   if (!o) {
     pv.stop()
     vp.pause()
+    sampleAudio.pause()
+    sampling.value = ''
   }
 })
 
@@ -147,30 +159,139 @@ watch(() => bv.open, (o) => {
 const vp = useVideoPreview()
 const live = ref(false) // ô xem trước đang theo trình nghe thử
 let tl: Timeline | null = null
+// Câu đọc thêm (hiện chữ đúng chính tả; câu đưa bộ đọc viết theo cách đọc cho tên riêng).
+const BRAND = { text: 'Bạn đang nghe sách nói, tạo bằng Sano.', say: 'Bạn đang nghe sách nói, tạo bằng Sa-nô.' }
+const END_LINE = { text: 'Tạo sách nói của bạn tại sanobook.com.', say: 'Tạo sách nói của bạn tại Sa-nô búc chấm com.' }
+const infoLine = computed(() => {
+  const b = d.value
+  if (!b) return ''
+  return [b.title.replace(/[.\s]+$/, '') + '.', b.author && `Tác giả ${b.author}.`, b.translator && `Dịch giả ${b.translator}.`, b.publisher && `Nhà xuất bản ${b.publisher}.`].filter(Boolean).join(' ')
+})
+const lines = computed(() => [
+  { key: 'brand', label: 'Mở đầu', text: BRAND.text, say: BRAND.say },
+  { key: 'info', label: 'Sau nhạc', text: infoLine.value, say: infoLine.value },
+  { key: 'end', label: 'Màn kết', text: END_LINE.text, say: END_LINE.say },
+])
+const extrasBusy = ref(false)
+const extrasErr = ref('')
+let extrasKey = ''
+let extrasGot: VideoExtra[] = []
+/** Tạo / lấy lại âm thanh thêm theo lựa chọn hiện tại (bộ đọc đọc câu mới; lần sau dùng lại). */
+async function ensureExtras(): Promise<VideoExtra[]> {
+  const b = d.value
+  if (!b) return []
+  const req = {
+    slug: b.slug, lines: voiceOn.value ? lines.value.map((l) => ({ key: l.key, text: l.say })) : [],
+    music: music.value, musicPath: music.value === 'file' ? musicPath.value : '', chime: chimeOn.value,
+  }
+  const key = JSON.stringify(req)
+  if (key === extrasKey) return extrasGot
+  if (!req.lines.length && req.music === 'none' && !req.chime) {
+    extrasKey = key
+    extrasGot = []
+    return []
+  }
+  extrasBusy.value = true
+  extrasErr.value = ''
+  try {
+    extrasGot = await bookVideoExtras(req)
+    extrasKey = key
+    return extrasGot
+  } catch (e) {
+    extrasErr.value = errText(e)
+    throw e
+  } finally {
+    extrasBusy.value = false
+  }
+}
+async function opening(): Promise<Opening> {
+  const b = d.value!
+  const got = await ensureExtras()
+  const clip = (k: string) => {
+    const x = got.find((e) => e.key === k)
+    return x ? { id: x.id, url: x.url, dur: x.durSec } : undefined
+  }
+  return {
+    brand: clip('brand'), info: clip('info'), end: clip('end'), music: clip('music'), chime: clip('chime'),
+    skipIntroTrack: voiceOn.value && isIntroTrack(b, texts.value, 0),
+  }
+}
+// Nghe thử một câu / nhạc hiệu
+const sampleAudio = new Audio()
+const sampling = ref('')
+sampleAudio.addEventListener('ended', () => (sampling.value = ''))
+async function playSample(key: string) {
+  if (sampling.value === key) {
+    sampleAudio.pause()
+    sampling.value = ''
+    return
+  }
+  vp.pause()
+  pv.stop()
+  sampling.value = key
+  try {
+    const got = await ensureExtras()
+    const x = got.find((e) => e.key === key)
+    if (!x || sampling.value !== key) return
+    sampleAudio.src = x.url
+    await sampleAudio.play()
+  } catch {
+    sampling.value = ''
+  }
+}
+async function chooseMusic() {
+  try {
+    const p = await pickMusicFile()
+    if (p) {
+      musicPath.value = p
+      music.value = 'file'
+    }
+  } catch (e) {
+    extrasErr.value = errText(e)
+  }
+}
+const musicName = computed(() => musicPath.value.split(/[\\/]/).pop() ?? '')
+function editInfo() {
+  const b = d.value
+  if (!b) return
+  close()
+  openEdit(b.slug, { tab: 'info' })
+}
+watch([voiceOn, music, musicPath, chimeOn, infoLine], () => live.value && stopListen())
+
 function options(): BookVideoOptions {
   return {
     from: span.value.from, to: span.value.to, ratio: ratio.value, bg: bg.value, extras: { ...extras.value },
     intro: introOn.value && introPicked.value.length ? { track: introTrack.value, from: lo.value, to: hi.value } : null,
   }
 }
-function buildPreview() {
+async function buildPreview() {
   const b = d.value
   if (!b) return null
+  const op = await opening()
   const lyr = quickLyrics(b, texts.value)
   // trích đoạn: dùng đúng giờ câu đang hiện trong danh sách chọn
   if (introLyrics.value) lyr.set(introTrack.value, introLyrics.value)
-  tl = buildTimeline(b, options(), lyr, bars.value.length ? bars.value : Array.from({ length: 48 }, () => 0.35), new Map([[introTrack.value, introSil.value]]))
+  tl = buildTimeline(b, { ...options(), opening: op }, lyr, bars.value.length ? bars.value : Array.from({ length: 48 }, () => 0.35), new Map([[introTrack.value, introSil.value]]))
   vp.load(tl.segs)
+  extraUrls = new Map(extrasGot.map((e) => [e.id, e.url]))
   return tl
 }
-function listenLikeVideo() {
+let extraUrls = new Map<string, string>()
+async function listenLikeVideo() {
   const b = d.value
   if (!b) return
   pv.stop()
-  if (!live.value || !tl) buildPreview()
+  sampleAudio.pause()
+  sampling.value = ''
+  try {
+    if (!live.value || !tl) await buildPreview()
+  } catch {
+    return // lỗi đã hiện ở extrasErr
+  }
   live.value = true
   const urls = new Map(b.tracks.map((t) => [t.file, t.url]))
-  vp.play(vp.pos.value, (f) => urls.get(f) ?? f)
+  vp.play(vp.pos.value, (f) => (f.startsWith('extra:') ? extraUrls.get(f.slice(6)) : urls.get(f)) ?? f)
 }
 function stopListen() {
   vp.stop()
@@ -325,16 +446,23 @@ watch([tab, ratio, bg, span, introPicked, introTrack, canvas, texts], () => void
 const previewWide = computed(() => ratio.value === 'wide' || (tab.value === 'thumb' && !live.value))
 
 // ── Ước lượng ──
-const totalSec = computed(() => bookSec.value + (introOn.value ? introDur.value : 0) + TITLE_SEC + END_SEC + chapterCount.value * CHAPTER_SEC)
+const totalSec = computed(() => bookSec.value + (introOn.value ? introDur.value : 0) + (voiceOn.value ? 14 : TITLE_SEC) + END_SEC + chapterCount.value * (chimeOn.value ? 1.5 : CHAPTER_SEC))
 // Đo thật: cuốn 29 phút ra 64 MB (~2,3 MB/phút, hình gần như tĩnh).
 const estMB = computed(() => Math.max(3, Math.round((totalSec.value / 60) * 2.5)))
 
-function create() {
+async function create() {
   const b = d.value
   if (!b) return
   stopListen()
   pv.stop()
+  let op: Opening
+  try {
+    op = await opening()
+  } catch {
+    return
+  }
   void startBookVideo(b, {
+    opening: op,
     from: span.value.from, to: span.value.to, ratio: ratio.value, bg: bg.value, extras: { ...extras.value },
     intro: introOn.value && introPicked.value.length ? { track: introTrack.value, from: lo.value, to: hi.value } : null,
   })
@@ -482,6 +610,60 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
               <p class="mt-1 text-[11px] text-muted-foreground truncate">Bấm ▶ ở một câu để nghe tiếp từ đó, dò đoạn hay · tối đa {{ MAX_INTRO_SEC }} giây</p>
             </template>
             <p v-else class="mt-1 text-[11px] text-muted-foreground">Tắt: video phát từ đầu đến cuối như thường.</p>
+          </div>
+
+          <!-- D16: Mở đầu & chuyển cảnh kiểu Fonos — không còn đoạn im lặng -->
+          <div class="rounded-lg border border-border p-3 space-y-2.5">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Mở đầu & chuyển cảnh</span>
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-medium flex items-center gap-1.5"><Mic class="w-4 h-4" /> Lời giới thiệu có giọng đọc</span>
+                <button role="switch" :aria-checked="voiceOn" aria-label="Lời giới thiệu có giọng đọc" class="h-5 w-9 rounded-full relative transition-colors" :class="voiceOn ? 'bg-primary' : 'bg-muted-foreground/30'" @click="voiceOn = !voiceOn">
+                  <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" :class="voiceOn ? 'left-[18px]' : 'left-0.5'"></span>
+                </button>
+              </div>
+              <template v-if="voiceOn">
+                <div class="mt-1.5 rounded-md bg-muted/40 divide-y divide-border text-[12.5px]">
+                  <div v-for="l in lines" :key="l.key" class="px-2.5 py-1 flex items-start gap-2">
+                    <span class="text-[10px] font-semibold uppercase text-muted-foreground w-[52px] shrink-0 pt-0.5">{{ l.label }}</span>
+                    <span class="flex-1 leading-snug">{{ l.text }}</span>
+                    <button class="h-5 w-5 shrink-0 grid place-items-center rounded-full hover:bg-muted" :class="sampling === l.key ? 'text-primary' : 'text-muted-foreground'" :aria-label="'Nghe thử: ' + l.label" :disabled="extrasBusy && sampling !== l.key" @click="playSample(l.key)">
+                      <Loader2 v-if="extrasBusy && sampling === l.key" class="w-3 h-3 animate-spin" /><Square v-else-if="sampling === l.key" class="w-3 h-3" /><Play v-else class="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <p class="mt-1 text-[11px] text-muted-foreground">Đọc bằng giọng {{ d.voice || 'của cuốn' }} (lần đầu mất vài giây).
+                  <template v-if="!d.author || !d.publisher">Thiếu tác giả, NXB? </template><button class="text-primary hover:underline inline-flex items-center gap-0.5" @click="editInfo"><Pencil class="w-3 h-3" /> Sửa thông tin sách</button></p>
+              </template>
+            </div>
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-medium flex items-center gap-1.5 shrink-0"><Music class="w-4 h-4" /> Nhạc hiệu</span>
+                <span class="flex items-center gap-1 min-w-0">
+                  <button v-for="m in (['sano', 'file', 'none'] as const)" :key="m" class="h-6 px-2 rounded-full border text-[11px] whitespace-nowrap min-w-0 truncate max-w-[150px]" :class="music === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'"
+                    :title="m === 'file' && musicPath ? musicPath : ''" @click="m === 'file' && !musicPath ? chooseMusic() : (music = m)">
+                    <template v-if="m === 'sano'">Sano (tạm)</template><template v-else-if="m === 'none'">Không</template>
+                    <template v-else><Upload class="inline w-3 h-3 -mt-0.5" /> {{ musicPath ? musicName : 'File của tôi…' }}</template>
+                  </button>
+                  <button v-if="music === 'file'" class="h-6 px-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground" title="Chọn file khác" @click="chooseMusic">Đổi</button>
+                  <button v-if="music !== 'none'" class="h-6 w-6 grid place-items-center rounded-full hover:bg-muted" :class="sampling === 'music' ? 'text-primary' : 'text-muted-foreground'" aria-label="Nghe thử nhạc hiệu" @click="playSample('music')">
+                    <Loader2 v-if="extrasBusy && sampling === 'music'" class="w-3 h-3 animate-spin" /><Square v-else-if="sampling === 'music'" class="w-3 h-3" /><Play v-else class="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+              <p class="mt-1 text-[11px] text-muted-foreground">Lên nhẹ ~4 giây dưới màn tựa rồi tắt dần; màn kết cũng có.<template v-if="music === 'file'"> Nhạc tự chọn: anh chị tự chịu trách nhiệm bản quyền.</template></p>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-medium flex items-center gap-1.5"><Bell class="w-4 h-4" /> Tiếng chuông khi sang chương</span>
+              <span class="flex items-center gap-1.5">
+                <button v-if="chimeOn" class="h-6 w-6 grid place-items-center rounded-full hover:bg-muted" :class="sampling === 'chime' ? 'text-primary' : 'text-muted-foreground'" aria-label="Nghe thử tiếng chuông" @click="playSample('chime')"><Play class="w-3 h-3" /></button>
+                <button role="switch" :aria-checked="chimeOn" aria-label="Tiếng chuông khi sang chương" class="h-5 w-9 rounded-full relative transition-colors" :class="chimeOn ? 'bg-primary' : 'bg-muted-foreground/30'" @click="chimeOn = !chimeOn">
+                  <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" :class="chimeOn ? 'left-[18px]' : 'left-0.5'"></span>
+                </button>
+              </span>
+            </div>
+            <p v-if="extrasBusy" class="text-[11px] text-muted-foreground flex items-center gap-1.5"><Loader2 class="w-3 h-3 animate-spin" /> Đang chuẩn bị lời giới thiệu, nhạc hiệu…</p>
+            <p v-if="extrasErr" class="text-[11px] text-destructive">{{ extrasErr }}</p>
           </div>
 
           <div class="flex items-start gap-5">
