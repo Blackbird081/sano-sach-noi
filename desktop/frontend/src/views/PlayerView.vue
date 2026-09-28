@@ -7,7 +7,6 @@ import {
   Check, ChevronDown, ChevronLeft, Clapperboard, Download, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
   Image as ImageIcon, Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
 } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
 import BookCover from '@/components/sano/BookCover.vue'
 import M4BProgress from '../components/M4BProgress.vue'
 import LyricsStage from '../components/LyricsStage.vue'
@@ -390,11 +389,21 @@ async function act(fn: (slug: string) => Promise<void>) {
         </div>
       </div>
       <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <Button size="sm" variant="outline" class="border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary" :disabled="!player.detail" title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</Button>
-        <!-- D17: ảnh và video đưa ra hàng nút (trước đây ở khung lời đọc và menu bánh răng) -->
-        <Button size="sm" variant="outline" :disabled="!player.detail || !lyrics" :title="lyrics ? 'Ảnh có lời từ đoạn hay, đăng Facebook, Zalo, Story' : 'Mục đang nghe chưa có lời đọc theo câu'" @click="openShare(lyricIndex)"><ImageIcon class="w-4 h-4" /> Chia sẻ ảnh</Button>
-        <Button size="sm" variant="outline" :disabled="!player.detail" title="Video ngắn đăng Reels, TikTok · Video cả cuốn đăng YouTube, Facebook" @click="openVideo(state.playerSlug)"><Clapperboard class="w-4 h-4" /> Tạo video</Button>
-        <M4BProgress v-if="state.playerSlug" :slug="state.playerSlug" />
+        <!-- D18: hai nút chia sẻ tô màu nền thẻ chia sẻ cho hút mắt (Sano lan truyền nhờ người nghe đăng);
+             Nghe trên điện thoại lùi thành nút nhẹ bên phải. -->
+        <button class="h-10 pl-3 pr-4 rounded-full text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-rose-500/25 bg-gradient-to-r from-orange-500 via-rose-600 to-purple-700 hover:brightness-110 transition disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
+          :disabled="!player.detail || !lyrics" :title="lyrics ? 'Ảnh có lời từ câu đang đọc, đăng Facebook, Zalo, Story' : 'Mục đang nghe chưa có lời đọc theo câu'" @click="openShare(lyricIndex)">
+          <ImageIcon class="w-4 h-4" /> Chia sẻ câu hay<span v-if="!compact" class="font-normal text-white/80 text-xs">· ảnh</span>
+        </button>
+        <button class="h-10 pl-3 pr-4 rounded-full text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-600 via-blue-700 to-fuchsia-700 hover:brightness-110 transition disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
+          :disabled="!player.detail" title="Video ngắn đăng Reels, TikTok · Video cả cuốn đăng YouTube, Facebook" @click="openVideo(state.playerSlug)">
+          <Clapperboard class="w-4 h-4" /> Tạo video<span v-if="!compact" class="font-normal text-white/80 text-xs">· Reels, YouTube</span>
+        </button>
+        <span class="ml-auto flex items-center gap-2">
+          <M4BProgress v-if="state.playerSlug" :slug="state.playerSlug" />
+          <button class="h-9 px-3 rounded-full text-sm text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 disabled:opacity-50" :disabled="!player.detail"
+            title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</button>
+        </span>
       </div>
     </div>
     <div ref="tocEl" class="w-72 shrink-0 border-l border-border overflow-auto">

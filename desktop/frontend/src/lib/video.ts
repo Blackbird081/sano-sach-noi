@@ -28,11 +28,11 @@ watch(videoKind, (k) => {
 /** Video ngắn cần lời đọc theo câu của mục đang nghe. */
 export const canShortVideo = () => !!lyrics.value?.sentences.length
 
-function show(kind: VideoKind, slug: string) {
+function show(kind: VideoKind, slug: string, sentence = lyricIndex.value) {
   if (kind === 'short') {
     bv.open = false
     shareUI.kind = 'video'
-    shareUI.sentence = lyricIndex.value
+    shareUI.sentence = sentence
     shareUI.open = true
   } else {
     shareUI.open = false
@@ -43,6 +43,13 @@ function show(kind: VideoKind, slug: string) {
 /** Mở hộp Tạo video với loại dùng lần trước (mục đang nghe chưa có lời thì mở Video cả cuốn). */
 export function openVideo(slug: string) {
   show(videoKind.value === 'short' && !canShortVideo() ? 'full' : videoKind.value, slug)
+}
+
+/** Video ngắn bắt đầu từ một câu (nút "Video 15 giây" dưới câu đang đọc, D18). */
+export function openShortVideo(sentence: number) {
+  if (!canShortVideo()) return
+  videoKind.value = 'short'
+  show('short', '', sentence)
 }
 
 /** Người dùng đổi loại ngay trong hộp. */
