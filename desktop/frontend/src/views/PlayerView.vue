@@ -96,6 +96,20 @@ watch(midEl, (el, old) => {
   midRO.observe(el)
 })
 onBeforeUnmount(() => midRO?.disconnect())
+// Hàng nút dưới (D18) luôn một dòng: hẹp thì bỏ chữ phụ "· ảnh", "· Reels, YouTube", hẹp nữa thì
+// nút điện thoại chỉ còn icon. Đo chính hàng nút (cột giữa co theo cửa sổ và mục lục).
+const actionsEl = ref<HTMLElement | null>(null)
+const actionsW = ref(9999)
+let actionsRO: ResizeObserver | null = null
+watch(actionsEl, (el) => {
+  actionsRO?.disconnect()
+  if (!el) return
+  actionsRO = new ResizeObserver(([e]) => (actionsW.value = e.contentRect.width))
+  actionsRO.observe(el)
+})
+onBeforeUnmount(() => actionsRO?.disconnect())
+const actionsFull = computed(() => actionsW.value >= 680)
+const phoneLabel = computed(() => actionsW.value >= 480)
 // Bìa to nhất vừa chỗ trống. Đo thật phần còn lại của cách xếp Rộng: khối tên sách
 // (titleH) và phần dưới (lời đọc, thanh thời gian, hàng nút). Rộng: bìa giữa, trên
 // khối tên. Vừa: bìa bên trái khối tên nên được cao hơn. Chọn cách cho bìa to hơn;
@@ -388,21 +402,21 @@ async function act(fn: (slug: string) => Promise<void>) {
           <Check class="w-3.5 h-3.5 shrink-0" /><span class="truncate">{{ pauseMsg }}</span>
         </div>
       </div>
-      <div class="shrink-0 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+      <div ref="actionsEl" class="shrink-0 flex items-center gap-2 border-t border-border pt-4 min-w-0">
         <!-- D18: hai nút chia sẻ tô màu nền thẻ chia sẻ cho hút mắt (Sano lan truyền nhờ người nghe đăng);
              Nghe trên điện thoại lùi thành nút nhẹ bên phải. -->
-        <button class="h-10 pl-3 pr-4 rounded-full text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-rose-500/25 bg-gradient-to-r from-orange-500 via-rose-600 to-purple-700 hover:brightness-110 transition disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
+        <button class="shrink-0 h-10 pl-3 pr-4 rounded-full text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-rose-500/25 bg-gradient-to-r from-orange-500 via-rose-600 to-purple-700 hover:brightness-110 transition disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
           :disabled="!player.detail || !lyrics" :title="lyrics ? 'Ảnh có lời từ câu đang đọc, đăng Facebook, Zalo, Story' : 'Mục đang nghe chưa có lời đọc theo câu'" @click="openShare(lyricIndex)">
-          <ImageIcon class="w-4 h-4" /> Chia sẻ câu hay<span v-if="!compact" class="font-normal text-white/80 text-xs">· ảnh</span>
+          <ImageIcon class="w-4 h-4 shrink-0" /><span class="whitespace-nowrap">Chia sẻ câu hay</span><span v-if="actionsFull" class="font-normal text-white/80 text-xs whitespace-nowrap">· ảnh</span>
         </button>
-        <button class="h-10 pl-3 pr-4 rounded-full text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-600 via-blue-700 to-fuchsia-700 hover:brightness-110 transition disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
+        <button class="shrink-0 h-10 pl-3 pr-4 rounded-full text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-600 via-blue-700 to-fuchsia-700 hover:brightness-110 transition disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
           :disabled="!player.detail" title="Video ngắn đăng Reels, TikTok · Video cả cuốn đăng YouTube, Facebook" @click="openVideo(state.playerSlug)">
-          <Clapperboard class="w-4 h-4" /> Tạo video<span v-if="!compact" class="font-normal text-white/80 text-xs">· Reels, YouTube</span>
+          <Clapperboard class="w-4 h-4 shrink-0" /><span class="whitespace-nowrap">Tạo video</span><span v-if="actionsFull" class="font-normal text-white/80 text-xs whitespace-nowrap">· Reels, YouTube</span>
         </button>
-        <span class="ml-auto flex items-center gap-2">
+        <span class="ml-auto shrink-0 flex items-center gap-2">
           <M4BProgress v-if="state.playerSlug" :slug="state.playerSlug" />
           <button class="h-9 px-3 rounded-full text-sm text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 disabled:opacity-50" :disabled="!player.detail"
-            title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4" /> Nghe trên điện thoại</button>
+            aria-label="Nghe trên điện thoại" title="Tạo một file sách nói (M4B) có bìa, mục lục chương, kèm hướng dẫn chép sang điện thoại" @click="openPhone(state.playerSlug, player.detail?.title ?? '', totalSec)"><Smartphone class="w-4 h-4 shrink-0" /><span v-if="phoneLabel" class="whitespace-nowrap">Nghe trên điện thoại</span></button>
         </span>
       </div>
     </div>
