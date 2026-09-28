@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.1.18 (28/09/2026)
+
+### Tính năng
+- **Chia sẻ câu hay:** ảnh có lời từ đoạn đang nghe, đăng Facebook, Zalo, Story. Có Sao chép ảnh, AirDrop
+- **Tạo video:** video ngắn có tiếng đọc cho Reels, TikTok; hoặc video cả cuốn có chữ chạy cho YouTube, kèm thumbnail, phụ đề, mô tả có mốc chương
+- **Lời đọc phóng to** ngay trong màn nghe, là chế độ mặc định. Rê chuột vào lời đọc để chia sẻ đúng câu đó
+- **Sửa sách:** thêm Dịch giả, Nhà xuất bản
+
+### Sửa lỗi
+- Chữ chạy không còn lệch một câu ở tiểu mục có dấu ":"
+- Giọng Thiền Tâm Đức đọc đúng "chánh" (chánh niệm, chánh kiến)
+- Mục lục màn nghe hiện tên chương
+
 ## v0.1.17 (27/09/2026)
 
 ### Tính năng
