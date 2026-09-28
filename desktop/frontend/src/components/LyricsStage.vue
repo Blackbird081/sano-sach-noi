@@ -3,6 +3,7 @@
 // câu đang đọc đậm, câu khác nhạt, mép trên / dưới mờ dần. Tự cuộn giữ câu đang đọc ở ~1/3
 // trên; người dùng tự cuộn (chuột / vuốt / phím) → ngừng tự cuộn, hiện "Về câu đang đọc".
 // Đổi cỡ cửa sổ không tính là tự cuộn: canh lại câu đang đọc. Bấm câu → nghe từ câu đó.
+// Câu đang đọc 21px đậm, câu khác 17px nhạt hơn (anh Việt: 23px đậm cả loạt nhìn nặng).
 // D18: ngay dưới câu đang đọc có "Chia sẻ câu này" · "Video 15 giây" — hiện khi di chuột vào
 // lời đọc hoặc lúc tạm dừng (chỗ luôn dành sẵn nên lời không nhảy khi nút hiện).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -65,9 +66,10 @@ const next = computed(() => tracks.value[player.current + 1])
         <template v-for="(p, pi) in lyrics.paragraphs" :key="pi">
           <template v-for="(s, si) in p" :key="s.index">
           <p :data-i="s.index" role="button" tabindex="0" title="Nghe từ câu này"
-            class="text-[23px] leading-[1.35] font-bold tracking-[-0.01em] cursor-pointer transition-colors duration-500 outline-none focus-visible:underline"
+            class="tracking-[-0.01em] cursor-pointer transition-colors duration-500 outline-none focus-visible:underline"
             :class="[
-              s.index === lyricIndex ? 'text-foreground' : s.index < lyricIndex ? 'text-foreground/20 hover:text-foreground/50' : 'text-foreground/35 hover:text-foreground/60',
+              s.index === lyricIndex ? 'text-[21px] leading-[1.4] font-bold text-foreground' : 'text-[17px] leading-[1.5] font-semibold',
+              s.index < lyricIndex ? 'text-foreground/25 hover:text-foreground/50' : s.index > lyricIndex && 'text-foreground/40 hover:text-foreground/60',
               si === p.length - 1 && pi < lyrics.paragraphs.length - 1 && 'pb-4',
             ]"
             @click="pickSentence(s.start)" @keydown.enter="pickSentence(s.start)">{{ s.text }}</p>
