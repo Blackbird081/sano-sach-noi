@@ -72,8 +72,9 @@ RC mới nhất đang chạy trên máy anh Việt: `desktop/build/bin/Sano.app`
 2. **Âm lượng nhạc hiệu:** đang −2 dB (−20% biên độ, nghe nhỏ ~13%). Anh hỏi lại "đã giảm 20% chưa" — nếu muốn
    nghe rõ nhỏ 20% thì −3,2 dB (`volume=0.69` trong `videoextras.go`, đổi mã `sano-v3` để tạo lại). Chờ anh nghe rc.15.
 3. **Nhạc hiệu chính thức:** anh Việt sẽ đặt làm / mua; khi có thì nhúng file thay bản tổng hợp tạm.
-4. **Đổi tên miền sanobook.com:** anh đã mua, sắp trỏ. Còn 28 chỗ `tanviet12.github.io` (README, CHANGELOG,
-   AboutView, docs/.vitepress…) — đổi khi anh báo đã trỏ xong. Thẻ chia sẻ / video đã ghi sanobook.com.
+4. **Tên miền sanobook.com: XONG 28/09.** DNS ở luutruso.vn (4 A + CNAME www + TXT xác minh GitHub), repo gắn
+   custom domain, base VitePress `/`, link đổi hết, homepage repo + ghi chú release cũ đã sửa. Link cũ 301 sang tên miền mới.
+   Còn: anh tích Enforce HTTPS; Search Console thêm property Domain `sanobook.com` + nộp sitemap; giữ property cũ 3–6 tháng.
 5. **Chưa kiểm tự động được (cửa sổ hệ điều hành):** Lưu ảnh / Lưu video / AirDrop / Mở thư mục — nhờ anh bấm thử.
    Sao chép ảnh trên Windows / Linux (API trình duyệt) chưa thử máy thật.
 6. **Phát hành 0.1.18**: viết `CHANGELOG.md` ngắn cho người dùng (các mục trên), `VERSION`, link `README.md`, commit
