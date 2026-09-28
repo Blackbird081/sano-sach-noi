@@ -11,7 +11,7 @@ import { drawScene, type BVRatio, type Scene } from '../lib/bookVideoCard'
 import { BACKGROUNDS, audioBars, loadImage, prepareCard } from '../lib/shareCard'
 import { bookTexts, copyText, errText, openBookVideoFolder, type SectionText } from '../lib/backend'
 import { buildLyrics } from '../lib/lyrics'
-import { lyricIndex, player } from '../lib/player'
+import { lyricIndex, pick, player } from '../lib/player'
 
 const KEY = 'sano.bookVideo'
 function read() {
@@ -121,7 +121,34 @@ watch(introTrack, () => pv.stop())
 watch(() => pv.current.value, (i) => {
   if (i >= 0 && pv.mode.value === 'from') listEl.value?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 })
-watch(() => bv.open, (o) => !o && pv.stop())
+watch(() => bv.open, (o) => !o && stopListen())
+
+// Nghe thử như video (không cần tạo): trích đoạn → lặng như màn tựa → trình nghe chính phát
+// từ đầu phần đã chọn (có chữ chạy); hộp thoại tự đóng để nghe.
+const listening = ref<'idle' | 'intro' | 'gap'>('idle')
+let gapTimer = 0
+function startBook() {
+  listening.value = 'idle'
+  pick(span.value.from)
+  bv.open = false
+}
+function listenLikeVideo() {
+  stopListen()
+  if (introOn.value && introPicked.value.length) {
+    listening.value = 'intro'
+    void pv.play(lo.value, hi.value, () => {
+      listening.value = 'gap'
+      gapTimer = window.setTimeout(startBook, TITLE_SEC * 1000)
+    })
+  } else startBook()
+}
+// Bấm ▶ câu khác / dừng giữa trích đoạn → thôi chuỗi nghe thử như video.
+watch(() => pv.playing.value, (p) => !p && listening.value === 'intro' && (listening.value = 'idle'))
+function stopListen() {
+  clearTimeout(gapTimer)
+  if (listening.value !== 'idle') pv.stop()
+  listening.value = 'idle'
+}
 async function init() {
   const b = d.value
   if (!b) return
@@ -133,13 +160,17 @@ async function init() {
       texts.value = []
     }
   }
-  range.value = 'all'
-  fromG.value = 0
-  toG.value = Math.max(0, groups.value.length - 1)
-  const cur = texts.value[player.current]?.text ? player.current : (withText.value[0]?.i ?? 0)
-  introTrack.value = cur
-  await nextTick()
-  autoFill(cur === player.current ? lyricIndex.value : 0)
+  // Mở lại cùng cuốn: giữ nguyên lựa chọn (vd vừa "Nghe thử như video" rồi quay lại tạo).
+  if (initedSlug !== b.slug) {
+    initedSlug = b.slug
+    range.value = 'all'
+    fromG.value = 0
+    toG.value = Math.max(0, groups.value.length - 1)
+    const cur = texts.value[player.current]?.text ? player.current : (withText.value[0]?.i ?? 0)
+    introTrack.value = cur
+    await nextTick()
+    autoFill(cur === player.current ? lyricIndex.value : 0)
+  }
   await prepareCard()
   cover.value = b.coverUrl ? await loadImage(b.coverUrl) : null
   void refreshBars()
@@ -147,6 +178,7 @@ async function init() {
   void nextTick(() => listEl.value?.querySelector(`[data-i="${lo.value}"]`)?.scrollIntoView({ block: 'center' }))
 }
 let loadedSlug = ''
+let initedSlug = ''
 watch(() => bv.open, (o) => o && void init(), { immediate: true })
 
 // ── Xem trước ──
@@ -225,6 +257,7 @@ const estMB = computed(() => Math.max(3, Math.round((totalSec.value / 60) * 2.5)
 function create() {
   const b = d.value
   if (!b) return
+  stopListen()
   pv.stop()
   void startBookVideo(b, {
     from: span.value.from, to: span.value.to, ratio: ratio.value, bg: bg.value, extras: { ...extras.value },
@@ -431,8 +464,18 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
 
         <div class="shrink-0 border-t border-border px-5 py-3.5">
           <template v-if="!busy && bv.step !== 'done'">
-            <Button class="w-full" :disabled="!d.tracks.length" @click="create"><Clapperboard class="w-4 h-4" /> Tạo video {{ Math.round(totalSec / 60) }} phút</Button>
-            <p class="mt-2 text-[11px] text-muted-foreground text-center">MP4 {{ ratio === 'wide' ? '1920×1080' : '1080×1920' }} · khoảng {{ estMB }} MB · tạo trên máy, không cần mạng.</p>
+            <div class="flex gap-2">
+              <Button variant="outline" class="shrink-0" :class="listening !== 'idle' ? 'border-primary text-primary bg-primary/5' : ''" :disabled="!d.tracks.length"
+                title="Nghe theo đúng thứ tự của video: trích đoạn, rồi cả phần sách từ đầu — không cần tạo video" @click="listening === 'idle' ? listenLikeVideo() : stopListen()">
+                <component :is="listening === 'idle' ? Play : Square" class="w-4 h-4" /> {{ listening === 'idle' ? 'Nghe thử như video' : 'Dừng nghe thử' }}
+              </Button>
+              <Button class="flex-1" :disabled="!d.tracks.length" @click="create"><Clapperboard class="w-4 h-4" /> Tạo video {{ Math.round(totalSec / 60) }} phút</Button>
+            </div>
+            <p class="mt-2 text-[11px] text-muted-foreground text-center">
+              <template v-if="listening === 'intro'">Đang nghe trích đoạn · sau đó phát phần sách từ đầu ở màn nghe</template>
+              <template v-else-if="listening === 'gap'">Hết trích đoạn · {{ TITLE_SEC }} giây nữa phát phần sách từ đầu…</template>
+              <template v-else>MP4 {{ ratio === 'wide' ? '1920×1080' : '1080×1920' }} · khoảng {{ estMB }} MB · tạo trên máy, không cần mạng.</template>
+            </p>
           </template>
           <Button v-else-if="busy" variant="outline" class="w-full" @click="cancelBookVideo">Huỷ</Button>
           <div v-else class="flex gap-2">

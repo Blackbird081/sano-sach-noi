@@ -16,6 +16,7 @@ export function usePreview(get: () => { url: string; sentences: PreviewSentence[
   const current = ref(-1) // câu đang đọc (-1 = không phát)
   const mode = ref<'from' | 'span'>('from')
   let stopAt = Infinity
+  let onDone: (() => void) | null = null // gọi khi phát hết đoạn (không gọi khi bấm dừng)
   let raf = 0
 
   function tick() {
@@ -23,7 +24,9 @@ export function usePreview(get: () => { url: string; sentences: PreviewSentence[
     if (!playing.value || !src) return
     const t = audio.currentTime
     if (t >= stopAt) {
+      const cb = onDone
       stop()
+      cb?.()
       return
     }
     let i = src.sentences.findIndex((s) => t < s.end)
@@ -32,11 +35,12 @@ export function usePreview(get: () => { url: string; sentences: PreviewSentence[
     raf = requestAnimationFrame(tick)
   }
 
-  async function play(from: number, to?: number) {
+  async function play(from: number, to?: number, done?: () => void) {
     const src = get()
     if (!src?.sentences[from]) return
     if (player.playing) pauseMain()
     mode.value = to === undefined ? 'from' : 'span'
+    onDone = done ?? null
     stopAt = to === undefined ? Infinity : src.sentences[to].end
     if (!audio.src.endsWith(src.url)) audio.src = src.url
     audio.currentTime = src.sentences[from].start
@@ -53,13 +57,19 @@ export function usePreview(get: () => { url: string; sentences: PreviewSentence[
   }
 
   function stop() {
+    onDone = null
     audio.pause()
     playing.value = false
     current.value = -1
     cancelAnimationFrame(raf)
   }
 
-  audio.addEventListener('ended', stop)
+  // Hết file (đoạn chọn kéo tới cuối tiểu mục): coi như phát hết đoạn.
+  audio.addEventListener('ended', () => {
+    const cb = stopAt < Infinity ? onDone : null
+    stop()
+    cb?.()
+  })
   onBeforeUnmount(() => {
     stop()
     audio.removeAttribute('src')
