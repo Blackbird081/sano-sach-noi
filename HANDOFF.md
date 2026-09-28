@@ -1,6 +1,6 @@
 # HANDOFF — Sano (sách nói tiếng Việt)
 
-Cập nhật: 28/09/2026 21:32 · Phiên bản đang phát hành: **0.1.17** (Latest trên GitHub Releases) · trên `main` có nhiều tính năng chưa phát hành (mục 3), RC máy anh: 0.1.18-rc.15
+Cập nhật: 28/09/2026 23:30 · Phiên bản phát hành: **0.1.18** (tag đã push 28/09, CI tạo nháp → công khai) · RC cuối trên máy anh: 0.1.18-rc.22
 
 Phiên mới: đọc file này + `README.md` + `CHANGELOG.md` là đủ nắm trạng thái.
 
@@ -28,6 +28,21 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Build RC tại máy: `scripts/release/build.sh 0.1.18-rc.1 darwin/arm64` → `desktop/build/bin/Sano.app` (wails dev dùng chung thư mục này, `-clean` xoá nó).
 - Phát hành: cập nhật `VERSION`, `CHANGELOG.md` (ngắn, hộp cập nhật của bản cũ hiện đoạn này), link tải trong `README.md` → commit `chore: phát hành vX.Y.Z` → push `main` → `git tag -a vX.Y.Z` + push tag → chờ CI → `gh release edit vX.Y.Z --draft=false --latest`.
 - VirusTotal luôn báo 2 phần mềm nhầm bản Windows (đã có từ 0.1.16, file Go chưa ký), không chặn phát hành.
+
+## 3a. Phiên tối 28/09 — D17, D18, phát hành 0.1.18
+
+- **D17** (`videohub`): hàng nút màn nghe; "Tạo video" một hộp, đầu hộp `components/VideoKindTabs.vue` chọn Video ngắn
+  (ShareDialog phần video) / Video cả cuốn (BookVideoDialog), cùng cỡ 1060×690, nhớ loại (`lib/video.ts`, `sano.video.kind`).
+  Hộp Chia sẻ chỉ còn ảnh. Bánh răng bỏ "Tạo video cả cuốn…".
+- **D18 A+B** (`sharecta`): nút "Chia sẻ câu hay · ảnh" (Hoàng hôn) + "Tạo video · Reels, YouTube" (tím xanh), hẹp thì chữ phụ
+  xuống dòng trong nút, nút điện thoại chỉ còn icon (đo `actionsEl`). Dưới câu đang đọc (LyricsStage) "Chia sẻ câu này" ·
+  "Video 15 giây", chỉ hiện khi rê chuột.
+- Phóng to lời đọc là mặc định (`sano.lyricsFrame.v2`), bỏ hẳn "Xem cả lời" (`LyricsPanel.vue` đã xoá), Thu lại = icon nhỏ.
+  Lời đọc: câu đang đọc 21px đậm, câu khác 17px. Khung Lời đọc ở màn thường tô màu Hoàng hôn nhạt.
+- Chia sẻ ảnh cuộn danh sách tới câu đang đọc (`centerPicked`).
+- **Bẫy đã gặp:** `wails dev` ghi đè `desktop/build/bin/Sano.app` và tắt dev thì xoá file chạy → test dev bằng worktree
+  riêng trong scratchpad (symlink node_modules) rồi `git worktree remove`. `/Applications/Sano.app` cùng bundle id:
+  đang chạy thì `open` RC chỉ đưa app cũ lên trước — phải ⌘Q trước.
 
 ## 3. Phiên 28/09 — nhiều tính năng mới trên `main` (26 commit từ `6766b1f`), CHƯA phát hành, CHƯA push
 
