@@ -6,7 +6,8 @@
 // - Hàng trên: bìa nhỏ + tên sách, giọng, tiểu mục; góc phải nút Thu lại / Xem cả lời.
 // - Giữa: mỗi câu một khối như lời bài hát; câu đang đọc đậm, câu khác nhạt, mép trên/dưới
 //   mờ dần; tự cuộn giữ câu đang đọc ở ~1/3 trên, bấm câu → nghe từ câu đó.
-// - Dưới: thanh thời gian (giữa có dấu "Sano · sách nói"), hàng nút y như màn nghe thường.
+// - Giữa thanh trên cùng: logo Sano + "Sách nói" (như đầu trình nghe Fonos) để ảnh chụp có thương hiệu.
+// - Dưới: thanh thời gian, hàng nút y như màn nghe thường.
 // - Khung hẹp (cửa sổ nhỏ nhất): nút Thu lại, Nghỉ chỉ còn biểu tượng.
 // - Vào: khung Lời đọc ở màn nghe có 2 nút "Phóng to" và "Xem cả lời". Ra: nút "Thu lại".
 //   App nhớ chế độ đã chọn cho lần mở sau.
@@ -131,8 +132,14 @@ const nav = [
               <div class="absolute -inset-10 -z-10 blur-3xl saturate-150 opacity-[0.18] dark:opacity-[0.22]"><WfBookCover :title="title" size="lg" /></div>
               <div class="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-background/40 to-background"></div>
             </template>
-            <div class="shrink-0 flex items-center justify-between">
+            <div class="relative shrink-0 flex items-center justify-between">
               <span class="text-sm text-muted-foreground flex items-center gap-1"><ChevronLeft class="w-4 h-4" /> Thư viện</span>
+              <!-- B: thương hiệu giữa thanh trên (như đầu trình nghe Fonos) -->
+              <span v-if="expanded" class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                <img src="@/assets/favicon.svg" alt="" class="h-6 w-6 rounded-md shadow-sm" />
+                <span class="text-[15px] font-semibold tracking-tight">Sano</span>
+                <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sách nói</span>
+              </span>
               <span class="h-8 w-8 grid place-items-center rounded-md text-muted-foreground"><Settings class="w-4 h-4" /></span>
             </div>
 
@@ -169,8 +176,6 @@ const nav = [
               <div class="mt-2 w-full max-w-md mx-auto shrink-0">
                 <div class="h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary rounded-full transition-all" :style="{ width: pct + '%' }"></div></div>
                 <div class="flex items-center justify-between text-[11px] text-muted-foreground mt-1 tabular-nums"><span>{{ clock(38 * pct / 100) }}</span>
-                  <!-- Dấu Sano nhỏ (sau này ảnh chia sẻ có sẵn thương hiệu) -->
-                  <span class="flex items-center gap-1 font-medium"><img src="@/assets/favicon.svg" alt="" class="h-3.5 w-3.5 rounded-[3px]" /> Sano · sách nói</span>
                   <span>-{{ clock(38 - 38 * pct / 100) }}</span></div>
               </div>
               <div class="mt-3 w-full max-w-md mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-2 shrink-0">

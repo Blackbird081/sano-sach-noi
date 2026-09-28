@@ -233,8 +233,14 @@ async function act(fn: (slug: string) => Promise<void>) {
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background"></div>
       </div>
-      <div class="shrink-0 flex items-center justify-between gap-2">
+      <div class="relative shrink-0 flex items-center justify-between gap-2">
         <button class="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground w-fit" @click="go('library')"><ChevronLeft class="w-4 h-4" /> Thư viện</button>
+        <!-- Phóng to (D13): thương hiệu giữa thanh trên như đầu trình nghe (ảnh chụp / chia sẻ có sẵn Sano) -->
+        <span v-if="framed && player.detail" class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none select-none">
+          <img src="@/assets/favicon.svg" alt="" class="h-6 w-6 rounded-md shadow-sm" />
+          <span class="text-[15px] font-semibold tracking-tight">Sano</span>
+          <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sách nói</span>
+        </span>
         <div v-if="player.detail" class="relative" data-book-menu>
           <button class="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" :class="bookMenu && 'bg-muted text-foreground'"
             aria-label="Tuỳ chọn cuốn sách" aria-haspopup="menu" :aria-expanded="bookMenu" @click="bookMenu = !bookMenu"><Settings class="w-4 h-4" /></button>
@@ -328,9 +334,7 @@ async function act(fn: (slug: string) => Promise<void>) {
           <div class="h-1.5 rounded-full bg-muted overflow-hidden cursor-pointer" role="slider" aria-label="Vị trí nghe" :aria-valuenow="Math.round(pctTrack)" @click="seekTo">
             <div class="h-full bg-primary rounded-full" :style="{ width: pctTrack + '%' }"></div>
           </div>
-          <div class="flex items-center justify-between text-[11px] text-muted-foreground mt-1 tabular-nums"><span>{{ fmtClock(player.time) }}</span>
-            <!-- Dấu Sano nhỏ khi phóng to (ảnh chụp / chia sẻ có sẵn thương hiệu) -->
-            <span v-if="framed" class="flex items-center gap-1 font-medium"><img src="@/assets/favicon.svg" alt="" class="h-3.5 w-3.5 rounded-[3px]" /> Sano · sách nói</span>
+          <div class="flex justify-between text-[11px] text-muted-foreground mt-1 tabular-nums"><span>{{ fmtClock(player.time) }}</span>
             <span>-{{ fmtClock(Math.max(0, player.duration - player.time)) }}</span></div>
         </div>
         <!-- Một hàng: tốc độ (trái) · nút phát (giữa) · Nghỉ (phải) -->
