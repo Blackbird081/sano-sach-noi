@@ -79,6 +79,8 @@ export const lyrics = computed<Lyrics | null>(() => {
   const sil = silences.value
   return sil && sil.url === t.url ? snapToSilences(l, sil.list) : l
 })
+/** Khoảng lặng thật đã dò của tiểu mục đang phát (null = chưa dò / không dò được). */
+export const trackSilences = computed(() => (silences.value && silences.value.url === track.value?.url ? silences.value.list : null))
 /** Cuốn đang phát có chữ ở ít nhất một tiểu mục (giữ ô Lời đọc cố định khi đổi tiểu mục). */
 export const bookHasLyrics = computed(() => texts.value.some((t) => !!t.text))
 export const lyricIndex = computed(() => (lyrics.value ? sentenceAt(lyrics.value, player.time) : 0))

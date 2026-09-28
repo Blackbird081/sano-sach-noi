@@ -164,3 +164,35 @@ export function sentenceAt(l: Lyrics, t: number): number {
   }
   return cur
 }
+
+/**
+ * Đầu / cuối từng câu để CẮT đoạn (trích đoạn, video chia sẻ): câu kế bắt đầu đúng lúc hết
+ * khoảng lặng (sau snapToSilences) nên cắt ở giữa khoảng lặng — không dính chữ đầu câu sau,
+ * không mất chữ đầu câu này (lùi ≤ 0,15 giây vào khoảng lặng trước). Không khớp khoảng lặng
+ * nào thì dùng giờ câu như cũ.
+ */
+export function sentenceBounds(l: Lyrics, silences: { end: number; len: number }[] | null, duration: number): { start: number; end: number }[] {
+  const sil = silences ?? []
+  const at = (t: number) => sil.find((s) => Math.abs(s.end - t) < 0.03)
+  return l.sentences.map((s, i) => {
+    const next = l.sentences[i + 1]
+    const before = i > 0 ? at(s.start) : undefined
+    const after = next ? at(next.start) : undefined
+    return {
+      start: before ? Math.max(0, s.start - Math.min(0.15, before.len / 2)) : s.start,
+      end: next ? (after ? after.end - after.len / 2 : next.start) : duration,
+    }
+  })
+}
+
+/** Dò khoảng lặng của một file tiếng (giải mã 16 kHz mono); lỗi → null. */
+export async function decodeSilences(url: string): Promise<{ end: number; len: number }[] | null> {
+  try {
+    const buf = await (await fetch(url)).arrayBuffer()
+    const Ctx = window.OfflineAudioContext || (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext }).webkitOfflineAudioContext
+    const a = await new Ctx(1, 1, 16000).decodeAudioData(buf)
+    return findSilences(a.getChannelData(0), a.sampleRate)
+  } catch {
+    return null
+  }
+}

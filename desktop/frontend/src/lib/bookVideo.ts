@@ -8,7 +8,7 @@ import {
   bookTexts, bookVideoBegin, bookVideoCancel, bookVideoFinish, bookVideoFrame, bookVideoState, errText, onEvent,
   type BookDetail, type BookVideoOverlay, type BookVideoSeg, type BookVideoStatus, type Track,
 } from './backend'
-import { buildLyrics, findSilences, snapToSilences, type Lyrics } from './lyrics'
+import { buildLyrics, decodeSilences, sentenceBounds, snapToSilences, type Lyrics } from './lyrics'
 import { gapsFor } from './pause'
 import { audioBars, canvasPNG, loadImage, prepareCard } from './shareCard'
 import { drawBrightBar, drawBrightWave, drawScene, introLines, sceneSize, type BVRatio, type Rect, type Scene, type SceneCommon } from './bookVideoCard'
@@ -85,18 +85,14 @@ export async function cancelBookVideo() {
 }
 
 // ── Lời từng tiểu mục (giờ câu bám khoảng lặng thật như màn nghe) ──
-async function trackLyrics(t: Track, text: string, script: string): Promise<Lyrics | null> {
+export type Silences = Map<number, { end: number; len: number }[] | null>
+async function trackLyrics(t: Track, text: string, script: string, sils: Silences, i: number): Promise<Lyrics | null> {
   if (!text) return null
   const l = buildLyrics(text, script, t.durationSec)
   if (t.durationSec > MAX_DECODE_SEC) return l
-  try {
-    const buf = await (await fetch(t.url)).arrayBuffer()
-    const Ctx = window.OfflineAudioContext || (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext }).webkitOfflineAudioContext
-    const a = await new Ctx(1, 1, 16000).decodeAudioData(buf)
-    return snapToSilences(l, findSilences(a.getChannelData(0), a.sampleRate))
-  } catch {
-    return l
-  }
+  const sil = await decodeSilences(t.url)
+  sils.set(i, sil)
+  return sil ? snapToSilences(l, sil) : l
 }
 
 /** Chương mới bắt đầu ở tiểu mục i (hiện thẻ chương / mốc mô tả)? */
@@ -145,21 +141,28 @@ export interface Timeline {
   part: string
 }
 
-/** Đầu và độ dài trích đoạn (giây trong tiểu mục) theo giờ câu đã tính. */
-export function introSpan(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>) {
+/**
+ * Trích đoạn: đầu, độ dài và điểm cắt sau từng câu (giây tính từ đầu trích đoạn). Cắt ở giữa
+ * khoảng lặng thật giữa hai câu (sentenceBounds) để không dính chữ đầu câu kế.
+ */
+export function introSpan(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>, sils?: Silences) {
   if (!o.intro) return null
   const it = d.tracks[o.intro.track]
-  const ss = lyr.get(o.intro.track)?.sentences ?? []
-  const a = ss[o.intro.from]?.start ?? 0
-  const end = o.intro.to + 1 < ss.length ? ss[o.intro.to + 1].start : it.durationSec
-  return { track: it, start: a, dur: Math.max(1, end - a) }
+  const l = lyr.get(o.intro.track)
+  if (!l?.sentences.length) return null
+  const b = sentenceBounds(l, sils?.get(o.intro.track) ?? null, it.durationSec)
+  const from = Math.min(o.intro.from, b.length - 1)
+  const to = Math.min(Math.max(o.intro.to, from), b.length - 1)
+  const a = b[from].start
+  const cuts = b.slice(from, to + 1).map((x) => x.end - a)
+  return { track: it, start: a, dur: Math.max(1, cuts[cuts.length - 1]), cuts, from, to }
 }
 
 /**
  * Dòng thời gian của video: đoạn tiếng + khung hình (dùng chung cho Tạo video và Nghe thử
  * như video trong hộp thoại, nên nghe thử khớp đúng video sẽ tạo).
  */
-export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>, introBars: number[]): Timeline {
+export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<number, Lyrics | null>, introBars: number[], sils?: Silences): Timeline {
   const range = d.tracks.slice(o.from, o.to + 1)
   const segs: BookVideoSeg[] = []
   const frames: Frame[] = []
@@ -173,16 +176,15 @@ export function buildTimeline(d: BookDetail, o: BookVideoOptions, lyr: Map<numbe
   }
   const silence = (dur: number) => segs.push({ file: '', start: 0, dur, silence: true })
   let introDur = 0
-  const sp = introSpan(d, o, lyr)
+  const sp = introSpan(d, o, lyr, sils)
   if (o.intro && sp) {
     const ss = lyr.get(o.intro.track)?.sentences ?? []
-    const endAt = (i: number) => (i + 1 < ss.length ? ss[i + 1].start : sp.track.durationSec)
     introDur = sp.dur
-    const pick = ss.slice(o.intro.from, o.intro.to + 1)
+    const pick = ss.slice(sp.from, sp.to + 1)
     const reserve = Math.max(1, ...pick.map((x) => introLines(o.ratio, x.text)))
     segs.push({ file: sp.track.file, start: sp.start, dur: introDur, silence: false })
     pick.forEach((x, k) => {
-      const sec = endAt(o.intro!.from + k) - x.start
+      const sec = sp.cuts[k] - (k ? sp.cuts[k - 1] : 0)
       frame({ kind: 'intro', line: x.text, bars: introBars, reserve }, sec)
       srt.push({ a: t, b: t + sec, t: x.text })
       t += sec
@@ -287,17 +289,18 @@ export async function startBookVideo(d: BookDetail, o: BookVideoOptions) {
 
     // 1. Lời + giờ câu của từng tiểu mục trong phần chọn.
     const lyr = new Map<number, Lyrics | null>()
+    const sils: Silences = new Map()
     const need = [...new Set([...(o.intro ? [o.intro.track] : []), ...range.map((_, k) => o.from + k)])]
     for (const i of need) {
       if (cancelled) return
-      lyr.set(i, await trackLyrics(d.tracks[i], texts[i]?.text ?? '', texts[i]?.script ?? ''))
+      lyr.set(i, await trackLyrics(d.tracks[i], texts[i]?.text ?? '', texts[i]?.script ?? '', sils, i))
       bv.done++
     }
 
     // 2. Dòng thời gian.
-    const sp = introSpan(d, o, lyr)
+    const sp = introSpan(d, o, lyr, sils)
     const introBars = sp ? await audioBars(sp.track.url, sp.start, sp.start + sp.dur, 48).catch(() => Array.from({ length: 48 }, () => 0.35)) : []
-    const tl = buildTimeline(d, o, lyr, introBars)
+    const tl = buildTimeline(d, o, lyr, introBars, sils)
     const { segs, frames, srt, marks, introDur, bookStart, bookEnd, minutes, badge, outName, partial, part } = tl
     common.totalLabel = tl.totalLabel
 

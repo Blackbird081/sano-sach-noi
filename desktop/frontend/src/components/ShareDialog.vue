@@ -11,7 +11,8 @@ import { BACKGROUNDS, audioBars, canvasPNG, drawBrightBars, drawCard, loadImage,
 import {
   airDropShareImage, airDropShareVideo, canAirDrop, cancelShareVideo, copyShareImage, errText, makeShareVideo, onEvent, saveShareImage, saveShareVideo,
 } from '../lib/backend'
-import { lyrics, player, track } from '../lib/player'
+import { lyrics, player, track, trackSilences } from '../lib/player'
+import { decodeSilences, sentenceBounds, snapToSilences } from '../lib/lyrics'
 
 // Ảnh: tối đa 4 câu (nhiều hơn chữ phải thu nhỏ, khó đọc). Video: tối đa 8 câu / 30 giây,
 // mở ra chọn sẵn ~15 giây (Reels 15–30 giây dễ được xem hết nhất; mỗi câu đọc ~3,3 giây).
@@ -44,10 +45,19 @@ async function init() {
     shareUI.open = false
     return
   }
-  const ss = ly.sentences
+  // Giờ câu bám khoảng lặng thật; điểm cắt ở giữa khoảng lặng để video không dính chữ câu kế.
+  // Màn nghe chưa kịp dò khoảng lặng thì dò ngay (trên bản sao, không đụng lời đang hiện).
+  let sil = trackSilences.value
+  let l = { paragraphs: ly.paragraphs, sentences: ly.sentences.map((x) => ({ ...x })) }
+  if (!sil && t.durationSec <= 20 * 60) {
+    sil = await decodeSilences(t.url)
+    if (sil) l = snapToSilences(l, sil)
+  }
+  const ss = l.sentences
+  const bounds = sentenceBounds(l, sil, t.durationSec)
   snap.value = {
     slug: d.slug, file: t.file, url: t.url, section: t.title, title: d.title, voice: d.voice,
-    sentences: ss.map((s, i) => ({ text: s.text, start: s.start, end: i + 1 < ss.length ? ss[i + 1].start : t.durationSec })),
+    sentences: ss.map((x, i) => ({ text: x.text, start: bounds[i].start, end: bounds[i].end })),
   }
   const i = Math.min(Math.max(0, shareUI.sentence), ss.length - 1)
   picked.value = [i]

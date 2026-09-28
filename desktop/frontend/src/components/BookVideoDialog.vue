@@ -11,7 +11,7 @@ import { useVideoPreview } from '../lib/videoPreview'
 import { drawScene, type BVRatio, type Scene } from '../lib/bookVideoCard'
 import { BACKGROUNDS, audioBars, loadImage, prepareCard } from '../lib/shareCard'
 import { bookTexts, copyText, errText, openBookVideoFolder, type SectionText } from '../lib/backend'
-import { buildLyrics } from '../lib/lyrics'
+import { buildLyrics, decodeSilences, sentenceBounds, snapToSilences } from '../lib/lyrics'
 import { lyricIndex, player } from '../lib/player'
 
 const KEY = 'sano.bookVideo'
@@ -68,17 +68,30 @@ const introTrack = ref(0)
 const introPicked = ref<number[]>([])
 const MAX_INTRO = 8
 const MAX_INTRO_SEC = 30
+// Khoảng lặng thật của tiểu mục trích đoạn: giờ câu bám giọng thật, cắt giữa khoảng lặng
+// (không dính chữ câu kế như khi chỉ ước lượng theo độ dài chữ).
+const introSil = ref<{ end: number; len: number }[] | null>(null)
+const silCache = new Map<string, { end: number; len: number }[] | null>()
+watch([introTrack, d], async () => {
+  const t = d.value?.tracks[introTrack.value]
+  introSil.value = null
+  if (!t) return
+  if (!silCache.has(t.url)) silCache.set(t.url, t.durationSec <= 20 * 60 ? await decodeSilences(t.url) : null)
+  if (d.value?.tracks[introTrack.value]?.url === t.url) introSil.value = silCache.get(t.url) ?? null
+}, { immediate: true })
 const introLyrics = computed(() => {
   const b = d.value
   const tx = texts.value[introTrack.value]
   if (!b || !tx?.text) return null
-  return buildLyrics(tx.text, tx.script, b.tracks[introTrack.value].durationSec)
+  const l = buildLyrics(tx.text, tx.script, b.tracks[introTrack.value].durationSec)
+  return introSil.value ? snapToSilences(l, introSil.value) : l
 })
 const introSentences = computed(() => {
   const l = introLyrics.value
   const t = d.value?.tracks[introTrack.value]
   if (!l || !t) return []
-  return l.sentences.map((s, i) => ({ text: s.text, start: s.start, end: i + 1 < l.sentences.length ? l.sentences[i + 1].start : t.durationSec }))
+  const b = sentenceBounds(l, introSil.value, t.durationSec)
+  return l.sentences.map((s, i) => ({ text: s.text, start: b[i].start, end: b[i].end }))
 })
 const lo = computed(() => Math.min(...introPicked.value))
 const hi = computed(() => Math.max(...introPicked.value))
@@ -146,7 +159,7 @@ function buildPreview() {
   const lyr = quickLyrics(b, texts.value)
   // trích đoạn: dùng đúng giờ câu đang hiện trong danh sách chọn
   if (introLyrics.value) lyr.set(introTrack.value, introLyrics.value)
-  tl = buildTimeline(b, options(), lyr, bars.value.length ? bars.value : Array.from({ length: 48 }, () => 0.35))
+  tl = buildTimeline(b, options(), lyr, bars.value.length ? bars.value : Array.from({ length: 48 }, () => 0.35), new Map([[introTrack.value, introSil.value]]))
   vp.load(tl.segs)
   return tl
 }
