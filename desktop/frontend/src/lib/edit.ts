@@ -294,20 +294,22 @@ export async function deleteWord(word: string) {
 }
 
 // ── Tìm và thay trong lời đọc (tab Nội dung, D20) ─────────────────────────
-// Khớp đúng nguyên cụm, phân biệt hoa thường; chỉ trong lời đọc (tiêu đề giữ nguyên), bỏ
+// Khớp đúng nguyên cụm, phân biệt hoa thường; trong lời đọc (tick thêm thì cả tiêu đề mục,
+// vì tiêu đề cũng được đọc ở đầu mục), bỏ
 // lời giới thiệu đầu sách (tự sinh từ tên sách) và mục đang đọc lại. Thay xong là bản sửa
 // CHƯA LƯU; người dùng bấm "Lưu & đọc lại N mục" để chỉ đọc lại các mục đó.
 
 /** Số chỗ `needle` xuất hiện trong `s` (không chồng nhau). */
 export const countIn = (s: string, needle: string) => (needle ? s.split(needle).length - 1 : 0)
 
-/** Các mục có `needle` trong lời đọc, kèm số chỗ. */
-export function textHits(needle: string) {
+/** Các mục có `needle` trong lời đọc (và tiêu đề nếu `titles`), kèm số chỗ. */
+export function textHits(needle: string, titles = false) {
   const out: { sec: EditSection; count: number }[] = []
   if (!needle) return out
   for (const s of edit.view?.sections ?? []) {
     if (s.intro) continue
-    const n = countIn(current(s).text, needle)
+    const c = current(s)
+    const n = countIn(c.text, needle) + (titles ? countIn(c.title, needle) : 0)
     if (n) out.push({ sec: s, count: n })
   }
   return out
@@ -321,9 +323,9 @@ export interface ReplaceResult {
 }
 
 /** Thay mọi chỗ `needle` bằng `repl` trong lời đọc các mục (thành bản sửa chưa lưu). */
-export function replaceInText(needle: string, repl: string): ReplaceResult {
+export function replaceInText(needle: string, repl: string, titles = false): ReplaceResult {
   const res: ReplaceResult = { count: 0, indexes: [], skipped: 0, undo: {} }
-  for (const { sec, count } of textHits(needle)) {
+  for (const { sec, count } of textHits(needle, titles)) {
     if (busySection(sec.index)) {
       res.skipped++
       continue
@@ -331,7 +333,7 @@ export function replaceInText(needle: string, repl: string): ReplaceResult {
     const d = edit.drafts[sec.index]
     res.undo[sec.index] = d ? { ...d } : undefined
     const c = current(sec)
-    setDraft(sec, c.title, c.text.split(needle).join(repl))
+    setDraft(sec, titles ? c.title.split(needle).join(repl) : c.title, c.text.split(needle).join(repl))
     res.count += count
     res.indexes.push(sec.index)
   }

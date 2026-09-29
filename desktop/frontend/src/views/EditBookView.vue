@@ -104,7 +104,7 @@ const changeNote = computed(() => {
   const s = sec.value
   if (!s || !dirty.value) return ''
   if (isStale(s.index)) return 'Từ điển cách đọc đã đổi, mục này cần đọc lại.'
-  if (fr.done?.indexes.includes(s.index) && current(s).text === s.text.split(fr.done.find).join(fr.done.repl)) return `Đã thay "${fr.done.find}" → "${fr.done.repl}".`
+  if (fr.done?.indexes.includes(s.index) && current(s).text === s.text.split(fr.done.find).join(fr.done.repl) && (!fr.done.titles || current(s).title === s.title.split(fr.done.find).join(fr.done.repl))) return `Đã thay "${fr.done.find}" → "${fr.done.repl}".`
   const a = s.text
   const b = text.value
   if (a === b) return 'Đã sửa tiêu đề.'
@@ -125,16 +125,16 @@ function pick(i: number) {
 }
 
 // ── Tìm và thay trong lời đọc (D20) ───────────────────────────────────────
-const fr = reactive({ open: false, find: '', repl: '', done: null as (ReplaceResult & { find: string; repl: string }) | null })
+const fr = reactive({ open: false, find: '', repl: '', titles: false, done: null as (ReplaceResult & { find: string; repl: string; titles: boolean }) | null })
 const findEl = ref<HTMLInputElement | null>(null)
 const mirror = ref<HTMLDivElement | null>(null)
-const hits = computed(() => (fr.open ? textHits(fr.find) : []))
+const hits = computed(() => (fr.open ? textHits(fr.find, fr.titles) : []))
 const hitTotal = computed(() => hits.value.reduce((n, h) => n + h.count, 0))
 // Sau khi thay: danh sách là các mục vừa thay (tô chỗ đã thay) cho tới khi sửa ô Tìm.
 const frList = computed(() => {
   const d = fr.done
   if (!d) return hits.value
-  return d.indexes.map((i) => secs.value[i]).filter(Boolean).map((sec) => ({ sec, count: countIn(current(sec).text, d.repl) }))
+  return d.indexes.map((i) => secs.value[i]).filter(Boolean).map((sec) => ({ sec, count: countIn(current(sec).text, d.repl) + (d.titles ? countIn(current(sec).title, d.repl) : 0) }))
 })
 const markWord = computed(() => (!fr.open ? '' : fr.done ? fr.done.repl : fr.find))
 const markParts = computed(() => {
@@ -148,7 +148,7 @@ const markParts = computed(() => {
   })
   return out
 })
-watch(() => fr.find, () => (fr.done = null))
+watch(() => [fr.find, fr.titles], () => (fr.done = null))
 function openFind() {
   if (edit.tab !== 'content') return
   fr.open = true
@@ -162,8 +162,8 @@ function closeFind() {
 }
 function doReplace() {
   if (!fr.find || fr.find === fr.repl) return
-  const r = replaceInText(fr.find, fr.repl)
-  fr.done = { ...r, find: fr.find, repl: fr.repl }
+  const r = replaceInText(fr.find, fr.repl, fr.titles)
+  fr.done = { ...r, find: fr.find, repl: fr.repl, titles: fr.titles }
   if (r.indexes.length && !r.indexes.includes(edit.index)) edit.index = r.indexes[0]
   void nextTick(scrollToMark)
 }
@@ -503,6 +503,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             <div class="h-8 rounded-md border border-input bg-background px-2 flex items-center gap-1.5 text-sm">
               <Replace class="w-3.5 h-3.5 text-muted-foreground shrink-0" /><input v-model="fr.repl" class="flex-1 min-w-0 bg-transparent outline-none" placeholder="Thay bằng" />
             </div>
+            <label class="flex items-start gap-2 text-[11px] leading-snug text-muted-foreground cursor-pointer">
+              <input v-model="fr.titles" type="checkbox" class="mt-px h-3.5 w-3.5 shrink-0 accent-[hsl(var(--primary))]" />
+              <span>Thay cả trong tiêu đề mục <span class="opacity-80">(tiêu đề cũng được đọc ở đầu mục, mục lục đổi theo)</span></span>
+            </label>
             <div v-if="fr.done" class="rounded-md border border-rag-green/40 bg-rag-green/10 px-2.5 py-1.5 text-[11px] leading-relaxed flex gap-1.5">
               <Check class="w-3.5 h-3.5 text-rag-green shrink-0 mt-0.5" />
               <span>Đã thay {{ fr.done.count }} chỗ trong {{ fr.done.indexes.length }} mục.<template v-if="fr.done.skipped"> Bỏ qua {{ fr.done.skipped }} mục đang đọc lại.</template>
