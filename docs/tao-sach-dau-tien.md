@@ -80,7 +80,7 @@ Sano tự đọc lời mở đầu và 2 mục đầu tiên (mỗi đoạn kho�
 - Chỗ nào đọc chưa đúng (tên riêng, từ nước ngoài, chữ viết tắt), sửa trong ô **Lời đọc** rồi bấm **Render lại đoạn này**. Bản cuối dùng đúng lời bạn đã sửa.
 - Muốn nghe thêm phần khác: chọn trong **Chọn thêm đoạn khác để nghe thử**.
 
-Cuối bước, tick ô xác nhận bạn có quyền dùng tài liệu này (tài liệu của bạn, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép), rồi bấm **Nghe ổn, render cả cuốn**.
+Cuối bước, bấm **Nghe ổn, render cả cuốn**. Lần đầu render một tài liệu, Sano hiện bảng cam kết: bạn có quyền dùng tài liệu (tài liệu của bạn, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép bằng văn bản), nội dung không vi phạm pháp luật, không mạo danh, không phát tán tác phẩm của người khác và tự chịu trách nhiệm. Tick đủ từng ô rồi bấm **Cam kết và render**.
 
 <img class="app-shot" src="./images/app/b5-nghe-thu.jpg" alt="Bước Nghe thử: nghe từng đoạn, sửa lời đọc" width="1600" height="955">
 

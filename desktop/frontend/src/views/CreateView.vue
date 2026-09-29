@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Tạo sách nói: 7 bước, dữ liệu thật từ phần Go (bookmaker).
 // Bước 1 Cách đọc (wireframe D8): cấp 1 sang thẳng Nạp file, cấp 2/3 qua màn nhờ AI.
-// Nghe thử không bắt buộc; chỉ cần xác nhận quyền dùng tài liệu là render được.
-import { computed } from 'vue'
+// Nghe thử không bắt buộc; bấm render thì hiện popup cam kết (D19), tick đủ mới render.
+import { computed, ref } from 'vue'
 import { Check, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { steps } from '../lib/mock'
@@ -14,12 +14,20 @@ import StepVoice from './create/StepVoice.vue'
 import StepIntro from './create/StepIntro.vue'
 import StepPreview from './create/StepPreview.vue'
 import StepRender from './create/StepRender.vue'
+import RenderPledgeDialog from '../components/RenderPledgeDialog.vue'
 
-// Xác nhận quyền dùng tài liệu: ngay trên thanh dưới cạnh nút render (bắt buộc,
-// không phải cuộn xuống cuối trang Nghe thử mới thấy).
-const rightsOk = computed(() => !!state.rightsConfirmedAt)
-function toggleRights(e: Event) {
-  state.rightsConfirmedAt = (e.target as HTMLInputElement).checked ? new Date().toISOString() : ''
+// Cam kết trước khi render: đã cam kết cho file này (nạp file mới thì xoá) thì render luôn,
+// chưa thì mở popup.
+const pledgeOpen = ref(false)
+const fileName = computed(() => state.file?.name ?? state.title)
+function requestRender() {
+  if (canRender.value) void startRender()
+  else pledgeOpen.value = true
+}
+function pledged() {
+  state.rightsConfirmedAt = new Date().toISOString()
+  pledgeOpen.value = false
+  void startRender()
 }
 
 const locked = computed(() => rendering.value || !!state.render?.done)
@@ -62,7 +70,7 @@ function jump(n: number) {
   if (n > 2 && !state.outline) return
   if (n === 2 && !state.level) return
   if (n === 7) {
-    if (canRender.value) void startRender()
+    if (!state.previewing) requestRender()
     return
   }
   if (n === 1) state.levelScreen = 'choose' // bấm "Cách đọc" trên thanh bước: về màn chọn cấp
@@ -71,7 +79,7 @@ function jump(n: number) {
 </script>
 
 <template>
-  <section class="flex-1 flex flex-col min-h-0">
+  <section class="relative flex-1 flex flex-col min-h-0">
     <!-- Thanh bước -->
     <div class="shrink-0 border-b border-border px-6 h-14 flex items-center gap-0.5">
       <template v-for="(s, i) in steps" :key="s.n">
@@ -100,19 +108,11 @@ function jump(n: number) {
     <div v-if="state.step < 7" class="shrink-0 border-t border-border px-6 h-16 flex items-center justify-between gap-4">
       <Button variant="ghost" :disabled="state.step === 1 && state.levelScreen === 'choose'" @click="back"><ChevronLeft class="w-4 h-4" /> Quay lại</Button>
       <p v-if="state.renderError" class="text-sm text-destructive truncate" :title="state.renderError">{{ state.renderError }}</p>
-      <label v-else-if="state.step === 6" class="flex-1 min-w-0 flex cursor-pointer items-center justify-end gap-2.5 rounded-md border px-3 py-2 text-sm"
-        :class="rightsOk ? 'border-border' : 'border-rag-amber/60 bg-rag-amber/10'"
-        title="Tài liệu của tôi, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép">
-        <input :checked="rightsOk" type="checkbox" class="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" @change="toggleRights" />
-        <span class="min-w-0">
-          Tôi xác nhận có quyền dùng tài liệu này để làm sách nói
-          <span class="block text-xs text-muted-foreground truncate">Tài liệu của tôi, tác phẩm đã hết thời hạn bảo hộ, hoặc được tác giả cho phép.{{ rightsOk ? '' : ' Tick để mở nút render.' }}</span>
-        </span>
-      </label>
       <p v-else-if="state.step === 1 && !state.level" class="text-xs text-muted-foreground">Chọn một cách để tiếp tục</p>
       <p v-else-if="state.step === 1 && state.levelScreen === 'ai' && !state.aiTool" class="text-xs text-muted-foreground">Chọn AI để tiếp tục</p>
       <Button v-if="state.step < 6" :disabled="!canNext" @click="next">{{ nextLabel }} <ChevronRight class="w-4 h-4" /></Button>
-      <Button v-else :disabled="!canRender || state.previewing" @click="startRender">Nghe ổn, render cả cuốn <ChevronRight class="w-4 h-4" /></Button>
+      <Button v-else :disabled="state.previewing" @click="requestRender">Nghe ổn, render cả cuốn <ChevronRight class="w-4 h-4" /></Button>
     </div>
+    <RenderPledgeDialog v-if="pledgeOpen" :file-name="fileName" @close="pledgeOpen = false" @confirm="pledged" />
   </section>
 </template>
