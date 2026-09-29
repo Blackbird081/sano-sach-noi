@@ -209,6 +209,11 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
   const innerW = bw - padX * 2
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = '#fff'
+  if (o.kind === 'video' && o.ratio === 'story') {
+    const r = drawReel(ctx, o, bw, k)
+    ctx.restore()
+    return r
+  }
 
   // Dải thương hiệu dưới cùng (marketing lan truyền): logo + "Sano · Tự tạo sách nói" · sanobook.com,
   // vạch mảnh phía trên. Người xem biết ngay Sano để làm gì và tìm tới đâu.
@@ -341,6 +346,120 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
   return { wave }
 }
 
+/**
+ * Video ngắn khung dọc (Reels / TikTok / Shorts): app phủ ~14% đầu, ~28% đáy (tên người đăng,
+ * chú thích, ô bình luận) và cột nút bên phải, nên mọi thứ nằm trong REEL_SAFE: logo trên cùng,
+ * rồi bìa nhỏ + tên sách, sóng âm, câu đang đọc.
+ */
+const REEL_SAFE = { top: 75, bottom: BASE.story.h * 0.72, left: 24, right: 54 }
+const reelTextW = () => BASE.story.w - REEL_SAFE.left - REEL_SAFE.right
+
+function drawReel(ctx: CanvasRenderingContext2D, o: CardOptions, bw: number, k: number): CardResult {
+  const S = REEL_SAFE
+  const sans = SANS()
+  const x = S.left
+  const tw = reelTextW()
+  const sp = (v: string) => ((ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = v)
+
+  // Logo + "Sano · Tự tạo sách nói" · sanobook.com, vạch mảnh bên dưới
+  const row = 24
+  let y = S.top
+  if (logoImg) {
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = 6
+    ctx.drawImage(logoImg, x, y, row, row)
+    ctx.restore()
+  }
+  const midY = y + row / 2 + 4.2
+  const bx = x + row + 8
+  ctx.fillStyle = '#fff'
+  ctx.font = `700 12px ${sans}`
+  ctx.fillText('Sano', bx, midY)
+  const sanoW = ctx.measureText('Sano').width
+  ctx.font = `400 12px ${sans}`
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'
+  ctx.fillText(' · Tự tạo sách nói', bx + sanoW, midY)
+  ctx.font = `600 11px ${sans}`
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.textAlign = 'right'
+  sp('0.3px')
+  ctx.fillText('sanobook.com', bw - x, midY)
+  sp('0px')
+  ctx.textAlign = 'left'
+  y += row + 12
+  ctx.fillStyle = 'rgba(255,255,255,0.2)'
+  ctx.fillRect(x, y, bw - x * 2, 1)
+  const top = y + 1 + 16
+
+  // Cỡ chữ câu đang đọc cố định cho cả video (theo câu dài nhất) để bố cục không nhảy.
+  const cw = 54
+  const ch = (cw * 4) / 3
+  const waveH = 30
+  const fixedH = ch + 16 + waveH + 18
+  const avail = S.bottom - top - fixedH
+  const reserve = Math.max(2, o.reserveLines ?? 0)
+  let size = 21
+  if (reserve * size * 1.375 > avail) size = Math.max(14, Math.floor(21 * Math.sqrt(avail / (reserve * 21 * 1.375))))
+  const lh = size * 1.375
+  const maxLines = Math.max(1, Math.floor(avail / lh))
+  ctx.font = `700 ${size}px ${sans}`
+  const lines = clampLines(ctx, wrap(ctx, o.lines[0] ?? '', tw), maxLines, tw)
+  const blockH = Math.min(maxLines, Math.max(lines.length, reserve)) * lh
+  // canh giữa cả nhóm theo chiều dọc vùng an toàn
+  const gy = top + Math.max(0, (S.bottom - top - (fixedH + blockH)) / 2)
+
+  // bìa nhỏ + tên sách, giọng
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.45)'
+  ctx.shadowBlur = 16
+  ctx.shadowOffsetY = 6
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'
+  roundRect(ctx, x, gy, cw, ch, 5)
+  ctx.fill()
+  ctx.restore()
+  drawBook(ctx, o, x, gy, cw, ch, 5)
+  const ix = x + cw + 12
+  const iw = bw - ix - S.left
+  ctx.font = `600 13px ${sans}`
+  const titleLines = clampLines(ctx, wrap(ctx, o.title, iw), 2, iw)
+  const infoH = titleLines.length * 16 + (o.voice ? 16 : 0)
+  let ty = gy + (ch - infoH) / 2
+  ctx.fillStyle = '#fff'
+  for (const l of titleLines) {
+    ctx.fillText(l, ix, ty + 12.5)
+    ty += 16
+  }
+  if (o.voice) {
+    ctx.font = `400 11px ${sans}`
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'
+    ctx.fillText(clampLines(ctx, wrap(ctx, 'Giọng ' + o.voice, iw), 1, iw)[0], ix, ty + 12)
+  }
+
+  // sóng âm
+  const wy = gy + ch + 16
+  const waveW = tw
+  const wave = { x: Math.round(x * k), y: Math.round(wy * k), w: Math.round(waveW * k), h: Math.round(waveH * k) }
+  if (o.bars?.length) {
+    drawBars(ctx, x, wy, waveW, waveH, o.bars, 'rgba(255,255,255,0.35)')
+    if (o.progress) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(x, wy, waveW * o.progress, waveH)
+      ctx.clip()
+      drawBars(ctx, x, wy, waveW, waveH, o.bars, 'rgba(255,255,255,0.95)')
+      ctx.restore()
+    }
+  }
+
+  // câu đang đọc
+  const sy = wy + waveH + 18
+  ctx.font = `700 ${size}px ${sans}`
+  ctx.fillStyle = '#fff'
+  lines.forEach((l, i) => ctx.fillText(l, x, sy + i * lh + size * 1.05))
+  return { wave }
+}
+
 export function drawBars(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, bars: number[], color: string) {
   const step = w / bars.length
   const bw = Math.max(1, step * 0.55)
@@ -368,8 +487,9 @@ export function videoLines(ratio: ShareRatio, text: string) {
   const base = BASE[ratio]
   const size = ratio === 'square' ? 19 : 21
   ctx.font = `700 ${size}px ${SANS()}`
-  const padX = ratio === 'square' ? 28 : 24
-  return Math.min(ratio === 'square' ? 4 : 6, wrap(ctx, text, base.w - padX * 2).length)
+  if (ratio === 'story') return wrap(ctx, text, reelTextW()).length
+  const padX = 28
+  return Math.min(4, wrap(ctx, text, base.w - padX * 2).length)
 }
 
 /** Độ to từng cột sóng âm của đoạn [start, end) trong file tiếng (RMS, chuẩn hoá 0–1). */
