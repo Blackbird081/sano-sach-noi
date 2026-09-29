@@ -22,7 +22,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="absolute inset-0 z-20 grid place-items-center bg-background/70 backdrop-blur-sm p-4" @click.self="emit('close')">
+  <div class="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4" @click.self="emit('close')">
     <div role="dialog" aria-modal="true" aria-labelledby="pledge-title" class="flex max-h-full w-[640px] max-w-full flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
       <div class="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
         <div class="min-w-0">

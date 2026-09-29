@@ -13,7 +13,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="absolute inset-0 z-20 grid place-items-center bg-background/70 backdrop-blur-sm" @click.self="emit('close')">
+  <div class="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4" @click.self="emit('close')">
     <div role="dialog" aria-modal="true" aria-labelledby="terms-title" class="flex max-h-[85%] w-[640px] flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
       <div class="flex items-center justify-between border-b border-border px-5 py-4">
         <h2 id="terms-title" class="font-semibold">Điều khoản sử dụng · phiên bản {{ TERMS_VERSION }}</h2>
