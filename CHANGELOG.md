@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.19 (29/09/2026)
+
+### Tính năng
+- **Cam kết trước khi tạo:** bấm render hoặc tạo video, Sano hiện bảng cam kết (quyền dùng tài liệu, không vi phạm pháp luật, không mạo danh, không phát tán tác phẩm của người khác, tự chịu trách nhiệm). Tick đủ mới tạo được
+- **Điều khoản sử dụng phiên bản 2:** rõ hơn về nội dung vi phạm pháp luật, video và ảnh chia sẻ, thêm mục Bồi hoàn. Mở app sẽ được hỏi đồng ý lại một lần
+
+### Sửa lỗi
+- Video và ảnh khung dọc 9:16 không còn bị Reels, TikTok, Story che logo, chữ và tên sách
+
 ## v0.1.18 (28/09/2026)
 
 ### Tính năng
