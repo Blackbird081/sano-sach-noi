@@ -4,6 +4,8 @@
 // hiện tiến độ theo bước; xong: mở thư mục, chép mô tả YouTube.
 // D17: mở từ nút "Tạo video" ở màn nghe; đầu hộp có thẻ chọn sang Video ngắn.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import RenderPledgeDialog from './RenderPledgeDialog.vue'
+import { markVideoPledged, videoPledged } from '../lib/pledge'
 import { Bell, Check, Clapperboard, Copy, FileText, FolderOpen, Image as ImageIcon, Loader2, Mic, Music, Pause, Pencil, Play, Square, Subtitles, Upload, Volume2, X } from 'lucide-vue-next'
 import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
@@ -452,9 +454,20 @@ const totalSec = computed(() => bookSec.value + (introOn.value ? introDur.value 
 // Đo thật: cuốn 29 phút ra 64 MB (~2,3 MB/phút, hình gần như tĩnh).
 const estMB = computed(() => Math.max(3, Math.round((totalSec.value / 60) * 2.5)))
 
+// Trước khi tạo video: popup cam kết (D19), một lần cho mỗi cuốn trong lần mở app này.
+const pledgeOpen = ref(false)
+function pledged() {
+  if (d.value) markVideoPledged(d.value.slug)
+  pledgeOpen.value = false
+  void create()
+}
 async function create() {
   const b = d.value
   if (!b) return
+  if (!videoPledged(b.slug)) {
+    pledgeOpen.value = true
+    return
+  }
   stopListen()
   pv.stop()
   let op: Opening
@@ -512,7 +525,7 @@ function close() {
   bv.open = false
 }
 function onKey(e: KeyboardEvent) {
-  if (bv.open && e.key === 'Escape') close()
+  if (bv.open && e.key === 'Escape' && !pledgeOpen.value) close()
 }
 document.addEventListener('keydown', onKey)
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
@@ -753,5 +766,7 @@ const fmtSize = (b: number) => (b > 1e9 ? (b / 1e9).toLocaleString('vi-VN', { ma
         </div>
       </div>
     </div>
+    <RenderPledgeDialog v-if="pledgeOpen" :file-name="d.title" title="Cam kết trước khi tạo video" label="Sách" action="Cam kết và tạo video"
+      @close="pledgeOpen = false" @confirm="pledged" />
   </div>
 </template>

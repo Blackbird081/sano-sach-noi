@@ -1,5 +1,6 @@
 // Cam kết trước khi render (wireframe D19): người dùng tick từng ô mới render được. Nội dung
-// khớp Điều khoản sử dụng (docs/dieu-khoan-su-dung.md, phiên bản 2).
+// khớp Điều khoản sử dụng (docs/dieu-khoan-su-dung.md, phiên bản 2). Dùng cả trước khi tạo video
+// (video ngắn, video cả cuốn): cam kết một lần cho mỗi cuốn trong một lần mở app.
 import { FileCheck2, Scale, Share2, ShieldAlert, UserX } from 'lucide-vue-next'
 
 export const PLEDGES = [
@@ -29,3 +30,8 @@ export const PLEDGES = [
     desc: 'Tôi tự chịu trách nhiệm trước pháp luật về nội dung đưa vào và mọi thứ tạo ra từ Sano. Tác giả, người đóng góp và nhà tài trợ của Sano không liên quan và không chịu trách nhiệm; nếu họ bị khiếu nại vì việc làm của tôi, tôi chịu mọi chi phí và thiệt hại phát sinh.',
   },
 ]
+
+const sharePledged = new Set<string>()
+/** Đã cam kết tạo video cho cuốn này trong lần mở app này chưa. */
+export const videoPledged = (slug: string) => sharePledged.has(slug)
+export const markVideoPledged = (slug: string) => void sharePledged.add(slug)

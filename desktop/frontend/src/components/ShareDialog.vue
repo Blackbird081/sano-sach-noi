@@ -5,6 +5,8 @@
 // thẻ chọn sang Video cả cuốn, cùng cỡ hộp D15 để đổi loại không nhảy khung).
 // Chụp lại tiểu mục lúc mở (câu, tiếng, bìa) nên nghe tiếp sang mục khác không đổi thẻ.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import RenderPledgeDialog from './RenderPledgeDialog.vue'
+import { markVideoPledged, videoPledged } from '../lib/pledge'
 import { Check, Clapperboard, Copy, Download, Film, Image as ImageIcon, Loader2, Play, Share2, Pause, Square, Volume2, X } from 'lucide-vue-next'
 import { usePreview } from '../lib/previewAudio'
 import { Button } from '@/components/ui/button'
@@ -88,7 +90,7 @@ function centerPicked(i: number) {
 }
 watch(() => shareUI.open, (o) => (o ? void init() : stopPreview()))
 function onKey(e: KeyboardEvent) {
-  if (shareUI.open && e.key === 'Escape') close()
+  if (shareUI.open && e.key === 'Escape' && !pledgeOpen.value) close()
 }
 document.addEventListener('keydown', onKey)
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
@@ -279,8 +281,19 @@ const progress = ref(0)
 const offProgress = onEvent<number>('share:progress', (p) => (progress.value = p))
 onBeforeUnmount(offProgress)
 watch([kind, ratio, () => shareUI.bg, picked], () => vstate.value === 'done' && (vstate.value = 'idle'))
+// Trước khi tạo video: popup cam kết (D19), một lần cho mỗi cuốn trong lần mở app này.
+const pledgeOpen = ref(false)
+function pledged() {
+  markVideoPledged(snap.value!.slug)
+  pledgeOpen.value = false
+  void makeVideo()
+}
 async function makeVideo() {
   const s = snap.value!
+  if (!videoPledged(s.slug)) {
+    pledgeOpen.value = true
+    return
+  }
   err.value = ''
   vstate.value = 'busy'
   progress.value = 0
@@ -445,5 +458,7 @@ function close() {
         <Check class="w-3.5 h-3.5 shrink-0" /><span class="truncate">{{ toast }}</span>
       </div>
     </div>
+    <RenderPledgeDialog v-if="pledgeOpen" :file-name="snap.title" title="Cam kết trước khi tạo video" label="Sách" action="Cam kết và tạo video"
+      @close="pledgeOpen = false" @confirm="pledged" />
   </div>
 </template>

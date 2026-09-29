@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Popup cam kết trước khi render (wireframe D19). Tick từng cam kết + đồng ý Điều khoản mới bật
+// Popup cam kết trước khi render (wireframe D19), cũng dùng trước khi tạo video. Tick từng cam kết + đồng ý Điều khoản mới bật
 // nút "Cam kết và render". Esc, bấm nền hoặc "Để sau" để đóng.
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { BookOpen, Check, ChevronRight, X } from 'lucide-vue-next'
@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button'
 import TermsDialog from './TermsDialog.vue'
 import { PLEDGES } from '../lib/pledge'
 
-defineProps<{ fileName: string }>()
+withDefaults(defineProps<{ fileName: string; title?: string; label?: string; action?: string }>(), {
+  title: 'Cam kết trước khi tạo sách nói',
+  label: 'Tài liệu',
+  action: 'Cam kết và render',
+})
 const emit = defineEmits<{ close: []; confirm: [] }>()
 
 const checked = ref<boolean[]>(PLEDGES.map(() => false))
@@ -26,8 +30,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     <div role="dialog" aria-modal="true" aria-labelledby="pledge-title" class="flex max-h-full w-[640px] max-w-full flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
       <div class="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
         <div class="min-w-0">
-          <h2 id="pledge-title" class="font-semibold">Cam kết trước khi tạo sách nói</h2>
-          <p class="mt-0.5 truncate text-xs text-muted-foreground">Tài liệu: <span class="font-medium text-foreground">{{ fileName }}</span> · tick từng ô để tiếp tục</p>
+          <h2 id="pledge-title" class="font-semibold">{{ title }}</h2>
+          <p class="mt-0.5 truncate text-xs text-muted-foreground">{{ label }}: <span class="font-medium text-foreground">{{ fileName }}</span> · tick từng ô để tiếp tục</p>
         </div>
         <button class="text-muted-foreground hover:text-foreground" aria-label="Đóng" @click="emit('close')"><X class="h-4 w-4" /></button>
       </div>
@@ -55,7 +59,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <span class="text-xs" :class="allOk ? 'text-rag-green flex items-center gap-1' : 'text-muted-foreground'"><Check v-if="allOk" class="h-3.5 w-3.5" /> Đã tick {{ count }}/{{ PLEDGES.length + 1 }}</span>
           <div class="flex gap-2">
             <Button variant="outline" @click="emit('close')">Để sau</Button>
-            <Button :disabled="!allOk" @click="emit('confirm')">Cam kết và render <ChevronRight class="w-4 h-4" /></Button>
+            <Button :disabled="!allOk" @click="emit('confirm')">{{ action }} <ChevronRight class="w-4 h-4" /></Button>
           </div>
         </div>
       </div>
