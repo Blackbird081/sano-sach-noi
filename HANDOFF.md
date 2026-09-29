@@ -29,6 +29,18 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Phát hành: cập nhật `VERSION`, `CHANGELOG.md` (ngắn, hộp cập nhật của bản cũ hiện đoạn này), link tải trong `README.md` → commit `chore: phát hành vX.Y.Z` → push `main` → `git tag -a vX.Y.Z` + push tag → chờ CI → `gh release edit vX.Y.Z --draft=false --latest`.
 - VirusTotal luôn báo 2 phần mềm nhầm bản Windows (đã có từ 0.1.16, file Go chưa ký), không chặn phát hành.
 
+## 3b. Phiên 29/09 — chuẩn bị 0.1.19 (anh Việt đã duyệt rc.5, chưa phát hành)
+
+RC đang chạy trên máy anh: `desktop/build/bin/Sano.app` = **0.1.19-rc.5**. CHANGELOG 0.1.19 chưa viết.
+
+- Khung dọc 9:16 chừa vùng Reels / TikTok / Story che: video cả cuốn (`bookVideoCard.ts`, `TALL_SAFE`:
+  14% đầu, 28% đáy, lề phải 64/360), video ngắn (`shareCard.ts` `drawReel`, `REEL_SAFE`: logo lên đầu,
+  bìa nhỏ + sóng âm + câu đọc), ảnh Story (14% đầu, 22% đáy). Khung ngang, vuông giữ nguyên.
+- **D19** popup cam kết trước khi render (`RenderPledgeDialog.vue`, `lib/pledge.ts`, wireframe `?wireframe=pledge`):
+  6 ô tick bắt buộc, thay ô tick ở thanh dưới bước Nghe thử. Điều khoản lên **phiên bản 2** (thêm nội dung
+  vi phạm pháp luật, video/ảnh chia sẻ, mục Bồi hoàn) → mọi người dùng đồng ý lại một lần.
+- Còn: anh nhờ luật sư xem mục Bồi hoàn (có nhắc nhà tài trợ SePay, 123HOST) trước khi phát hành.
+
 ## 3a. Phiên tối 28/09 — D17, D18, phát hành 0.1.18
 
 **Đã phát hành 0.1.18:** test Go gốc + desktop và build frontend qua; CI xanh (build 3 hệ, VirusTotal, smoke);
