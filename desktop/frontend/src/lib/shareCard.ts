@@ -217,8 +217,12 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
 
   // Dải thương hiệu dưới cùng (marketing lan truyền): logo + "Sano · Tự tạo sách nói" · sanobook.com,
   // vạch mảnh phía trên. Người xem biết ngay Sano để làm gì và tìm tới đâu.
+  // Ảnh Story (Facebook / Instagram / Zalo): app phủ ~14% đầu (thanh tiến trình, tên người
+  // đăng) và ~20% đáy (ô trả lời), nên khung dọc thu nội dung vào giữa.
+  const storyImg = o.kind === 'image' && o.ratio === 'story'
+  const safeTop = storyImg ? Math.round(bh * 0.14) : padY
   const brandRow = 24
-  const brandBottom = bh - padY
+  const brandBottom = storyImg ? bh * 0.78 : bh - padY
   const brandTop = brandBottom - brandRow
   ctx.fillStyle = 'rgba(255,255,255,0.2)'
   ctx.fillRect(padX, brandTop - 12 - 1, innerW, 1)
@@ -277,9 +281,9 @@ export function drawCard(canvas: HTMLCanvasElement, o: CardOptions): CardResult 
     // Dấu ngoặc kép + các câu, canh giữa theo chiều dọc vùng còn lại.
     ctx.font = `400 60px Georgia, serif`
     ctx.fillStyle = 'rgba(255,255,255,0.5)'
-    ctx.fillText('“', padX - 2, padY + 44)
+    ctx.fillText('“', padX - 2, safeTop + 44)
     ctx.fillStyle = '#fff'
-    const top = padY + 44
+    const top = safeTop + 44
     const bottom = footTop - 20
     let size = o.ratio === 'square' ? (o.lines.length > 2 ? 19 : 23) : 22
     let blocks: string[][] = []
