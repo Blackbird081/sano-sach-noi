@@ -5,10 +5,10 @@
 //   (bản sửa giữ tạm khi rời màn). Dưới ô chữ luôn báo: chưa lưu / đang lưu / đã lưu xong.
 // - Thông tin & bìa: đổi tên → bìa tự vẽ vẽ lại, lời mở đầu "Cuốn sách: …" đọc lại.
 // - Giọng đọc: đổi giọng cả cuốn, chạy nền, xong hết mới thay.
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import {
   AlertCircle, BookA, Check, ChevronDown, Plus, Search, Trash2, ChevronLeft, ChevronRight, Headphones, ImagePlus, Loader2, Mic, Pause, Play,
-  RotateCcw, Square, Wand2,
+  Replace, RotateCcw, Square, Wand2, X,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BookCover from '../components/sano/BookCover.vue'
@@ -17,7 +17,7 @@ import { chooseCover, errText, saveBookInfo, setBookCover, speakSample, useAutoC
 import { useClipPlayer } from '../lib/audio'
 import {
   busySection, changeVoice, closeEdit, current, deleteWord, discardVoice, dropDraft, edit, fmtRemain, isStale, load, pendingIdx, reread,
-  rereadWith, sectionsWith, setDraft, setWord, stopEdit, type EditTab,
+  rereadWith, sectionsWith, setDraft, setWord, stopEdit, textHits, countIn, replaceInText, undoReplace, type EditTab, type ReplaceResult,
 } from '../lib/edit'
 import { WORD_HINT, globalReading, isDictWord, loadGlobalDict } from '../lib/dict'
 import { categoryCounts, seriesKey } from '../lib/find'
@@ -104,6 +104,7 @@ const changeNote = computed(() => {
   const s = sec.value
   if (!s || !dirty.value) return ''
   if (isStale(s.index)) return 'Từ điển cách đọc đã đổi, mục này cần đọc lại.'
+  if (fr.done?.indexes.includes(s.index) && current(s).text === s.text.split(fr.done.find).join(fr.done.repl)) return `Đã thay "${fr.done.find}" → "${fr.done.repl}".`
   const a = s.text
   const b = text.value
   if (a === b) return 'Đã sửa tiêu đề.'
@@ -120,6 +121,72 @@ const changeNote = computed(() => {
 function pick(i: number) {
   edit.index = i
   clip.stop()
+  if (fr.open) void nextTick(scrollToMark)
+}
+
+// ── Tìm và thay trong lời đọc (D20) ───────────────────────────────────────
+const fr = reactive({ open: false, find: '', repl: '', done: null as (ReplaceResult & { find: string; repl: string }) | null })
+const findEl = ref<HTMLInputElement | null>(null)
+const mirror = ref<HTMLDivElement | null>(null)
+const hits = computed(() => (fr.open ? textHits(fr.find) : []))
+const hitTotal = computed(() => hits.value.reduce((n, h) => n + h.count, 0))
+// Sau khi thay: danh sách là các mục vừa thay (tô chỗ đã thay) cho tới khi sửa ô Tìm.
+const frList = computed(() => {
+  const d = fr.done
+  if (!d) return hits.value
+  return d.indexes.map((i) => secs.value[i]).filter(Boolean).map((sec) => ({ sec, count: countIn(current(sec).text, d.repl) }))
+})
+const markWord = computed(() => (!fr.open ? '' : fr.done ? fr.done.repl : fr.find))
+const markParts = computed(() => {
+  const w = markWord.value
+  const t = text.value
+  if (!w) return [{ s: t, hit: false }]
+  const out: { s: string; hit: boolean }[] = []
+  t.split(w).forEach((x, i, a) => {
+    out.push({ s: x, hit: false })
+    if (i < a.length - 1) out.push({ s: w, hit: true })
+  })
+  return out
+})
+watch(() => fr.find, () => (fr.done = null))
+function openFind() {
+  if (edit.tab !== 'content') return
+  fr.open = true
+  const sel = area.value && area.value.selectionEnd > area.value.selectionStart ? area.value.value.slice(area.value.selectionStart, area.value.selectionEnd) : ''
+  if (sel && !sel.includes('\n')) fr.find = sel
+  void nextTick(() => findEl.value?.select())
+}
+function closeFind() {
+  fr.open = false
+  fr.done = null
+}
+function doReplace() {
+  if (!fr.find || fr.find === fr.repl) return
+  const r = replaceInText(fr.find, fr.repl)
+  fr.done = { ...r, find: fr.find, repl: fr.repl }
+  if (r.indexes.length && !r.indexes.includes(edit.index)) edit.index = r.indexes[0]
+  void nextTick(scrollToMark)
+}
+/** Lượt thay vừa làm: còn chờ lưu / đang đọc lại / đã đọc lại xong. */
+const doneState = computed(() => {
+  const d = fr.done
+  if (!d) return ''
+  if (d.indexes.some((i) => busySection(i))) return 'reading'
+  return d.indexes.some((i) => edit.drafts[i]) ? 'pending' : 'saved'
+})
+function undoFind() {
+  if (!fr.done) return
+  undoReplace(fr.done)
+  fr.done = null
+}
+/** Cuộn ô lời đọc tới chỗ khớp đầu tiên. */
+function scrollToMark() {
+  const m = mirror.value?.querySelector('mark') as HTMLElement | null
+  if (m && area.value) area.value.scrollTop = Math.max(0, m.offsetTop - 40)
+  syncMirror()
+}
+function syncMirror() {
+  if (mirror.value && area.value) mirror.value.scrollTop = area.value.scrollTop
 }
 
 // Nghe bản đang có / nghe thử đoạn bôi đen
@@ -378,6 +445,12 @@ const pickedEst = computed(() => {
 })
 
 function onKey(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f' && edit.tab === 'content') {
+    e.preventDefault()
+    openFind()
+    return
+  }
+  if (e.key === 'Escape' && fr.open && e.target === findEl.value) return closeFind()
   if (e.key === 'Escape' && !(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) closeEdit()
 }
 onMounted(() => document.addEventListener('keydown', onKey))
@@ -416,8 +489,49 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
       <!-- ─── Tab Nội dung ─── -->
       <div v-if="edit.tab === 'content'" class="flex-1 flex min-h-0">
-        <div class="w-72 shrink-0 border-r border-border overflow-auto py-2">
-          <template v-for="c in chapters" :key="c.index">
+        <div class="w-72 shrink-0 border-r border-border flex flex-col min-h-0">
+          <!-- Tìm và thay (D20) -->
+          <div v-if="fr.open" class="p-3 border-b border-border space-y-2 bg-muted/30">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold flex items-center gap-1.5"><Replace class="w-3.5 h-3.5" /> Tìm và thay trong lời đọc</span>
+              <button class="text-muted-foreground hover:text-foreground" aria-label="Đóng tìm" @click="closeFind"><X class="w-3.5 h-3.5" /></button>
+            </div>
+            <div class="h-8 rounded-md border border-input bg-background px-2 flex items-center gap-1.5 text-sm">
+              <Search class="w-3.5 h-3.5 text-muted-foreground shrink-0" /><input ref="findEl" v-model="fr.find" class="flex-1 min-w-0 bg-transparent outline-none" placeholder="Tìm" />
+              <span v-if="fr.find" class="text-[11px] text-muted-foreground shrink-0">{{ hitTotal }} chỗ</span>
+            </div>
+            <div class="h-8 rounded-md border border-input bg-background px-2 flex items-center gap-1.5 text-sm">
+              <Replace class="w-3.5 h-3.5 text-muted-foreground shrink-0" /><input v-model="fr.repl" class="flex-1 min-w-0 bg-transparent outline-none" placeholder="Thay bằng" />
+            </div>
+            <div v-if="fr.done" class="rounded-md border border-rag-green/40 bg-rag-green/10 px-2.5 py-1.5 text-[11px] leading-relaxed flex gap-1.5">
+              <Check class="w-3.5 h-3.5 text-rag-green shrink-0 mt-0.5" />
+              <span>Đã thay {{ fr.done.count }} chỗ trong {{ fr.done.indexes.length }} mục.<template v-if="fr.done.skipped"> Bỏ qua {{ fr.done.skipped }} mục đang đọc lại.</template>
+                <template v-if="doneState === 'pending'"> Chưa lưu: bấm <b>Lưu & đọc lại {{ pendingIdx.length }} mục</b> ở trên, hoặc <button class="underline" @click="undoFind">hoàn tác</button>.</template>
+                <template v-else-if="doneState === 'reading'"> Đang đọc lại, các mục khác giữ nguyên.</template>
+                <template v-else> Đã đọc lại xong, gói zip đã cập nhật.</template></span>
+            </div>
+            <Button v-else size="sm" class="w-full" :disabled="!hitTotal || fr.find === fr.repl" @click="doReplace">
+              {{ hitTotal ? `Thay tất cả · ${hitTotal} chỗ trong ${hits.length} mục` : fr.find ? 'Không thấy chỗ nào' : 'Gõ chữ cần tìm' }}
+            </Button>
+          </div>
+          <button v-else class="mx-3 mt-2 h-8 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center gap-1.5" title="⌘F" @click="openFind">
+            <Replace class="w-3.5 h-3.5" /> Tìm và thay trong cả cuốn
+          </button>
+          <div class="flex-1 overflow-auto py-2">
+          <template v-if="fr.open && (fr.find || fr.done)">
+            <p class="px-3 pb-1 text-[11px] text-muted-foreground">{{ frList.length ? `${frList.length} mục có "${markWord}" · bấm để xem` : 'Không mục nào có chữ này.' }}</p>
+            <template v-for="(h, k) in frList" :key="h.sec.index">
+              <p v-if="k === 0 || frList[k - 1].sec.chapterIndex !== h.sec.chapterIndex" class="px-3 pt-2 pb-1 text-[11px] font-medium text-muted-foreground truncate">{{ h.sec.chapter }}</p>
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left" :class="h.sec.index === edit.index ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'" @click="pick(h.sec.index)">
+                <span v-if="sectionState(h.sec) === 'edited'" class="shrink-0 h-2 w-2 rounded-full bg-rag-amber" title="Đã sửa, chưa lưu"></span>
+                <span class="truncate flex-1">{{ current(h.sec).title }}</span>
+                <Loader2 v-if="sectionState(h.sec) === 'reading'" class="w-3.5 h-3.5 shrink-0 animate-spin" />
+                <Check v-else-if="sectionState(h.sec) === 'done'" class="w-3.5 h-3.5 shrink-0 text-rag-green" />
+                <span v-else class="shrink-0 text-[11px] rounded-full bg-muted px-1.5 text-muted-foreground">{{ h.count }}</span>
+              </button>
+            </template>
+          </template>
+          <template v-else v-for="c in chapters" :key="c.index">
             <button class="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground text-left" @click="toggleCh(c.index)">
               <component :is="openCh.has(c.index) ? ChevronDown : ChevronRight" class="w-3.5 h-3.5 shrink-0" /><span class="truncate">{{ c.title }}</span>
               <span v-if="!openCh.has(c.index) && c.items.some((s) => edit.drafts[s.index])" class="ml-auto h-2 w-2 rounded-full bg-rag-amber shrink-0"></span>
@@ -435,6 +549,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             </template>
           </template>
           <p class="px-3 pt-3 text-[11px] text-muted-foreground leading-relaxed flex gap-1.5"><span class="mt-1 h-2 w-2 rounded-full bg-rag-amber shrink-0"></span> Đã sửa, chưa lưu. Rời màn này vẫn giữ tạm bản sửa.</p>
+          </div>
         </div>
 
         <div v-if="sec" class="flex-1 flex flex-col min-w-0 p-5 gap-3">
@@ -448,9 +563,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
               Lời đọc
               <span class="font-normal truncate">Sửa chữ sai, cách đọc tên riêng, số, viết tắt. Xuống dòng = nghỉ dài.</span>
             </span>
-            <textarea ref="area" v-model="text" :readonly="busy" spellcheck="false"
-              class="mt-1 flex-1 w-full rounded-md border bg-background p-3 text-sm leading-relaxed resize-none focus:outline-none focus:ring-1"
-              :class="dirty ? 'border-rag-amber focus:ring-rag-amber' : 'border-input focus:ring-ring'"></textarea>
+            <div class="relative mt-1 flex-1 min-h-0 rounded-md bg-background">
+              <!-- lớp tô chỗ khớp nằm dưới ô chữ (Tìm và thay) -->
+              <div v-if="markWord" ref="mirror" aria-hidden="true"
+                class="absolute inset-0 overflow-y-scroll rounded-md border border-transparent p-3 text-sm leading-relaxed whitespace-pre-wrap break-words text-transparent pointer-events-none"><template v-for="(p, k) in markParts" :key="k"><mark v-if="p.hit" class="rounded-sm text-transparent" :class="fr.done ? 'bg-rag-green/30' : 'bg-rag-amber/40'">{{ p.s }}</mark><template v-else>{{ p.s }}</template></template>{{ '\n' }}</div>
+              <textarea ref="area" v-model="text" :readonly="busy" spellcheck="false" @scroll="syncMirror"
+                class="relative h-full w-full rounded-md border bg-transparent p-3 text-sm leading-relaxed resize-none focus:outline-none focus:ring-1"
+                :class="[dirty ? 'border-rag-amber focus:ring-rag-amber' : 'border-input focus:ring-ring', markWord ? 'overflow-y-scroll' : '']"></textarea>
+            </div>
           </label>
           <!-- Trạng thái lưu của mục đang chọn: chưa lưu → đang lưu, đọc lại → đã lưu xong -->
           <div v-if="readingThis" class="rounded-md bg-muted/60 px-3 py-2 text-xs flex items-center gap-2"><Loader2 class="w-3.5 h-3.5 animate-spin shrink-0" /> <span><b>Đang lưu và đọc lại mục này</b>{{ st?.remainSec ? ', ' + fmtRemain(st.remainSec) : `, khoảng ${estSec} giây` }}. Anh chọn mục khác sửa tiếp được.</span></div>

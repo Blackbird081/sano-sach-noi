@@ -292,3 +292,59 @@ export async function deleteWord(word: string) {
   delete edit.dictChanged[word]
   markStale(word)
 }
+
+// ── Tìm và thay trong lời đọc (tab Nội dung, D20) ─────────────────────────
+// Khớp đúng nguyên cụm, phân biệt hoa thường; chỉ trong lời đọc (tiêu đề giữ nguyên), bỏ
+// lời giới thiệu đầu sách (tự sinh từ tên sách) và mục đang đọc lại. Thay xong là bản sửa
+// CHƯA LƯU; người dùng bấm "Lưu & đọc lại N mục" để chỉ đọc lại các mục đó.
+
+/** Số chỗ `needle` xuất hiện trong `s` (không chồng nhau). */
+export const countIn = (s: string, needle: string) => (needle ? s.split(needle).length - 1 : 0)
+
+/** Các mục có `needle` trong lời đọc, kèm số chỗ. */
+export function textHits(needle: string) {
+  const out: { sec: EditSection; count: number }[] = []
+  if (!needle) return out
+  for (const s of edit.view?.sections ?? []) {
+    if (s.intro) continue
+    const n = countIn(current(s).text, needle)
+    if (n) out.push({ sec: s, count: n })
+  }
+  return out
+}
+
+export interface ReplaceResult {
+  count: number
+  indexes: number[]
+  skipped: number // mục đang đọc lại, không thay
+  undo: Record<number, Draft | undefined>
+}
+
+/** Thay mọi chỗ `needle` bằng `repl` trong lời đọc các mục (thành bản sửa chưa lưu). */
+export function replaceInText(needle: string, repl: string): ReplaceResult {
+  const res: ReplaceResult = { count: 0, indexes: [], skipped: 0, undo: {} }
+  for (const { sec, count } of textHits(needle)) {
+    if (busySection(sec.index)) {
+      res.skipped++
+      continue
+    }
+    const d = edit.drafts[sec.index]
+    res.undo[sec.index] = d ? { ...d } : undefined
+    const c = current(sec)
+    setDraft(sec, c.title, c.text.split(needle).join(repl))
+    res.count += count
+    res.indexes.push(sec.index)
+  }
+  return res
+}
+
+/** Hoàn tác một lượt thay: trả các mục về bản sửa (hoặc chữ trong sách) như trước khi thay. */
+export function undoReplace(r: ReplaceResult) {
+  for (const i of r.indexes) {
+    if (busySection(i)) continue
+    const d = r.undo[i]
+    if (d) edit.drafts[i] = d
+    else delete edit.drafts[i]
+  }
+  saveDrafts()
+}
