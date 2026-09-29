@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.20 (29/09/2026)
+
+### Tính năng
+- **Tìm và thay trong cả cuốn:** ở Sửa sách, bấm "Tìm và thay" (⌘F) để đổi một cụm chữ trong lời đọc mọi mục, tick thêm để đổi cả tiêu đề mục. Chỉ đọc lại các mục bị thay, không đọc lại cả cuốn
+
 ## v0.1.19 (29/09/2026)
 
 ### Tính năng
