@@ -54,4 +54,5 @@ Sano gọi ffmpeg như một chương trình riêng (chuyển WAV → MP3), khô
 - lucide (biểu tượng) — ISC — https://github.com/lucide-icons/lucide
 - golang.org/x/sys — BSD-3-Clause — https://go.googlesource.com/sys
 - github.com/ulikunitz/xz (giải nén bản ffmpeg Linux) — BSD-3-Clause — https://github.com/ulikunitz/xz
+- MCP Go SDK (kết nối AI: Claude, Codex…) — MIT / Apache License 2.0 — https://github.com/modelcontextprotocol/go-sdk
 - Các thư viện Go / npm khác: xem `go.mod`, `desktop/go.mod`, `desktop/frontend/package.json` (đều MIT, BSD hoặc Apache-2.0).
