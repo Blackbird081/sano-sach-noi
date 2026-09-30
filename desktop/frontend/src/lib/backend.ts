@@ -189,6 +189,10 @@ export interface MCPLogEntry {
   text: string
   edit: boolean
   error?: string
+  slug?: string
+  undo?: string // mã bản cũ giữ trước khi AI sửa
+  canUndo?: boolean
+  undone?: boolean
 }
 
 /** Dữ liệu màn MCP (mcp_settings.go). */
@@ -427,6 +431,7 @@ interface GoApp {
   SetMCPLocal(on: boolean): Promise<MCPInfo>
   SetMCPAllowEdit(on: boolean): Promise<MCPInfo>
   AddToClaudeDesktop(): Promise<MCPInfo>
+  MCPUndo(slug: string, id: string): Promise<MCPInfo>
   Library(): Promise<LibraryInfo>
   LibrarySize(): Promise<number>
   Book(slug: string): Promise<BookDetail>
@@ -745,6 +750,10 @@ export async function setMCPLocal(on: boolean): Promise<MCPInfo> {
 
 export async function setMCPAllowEdit(on: boolean): Promise<MCPInfo> {
   return need().SetMCPAllowEdit(on)
+}
+
+export async function mcpUndo(slug: string, id: string): Promise<MCPInfo> {
+  return need().MCPUndo(slug, id)
 }
 
 export async function addToClaudeDesktop(): Promise<MCPInfo> {

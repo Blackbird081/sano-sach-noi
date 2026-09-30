@@ -4,8 +4,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Ban, Bot, Check, Copy, Eye, Globe, History, Laptop, Loader2, PenLine, Plug, TriangleAlert } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { addToClaudeDesktop, copyText, errText, setMCPAllowEdit, setMCPLocal, type MCPInfo } from '../lib/backend'
+import { addToClaudeDesktop, copyText, errText, mcpUndo, setMCPAllowEdit, setMCPLocal, type MCPInfo, type MCPLogEntry } from '../lib/backend'
 import { mcp, refreshMCPInfo } from '../lib/mcp'
+import { refreshLibrary } from '../lib/store'
 
 type Client = 'claude-desktop' | 'claude-code' | 'codex' | 'other'
 const clients: { key: Client; label: string }[] = [
@@ -43,6 +44,19 @@ async function copy(key: string, text: string) {
     copied.value = key
     setTimeout(() => copied.value === key && (copied.value = ''), 1500)
   }
+}
+
+// Hoàn tác việc AI sửa (bấm hai lần để chắc): đưa cuốn về bản giữ lại trước lần sửa đó.
+const confirmUndo = ref('')
+async function undo(l: MCPLogEntry) {
+  if (!l.slug || !l.undo) return
+  if (confirmUndo.value !== l.undo) {
+    confirmUndo.value = l.undo
+    return
+  }
+  confirmUndo.value = ''
+  await act('undo', () => mcpUndo(l.slug!, l.undo!))
+  void refreshLibrary()
 }
 
 function fmtWhen(at: number) {
@@ -156,14 +170,14 @@ onUnmounted(() => clearInterval(timer))
             <label class="rounded-md border border-border px-3 py-2 flex items-start gap-2 cursor-pointer">
               <input type="checkbox" :checked="info.allowEdit" :disabled="busy === 'edit'" class="mt-0.5 accent-[hsl(var(--primary))]"
                 @change="act('edit', () => setMCPAllowEdit(!info!.allowEdit))" />
-              <span><span class="flex items-center gap-1 font-medium"><PenLine class="w-3.5 h-3.5" /> Tạo và sửa sách</span><span class="text-muted-foreground">Tạo sách nói (sửa lời, đổi giọng sẽ có sau)</span></span>
+              <span><span class="flex items-center gap-1 font-medium"><PenLine class="w-3.5 h-3.5" /> Tạo và sửa sách</span><span class="text-muted-foreground">Tạo sách, sửa lời, tìm và thay, đổi giọng, bìa, thông tin</span></span>
             </label>
             <div class="rounded-md border border-dashed border-border px-3 py-2 flex items-start gap-2 text-muted-foreground">
               <Ban class="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span><span class="font-medium text-foreground">Không xoá được</span><br />AI không có lệnh xoá sách hay file nào. Xoá sách chỉ làm trong app</span>
             </div>
           </div>
-          <p class="mt-2 ml-7 text-xs text-muted-foreground">AI chỉ chạm được sách trong thư viện Sano, không đọc hay ghi file nào khác trên máy.</p>
+          <p class="mt-2 ml-7 text-xs text-muted-foreground">AI chỉ chạm được sách trong thư viện Sano, không đọc hay ghi file nào khác trên máy. Mỗi lần AI sửa một cuốn, Sano giữ bản trước đó để bạn hoàn tác ở nhật ký bên dưới (7 ngày).</p>
         </div>
 
         <!-- Nhật ký -->
@@ -180,6 +194,9 @@ onUnmounted(() => clearInterval(timer))
               <component :is="l.edit ? PenLine : Eye" class="w-3 h-3 text-muted-foreground shrink-0 self-center" />
               <span class="font-medium shrink-0">{{ l.client }}</span>
               <span class="min-w-0 truncate" :class="l.error ? 'text-destructive' : 'text-muted-foreground'" :title="l.error ? `${l.text}: ${l.error}` : l.text">{{ l.text }}<template v-if="l.error"> · lỗi: {{ l.error }}</template></span>
+              <button v-if="l.canUndo" class="ml-auto shrink-0 hover:underline disabled:opacity-50" :class="confirmUndo === l.undo ? 'text-destructive font-medium' : 'text-primary'" :disabled="busy === 'undo'"
+                @click="undo(l)" @blur="confirmUndo === l.undo && (confirmUndo = '')">{{ confirmUndo === l.undo ? 'Hoàn tác? Bấm lần nữa' : 'Hoàn tác' }}</button>
+              <span v-else-if="l.undone" class="ml-auto shrink-0 text-muted-foreground">Đã hoàn tác</span>
             </div>
           </div>
           <p v-else class="mt-2 ml-7 text-xs text-muted-foreground">Chưa có phần mềm AI nào kết nối.</p>
