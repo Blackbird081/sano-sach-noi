@@ -1,6 +1,6 @@
 # HANDOFF — Sano (sách nói tiếng Việt)
 
-Cập nhật: 28/09/2026 23:45 · Phiên bản đang phát hành: **0.1.18** (Latest trên GitHub Releases, công khai 28/09) · `main` = bản phát hành, chưa có gì mới sau đó
+Cập nhật: 30/09/2026 · Phiên bản đang phát hành: **0.1.20** (Latest trên GitHub Releases, công khai 29/09) · `main` = bản phát hành, chưa có gì mới sau đó
 
 Phiên mới: đọc file này + `README.md` + `CHANGELOG.md` là đủ nắm trạng thái.
 
@@ -29,17 +29,33 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Phát hành: cập nhật `VERSION`, `CHANGELOG.md` (ngắn, hộp cập nhật của bản cũ hiện đoạn này), link tải trong `README.md` → commit `chore: phát hành vX.Y.Z` → push `main` → `git tag -a vX.Y.Z` + push tag → chờ CI → `gh release edit vX.Y.Z --draft=false --latest`.
 - VirusTotal luôn báo 2 phần mềm nhầm bản Windows (đã có từ 0.1.16, file Go chưa ký), không chặn phát hành.
 
-## 3b. Phiên 29/09 — chuẩn bị 0.1.19 (anh Việt đã duyệt rc.5, chưa phát hành)
+## 3b. Phiên 29/09 — phát hành 0.1.19 và 0.1.20
 
-RC đang chạy trên máy anh: `desktop/build/bin/Sano.app` = **0.1.19-rc.5**. CHANGELOG 0.1.19 chưa viết.
+Cả hai bản: test Go gốc + desktop và build frontend qua, CI xanh (build 3 hệ, smoke). RC cuối trên máy anh Việt:
+`desktop/build/bin/Sano.app` = 0.1.20-rc.2 (bản rc sau nên đánh 0.1.21-rc.N).
 
+**0.1.19**
 - Khung dọc 9:16 chừa vùng Reels / TikTok / Story che: video cả cuốn (`bookVideoCard.ts`, `TALL_SAFE`:
   14% đầu, 28% đáy, lề phải 64/360), video ngắn (`shareCard.ts` `drawReel`, `REEL_SAFE`: logo lên đầu,
   bìa nhỏ + sóng âm + câu đọc), ảnh Story (14% đầu, 22% đáy). Khung ngang, vuông giữ nguyên.
-- **D19** popup cam kết trước khi render (`RenderPledgeDialog.vue`, `lib/pledge.ts`, wireframe `?wireframe=pledge`):
-  6 ô tick bắt buộc, thay ô tick ở thanh dưới bước Nghe thử. Điều khoản lên **phiên bản 2** (thêm nội dung
-  vi phạm pháp luật, video/ảnh chia sẻ, mục Bồi hoàn) → mọi người dùng đồng ý lại một lần.
-- Còn: anh nhờ luật sư xem mục Bồi hoàn (có nhắc nhà tài trợ SePay, 123HOST) trước khi phát hành.
+- **D19** popup cam kết (`RenderPledgeDialog.vue`, `lib/pledge.ts`, `?wireframe=pledge`): 6 ô tick bắt buộc trước
+  khi render (thay ô tick ở thanh dưới bước Nghe thử) và trước khi tạo video ngắn / cả cuốn (một lần mỗi cuốn trong
+  một lần mở app, chưa lưu lúc cam kết của video). Popup dùng `flex` + `max-h-full` để không tràn khung (grid thì tràn).
+- Điều khoản **phiên bản 2** (`docs/dieu-khoan-su-dung.md`): nội dung vi phạm pháp luật, video/ảnh chia sẻ, mục Bồi hoàn.
+
+**0.1.20**
+- **D20** Tìm và thay trong lời đọc cả cuốn (Sửa sách · Nội dung, nút hoặc ⌘F; `lib/edit.ts` `textHits` /
+  `replaceInText` / `undoReplace`, `?wireframe=findreplace`): khớp nguyên cụm, phân biệt hoa thường; tick "Thay cả
+  trong tiêu đề mục". Thay xong là bản sửa chưa lưu → nút có sẵn "Lưu & đọc lại N mục" chỉ đọc lại các mục đó.
+  Tô chỗ khớp bằng lớp div nằm dưới textarea trong suốt (đồng bộ cuộn). Tên chương không thay được bằng cách này.
+
+**Còn / ý tưởng**
+- Anh nhờ luật sư xem mục Bồi hoàn (có nhắc nhà tài trợ SePay, 123HOST).
+- Chia sẻ ảnh chưa có popup cam kết (anh chưa yêu cầu).
+- Cáp quốc tế chậm thì tải cập nhật từ GitHub ~20 KB/giây. Đề xuất (chưa làm): bản sao file cập nhật trên
+  sanobook.com (Cloudflare), app ưu tiên tải từ đó, GitHub dự phòng.
+- Test dev không đụng thư viện thật: worktree trong scratchpad + symlink node_modules + `SANO_HOME=<tạm>` chứa bản
+  sao một cuốn, `wails dev -browser=false`, agent-browser vào :34115; xong kill đúng PID rồi `git worktree remove`.
 
 ## 3a. Phiên tối 28/09 — D17, D18, phát hành 0.1.18
 
