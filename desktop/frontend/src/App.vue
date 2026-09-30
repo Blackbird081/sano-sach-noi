@@ -62,7 +62,7 @@ onMounted(async () => {
     <ShareDialog />
     <BookVideoDialog />
     <!-- AI nhờ đọc một cuốn qua MCP: người ngồi trước máy tick cam kết D19 mới bắt đầu -->
-    <RenderPledgeDialog v-if="mcp.pledge" :key="mcp.pledge.id" :title="`${mcp.pledge.client || 'AI'} nhờ tạo sách nói`" label="Sách AI gửi" action="Cam kết và đọc"
+    <RenderPledgeDialog v-if="mcp.pledge" :key="mcp.pledge.id" :title="`${mcp.pledge.client || 'AI'} nhờ tạo sách nói`" label="Sách AI gửi" action="Cam kết và đọc" cancel="Không đọc" strict
       :file-name="`${mcp.pledge.title} · ${mcp.pledge.sections} mục · khoảng ${mcp.pledge.listenMin} phút nghe · giọng ${mcp.pledge.voice}`"
       @confirm="answerPledge(true)" @close="answerPledge(false)" />
   </div>
