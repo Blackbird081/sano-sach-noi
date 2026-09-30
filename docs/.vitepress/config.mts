@@ -180,6 +180,7 @@ export default defineConfig({
         items: [
           { text: 'Ba cách đọc (làm mượt, viết lại)', link: '/lam-muot-tai-lieu' },
           { text: 'Skill AI làm sách nói', link: '/skill-ai' },
+          { text: 'Kết nối AI (MCP)', link: '/ket-noi-ai' },
           { text: 'Nghe trên điện thoại', link: '/nghe-tren-dien-thoai' },
           { text: 'Nghe khi lái xe ô tô', link: '/nghe-khi-lai-xe' },
           { text: 'Thư viện & danh mục', link: '/thu-vien' },

@@ -6,6 +6,7 @@ import { Ban, Bot, Check, Copy, Eye, Globe, History, Laptop, Loader2, PenLine, P
 import { Button } from '@/components/ui/button'
 import { addToClaudeDesktop, copyText, errText, mcpUndo, setMCPAllowEdit, setMCPLocal, type MCPInfo, type MCPLogEntry } from '../lib/backend'
 import { mcp, refreshMCPInfo } from '../lib/mcp'
+import { DOCS } from '../lib/mock'
 import { refreshLibrary } from '../lib/store'
 
 type Client = 'claude-desktop' | 'claude-code' | 'codex' | 'other'
@@ -83,7 +84,8 @@ onUnmounted(() => clearInterval(timer))
   <section class="flex-1 overflow-auto p-6">
     <div class="max-w-2xl">
       <h1 class="text-xl font-semibold tracking-tight">MCP · Kết nối AI</h1>
-      <p class="mt-2 mb-4 text-sm text-muted-foreground">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc tạo sách (render) vẫn chạy trên máy này.</p>
+      <p class="mt-2 mb-4 text-sm text-muted-foreground">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc tạo sách (render) vẫn chạy trên máy này.
+        <a :href="`${DOCS}/ket-noi-ai`" target="_blank" rel="noopener" class="text-primary underline underline-offset-2">Xem hướng dẫn</a></p>
       <p v-if="error" class="mb-3 text-sm text-destructive">{{ error }}</p>
 
       <div v-if="!info" class="text-sm text-muted-foreground flex items-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> Đang tải…</div>
