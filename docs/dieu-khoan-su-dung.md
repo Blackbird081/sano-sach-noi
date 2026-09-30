@@ -12,7 +12,7 @@ Bạn chỉ đưa vào Sano những tài liệu bạn **có quyền sử dụng*
 - Tác phẩm đã hết thời hạn bảo hộ quyền tác giả.
 - Tác phẩm được tác giả hoặc chủ sở hữu cho phép **bằng văn bản** chuyển thành sách nói.
 
-Bạn tự chịu trách nhiệm về quyền đối với mọi nội dung mình đưa vào Sano. Trước mỗi lần tạo sách nói từ một tài liệu, Sano yêu cầu bạn cam kết các điều trong điều khoản này và ghi lại thời điểm cam kết vào thông tin cuốn sách.
+Bạn tự chịu trách nhiệm về quyền đối với mọi nội dung mình đưa vào Sano. Trước khi một cuốn sách nói được lưu vào Thư viện để nghe, xuất hay chia sẻ, Sano yêu cầu bạn cam kết các điều trong điều khoản này và ghi lại thời điểm cam kết vào thông tin cuốn sách. Sách do trợ lý AI tạo giúp bạn (qua kết nối MCP) được tạo trước và nằm ở khu chờ, chưa dùng được cho đến khi bạn cam kết; không cam kết thì Sano tự xoá sau 7 ngày.
 
 ## 2. Sách nói bạn tạo ra
 
