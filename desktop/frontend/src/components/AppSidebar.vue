@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { Library, BarChart3, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw, Bot, X, Cable } from 'lucide-vue-next'
+import { Library, BarChart3, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw, Bot, X, Cable, CheckCircle2 } from 'lucide-vue-next'
 import faviconUrl from '@/assets/favicon.svg'
 import sepayLogo from '../assets/sponsors/sepay.svg'
 import hostLogo from '../assets/sponsors/123host.svg'
 import { AUTHOR_FB, DOCS } from '../lib/mock'
 import { go, openBook, remainMin, renderPct, rendering, state, type View } from '../lib/store'
-import { mcp, mcpRenderPct } from '../lib/mcp'
+import { computed } from 'vue'
+import { activeJobs, dismissJobs, mcp, stagedJobs } from '../lib/mcp'
 import { edit, fmtRemain, openEdit } from '../lib/edit'
+
+// Thẻ sách AI tạo (D22)
+const currentJob = computed(() => mcp.jobs.find((j) => j.status === 'rendering'))
+const savedJobs = computed(() => mcp.jobs.filter((j) => j.status === 'saved'))
+const failedJobs = computed(() => mcp.jobs.filter((j) => j.status === 'failed'))
+const doneCount = computed(() => mcp.jobs.filter((j) => j.status !== 'queued' && j.status !== 'rendering').length)
+const jobClient = computed(() => [...new Set(mcp.jobs.map((j) => j.client || 'AI'))].join(', '))
 
 const nav = [
   { key: 'library' as View, label: 'Thư viện', icon: Library },
@@ -57,21 +65,32 @@ const sponsors = [
       <div class="mt-2 h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary rounded-full" :style="{ width: renderPct + '%' }"></div></div>
       <div class="mt-1 flex justify-between text-[11px] text-muted-foreground tabular-nums"><span>{{ renderPct }}%</span><span>còn ~{{ remainMin }} phút</span></div>
     </button>
-    <!-- Thẻ lượt tạo sách AI nhờ qua MCP: đang tạo / xong (mở sách) / lỗi -->
-    <div v-if="mcp.render" class="mx-3 mb-3 rounded-lg border bg-background p-2.5 text-xs" :class="mcp.render.error ? 'border-destructive/40' : 'border-border'">
-      <div class="flex items-center gap-1.5 font-medium">
-        <Loader2 v-if="mcp.render.running" class="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-        <Bot v-else class="w-3.5 h-3.5 text-primary shrink-0" />
-        <span class="truncate">{{ mcp.render.running ? 'AI đang tạo sách' : mcp.render.done ? 'AI đã tạo xong' : 'AI tạo sách bị lỗi' }}</span>
-        <button v-if="!mcp.render.running" class="ml-auto text-muted-foreground hover:text-foreground" aria-label="Ẩn" @click="mcp.render = null"><X class="w-3.5 h-3.5" /></button>
-      </div>
-      <p class="mt-1 text-muted-foreground truncate" :title="mcp.render.title">{{ mcp.render.title }}</p>
-      <template v-if="mcp.render.running">
-        <div class="mt-1.5 h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: mcpRenderPct(mcp.render) + '%' }"></div></div>
-        <div class="mt-1 text-muted-foreground tabular-nums">{{ mcpRenderPct(mcp.render) }}% · {{ mcp.render.progress.done }}/{{ mcp.render.progress.total }} mục</div>
+    <!-- Thẻ sách AI nhờ tạo qua MCP (D22): đang tạo / chờ cam kết / đã lưu -->
+    <div v-if="mcp.jobs.length" class="mx-3 mb-3 rounded-lg border border-border bg-background p-2.5 text-xs">
+      <template v-if="activeJobs.length || stagedJobs.length">
+        <div class="flex items-center gap-1.5 font-medium">
+          <Loader2 v-if="activeJobs.length" class="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+          <Bot v-else class="w-3.5 h-3.5 text-primary shrink-0" />
+          <span class="truncate">{{ jobClient }} {{ activeJobs.length ? 'nhờ tạo' : 'tạo xong' }} {{ activeJobs.length ? mcp.jobs.length : stagedJobs.length }} cuốn</span>
+        </div>
+        <template v-if="currentJob">
+          <p class="mt-1 text-muted-foreground truncate" :title="currentJob.title">Đang tạo {{ doneCount + 1 }}/{{ mcp.jobs.length }} · {{ currentJob.title }}</p>
+          <div class="mt-1.5 h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: currentJob.percent + '%' }"></div></div>
+        </template>
+        <button v-if="stagedJobs.length" class="mt-2 w-full h-7 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/15" @click="mcp.popup = true">
+          {{ stagedJobs.length }} cuốn chờ cam kết · Mở</button>
       </template>
-      <button v-else-if="mcp.render.done && mcp.render.slug" class="mt-1.5 font-medium text-primary hover:underline" @click="openBook(mcp.render.slug); mcp.render = null">Nghe ngay</button>
-      <p v-else-if="mcp.render.error" class="mt-1 text-destructive line-clamp-2" :title="mcp.render.error">{{ mcp.render.error }}</p>
+      <template v-if="savedJobs.length && !activeJobs.length">
+        <div class="flex items-center gap-1.5 font-medium" :class="stagedJobs.length ? 'mt-2.5' : ''">
+          <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600 shrink-0" /> <span class="truncate">Đã lưu {{ savedJobs.length }} cuốn vào Thư viện</span>
+          <button class="ml-auto text-muted-foreground hover:text-foreground" aria-label="Ẩn" @click="dismissJobs()"><X class="w-3.5 h-3.5" /></button>
+        </div>
+        <button v-if="savedJobs.length === 1 && savedJobs[0].slug" class="mt-1 font-medium text-primary hover:underline truncate max-w-full" @click="openBook(savedJobs[0].slug!)">Nghe {{ savedJobs[0].title }}</button>
+        <button v-else class="mt-1 font-medium text-primary hover:underline" @click="go('library')">Xem trong Thư viện</button>
+        <p v-if="stagedJobs.length" class="mt-1 text-muted-foreground">{{ stagedJobs.length }} cuốn vẫn ở khu chờ, tự xoá sau 7 ngày nếu không cam kết.</p>
+      </template>
+      <p v-for="j in failedJobs" :key="j.id" class="mt-1.5 text-destructive line-clamp-2" :title="j.error">Lỗi tạo {{ j.title }}: {{ j.error }}</p>
+      <button v-if="failedJobs.length && !activeJobs.length && !savedJobs.length" class="mt-1 text-muted-foreground hover:text-foreground" @click="dismissJobs()">Ẩn</button>
     </div>
     <p v-if="mcp.error" class="mx-3 mb-3 text-xs text-destructive">{{ mcp.error }}</p>
     <!-- Thẻ tiến độ sửa sách: đổi giọng / đọc lại chạy nền (wireframe D11) -->

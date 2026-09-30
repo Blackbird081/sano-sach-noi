@@ -3,7 +3,7 @@
 // hoặc thanh bên + nội dung, hộp cập nhật phủ trên cùng.
 import { onMounted, ref } from 'vue'
 import { platform } from './lib/backend'
-import { init, state } from './lib/store'
+import { init, refreshLibrary, state } from './lib/store'
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/AppSidebar.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
@@ -21,8 +21,8 @@ import StatsView from './views/StatsView.vue'
 import CreateView from './views/CreateView.vue'
 import EditBookView from './views/EditBookView.vue'
 import { initEdit } from './lib/edit'
-import RenderPledgeDialog from './components/RenderPledgeDialog.vue'
-import { answerPledge, initMCP, mcp } from './lib/mcp'
+import McpPledgeDialog from './components/McpPledgeDialog.vue'
+import { initMCP, mcp } from './lib/mcp'
 import MiniPlayer from './components/MiniPlayer.vue'
 import { player } from './lib/player'
 
@@ -31,7 +31,7 @@ onMounted(async () => {
   os.value = await platform()
   await init()
   void initEdit()
-  void initMCP()
+  void initMCP(() => void refreshLibrary())
 })
 </script>
 
@@ -61,9 +61,7 @@ onMounted(async () => {
     <PhoneDialog />
     <ShareDialog />
     <BookVideoDialog />
-    <!-- AI nhờ tạo một cuốn qua MCP: người ngồi trước máy tick cam kết D19 mới bắt đầu -->
-    <RenderPledgeDialog v-if="mcp.pledge" :key="mcp.pledge.id" :title="`${mcp.pledge.client || 'AI'} nhờ tạo sách nói`" label="Sách AI gửi" action="Cam kết và tạo sách" cancel="Không tạo" strict
-      :file-name="`${mcp.pledge.title} · ${mcp.pledge.sections} mục · khoảng ${mcp.pledge.listenMin} phút nghe · giọng ${mcp.pledge.voice}`"
-      @confirm="answerPledge(true)" @close="answerPledge(false)" />
+    <!-- Sách AI tạo qua MCP: tạo trước, cam kết sau, một popup cho nhiều cuốn (D22) -->
+    <McpPledgeDialog v-if="mcp.popup" />
   </div>
 </template>

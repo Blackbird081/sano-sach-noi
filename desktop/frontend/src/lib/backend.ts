@@ -163,16 +163,23 @@ export interface RenderStatus {
   source: string // '' = tạo trong app, 'mcp' = AI tạo qua MCP
 }
 
-/** Popup cam kết cho sách AI gửi qua MCP (mcp_create.go). */
-export interface MCPPledge {
+/** Một cuốn AI nhờ tạo qua MCP (mcp_queue.go, wireframe D22). */
+export interface MCPJob {
   id: string
   title: string
-  author: string
+  author?: string
   voice: string
-  chapters: number
+  client: string
   sections: number
   listenMin: number
-  client: string
+  status: 'queued' | 'rendering' | 'staged' | 'saved' | 'failed' | 'cancelled'
+  percent: number
+  slug?: string
+  error?: string
+  autoSave: boolean
+  pledgedAt?: string
+  createdAt: number
+  stagedAt?: number
 }
 
 export interface MCPLogEntry {
@@ -412,8 +419,10 @@ interface GoApp {
   StartRender(s: BookSettings): Promise<RenderStatus>
   CancelRender(): Promise<void>
   RenderStatus(): Promise<RenderStatus | null>
-  MCPPledgeAnswer(id: string, ok: boolean): Promise<void>
-  MCPPendingPledge(): Promise<MCPPledge | null>
+  MCPJobs(): Promise<MCPJob[]>
+  MCPCommit(ids: string[]): Promise<MCPJob[]>
+  MCPDiscard(id: string): Promise<MCPJob[]>
+  MCPDismiss(): Promise<MCPJob[]>
   MCPInfo(): Promise<MCPInfo>
   SetMCPLocal(on: boolean): Promise<MCPInfo>
   SetMCPAllowEdit(on: boolean): Promise<MCPInfo>
@@ -710,12 +719,20 @@ export async function startRender(s: BookSettings): Promise<RenderStatus> {
   return need().StartRender(s)
 }
 
-export async function mcpPledgeAnswer(id: string, ok: boolean): Promise<void> {
-  await need().MCPPledgeAnswer(id, ok)
+export async function mcpJobs(): Promise<MCPJob[]> {
+  return (await goApp()?.MCPJobs()) ?? []
 }
 
-export async function mcpPendingPledge(): Promise<MCPPledge | null> {
-  return (await goApp()?.MCPPendingPledge()) ?? null
+export async function mcpCommit(ids: string[]): Promise<MCPJob[]> {
+  return need().MCPCommit(ids)
+}
+
+export async function mcpDiscard(id: string): Promise<MCPJob[]> {
+  return need().MCPDiscard(id)
+}
+
+export async function mcpDismiss(): Promise<MCPJob[]> {
+  return (await goApp()?.MCPDismiss()) ?? []
 }
 
 export async function mcpInfo(): Promise<MCPInfo | null> {

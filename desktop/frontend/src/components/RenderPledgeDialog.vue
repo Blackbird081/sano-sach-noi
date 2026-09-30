@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/button'
 import TermsDialog from './TermsDialog.vue'
 import { PLEDGES } from '../lib/pledge'
 
-// strict: chỉ đóng bằng nút (X / nút huỷ), bấm ra ngoài hay Esc không đóng — dùng khi AI nhờ đọc qua MCP:
-// đóng là từ chối, bấm nhầm ra ngoài sẽ mất lượt.
-const props = withDefaults(defineProps<{ fileName: string; title?: string; label?: string; action?: string; cancel?: string; strict?: boolean }>(), {
-  cancel: 'Để sau',
-  strict: false,
+withDefaults(defineProps<{ fileName: string; title?: string; label?: string; action?: string }>(), {
   title: 'Cam kết trước khi tạo sách nói',
   label: 'Tài liệu',
   action: 'Cam kết và render',
@@ -24,13 +20,13 @@ const showTerms = ref(false)
 const allOk = computed(() => checked.value.every(Boolean) && readTerms.value)
 const count = computed(() => checked.value.filter(Boolean).length + (readTerms.value ? 1 : 0))
 
-const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !showTerms.value && !props.strict && emit('close')
+const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !showTerms.value && emit('close')
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4" @click.self="!strict && emit('close')">
+  <div class="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4" @click.self="emit('close')">
     <div role="dialog" aria-modal="true" aria-labelledby="pledge-title" class="flex max-h-full w-[640px] max-w-full flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
       <div class="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
         <div class="min-w-0">
@@ -62,7 +58,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <div class="mt-3 flex items-center justify-between gap-3">
           <span class="text-xs" :class="allOk ? 'text-rag-green flex items-center gap-1' : 'text-muted-foreground'"><Check v-if="allOk" class="h-3.5 w-3.5" /> Đã tick {{ count }}/{{ PLEDGES.length + 1 }}</span>
           <div class="flex gap-2">
-            <Button variant="outline" @click="emit('close')">{{ cancel }}</Button>
+            <Button variant="outline" @click="emit('close')">Để sau</Button>
             <Button :disabled="!allOk" @click="emit('confirm')">{{ action }} <ChevronRight class="w-4 h-4" /></Button>
           </div>
         </div>
