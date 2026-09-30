@@ -160,10 +160,17 @@ export default defineConfig({
       { text: 'Nghe thử', link: '/demo', activeMatch: '^/demo' },
       {
         text: 'Hướng dẫn',
-        activeMatch: '^/(?!$|demo|tai-ve|skill-ai)',
+        activeMatch: '^/(?!$|demo|tai-ve|skill-ai|ket-noi-ai)',
         items: guide,
       },
-      { text: 'Skill AI', link: '/skill-ai', activeMatch: '^/skill-ai' },
+      {
+        text: 'AI',
+        activeMatch: '^/(skill-ai|ket-noi-ai)',
+        items: [
+          { text: 'Skill làm sách nói', link: '/skill-ai' },
+          { text: 'Kết nối AI (MCP)', link: '/ket-noi-ai' },
+        ],
+      },
       { text: 'Tải về', link: '/tai-ve', activeMatch: '^/tai-ve' },
     ],
 
@@ -179,13 +186,18 @@ export default defineConfig({
         text: 'Dùng Sano',
         items: [
           { text: 'Ba cách đọc (làm mượt, viết lại)', link: '/lam-muot-tai-lieu' },
-          { text: 'Skill AI làm sách nói', link: '/skill-ai' },
-          { text: 'Kết nối AI (MCP)', link: '/ket-noi-ai' },
           { text: 'Nghe trên điện thoại', link: '/nghe-tren-dien-thoai' },
           { text: 'Nghe khi lái xe ô tô', link: '/nghe-khi-lai-xe' },
           { text: 'Thư viện & danh mục', link: '/thu-vien' },
           { text: 'Hành trình nghe', link: '/hanh-trinh-nghe' },
           { text: 'Xuất M4B / gói zip', link: '/xuat-m4b-goi-zip' },
+        ],
+      },
+      {
+        text: 'Dùng Sano với AI',
+        items: [
+          { text: 'Skill làm sách nói', link: '/skill-ai' },
+          { text: 'Kết nối AI (MCP)', link: '/ket-noi-ai' },
         ],
       },
       {
