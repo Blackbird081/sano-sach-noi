@@ -45,6 +45,7 @@ type App struct {
 	ttsChecks int
 
 	mcpSrv *http.Server // máy chủ MCP trong máy (mcp.go)
+	mcp    mcpState     // bản nháp + cam kết của AI (mcp_create.go)
 
 	updateState // tự cập nhật (selfupdate.go), khoá riêng updMu
 }

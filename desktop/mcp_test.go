@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -33,6 +34,19 @@ func mcpTestServer(t *testing.T) (*App, *httptest.Server, string) {
 	return a, srv, token
 }
 
+func mcpConnect(t *testing.T, srv *httptest.Server, token string) *mcp.ClientSession {
+	t.Helper()
+	c := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	cs, err := c.Connect(context.Background(), &mcp.StreamableClientTransport{
+		Endpoint: srv.URL + "/mcp", HTTPClient: &http.Client{Transport: bearer{token}}, DisableStandaloneSSE: true,
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = cs.Close() })
+	return cs
+}
+
 func callTool(t *testing.T, cs *mcp.ClientSession, name string, args any, out any) {
 	t.Helper()
 	res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: args})
@@ -50,24 +64,24 @@ func callTool(t *testing.T, cs *mcp.ClientSession, name string, args any, out an
 
 func TestMCP_XemSach(t *testing.T) {
 	_, srv, token := mcpTestServer(t)
-	c := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
-	cs, err := c.Connect(context.Background(), &mcp.StreamableClientTransport{
-		Endpoint: srv.URL + "/mcp", HTTPClient: &http.Client{Transport: bearer{token}}, DisableStandaloneSSE: true,
-	}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = cs.Close() }()
+	cs := mcpConnect(t, srv, token)
 
 	tools, err := cs.ListTools(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	names := []string{}
+	readOnly := map[string]bool{"list_books": true, "get_book": true, "get_section_texts": true, "list_voices": true, "get_status": true, "get_render_status": true}
 	for _, tl := range tools.Tools {
 		names = append(names, tl.Name)
-		if tl.Annotations == nil || !tl.Annotations.ReadOnlyHint {
-			t.Errorf("%s phải đánh dấu chỉ đọc", tl.Name)
+		if tl.Annotations == nil || tl.Annotations.ReadOnlyHint != readOnly[tl.Name] {
+			t.Errorf("%s: đánh dấu chỉ đọc sai", tl.Name)
+		}
+		if strings.Contains(tl.Name, "delete") || strings.Contains(tl.Name, "remove") {
+			t.Errorf("MCP không được có công cụ xoá: %s", tl.Name)
+		}
+		if tl.Annotations != nil && tl.Annotations.DestructiveHint != nil && *tl.Annotations.DestructiveHint {
+			t.Errorf("%s không được là công cụ phá dữ liệu", tl.Name)
 		}
 	}
 	if got := strings.Join(names, ","); !strings.Contains(got, "list_books") || !strings.Contains(got, "get_section_texts") {
@@ -130,5 +144,103 @@ func TestMCP_ChanKhongMaVaTrangWeb(t *testing.T) {
 	}
 	if c := do("Bearer "+token, ""); c != http.StatusOK {
 		t.Errorf("đúng mã: %d", c)
+	}
+}
+
+const mcpSampleText = `Đây là lời chào của AI, phải bị bỏ.
+
+% Sách thử MCP
+
+# Chương 1. Mở đầu
+
+## Mục một
+
+Đây là đoạn văn đầu tiên để đọc thử.
+
+## Mục hai
+
+Đoạn văn thứ hai, câu ngắn, dễ nghe.
+
+# Chương 2. Kết
+
+## Ba ý cần nhớ
+
+Một. Hai. Ba.
+`
+
+func TestMCP_TaoBanNhapVaCamKet(t *testing.T) {
+	a, srv, token := mcpTestServer(t)
+	cs := mcpConnect(t, srv, token)
+
+	var d mcpDraftOut
+	callTool(t, cs, "create_book", map[string]any{"text": mcpSampleText, "author": "Người thử"}, &d)
+	if d.DraftID == "" || d.Title != "Sách thử MCP" || len(d.Chapters) != 2 || d.Sections != 3 || d.Voice != mcpDefaultVoice {
+		t.Fatalf("bản nháp sai: %+v", d)
+	}
+	if !strings.Contains(d.IntroText, "Tác giả: Người thử.") {
+		t.Fatalf("lời giới thiệu tự tạo sai: %q", d.IntroText)
+	}
+	a.mcp.mu.Lock()
+	draft := a.mcp.drafts[d.DraftID]
+	a.mcp.mu.Unlock()
+	if draft == nil || draft.settings.RightsConfirmedAt != "" {
+		t.Fatal("bản nháp không được có sẵn cam kết")
+	}
+	if !strings.HasPrefix(draft.docx, a.lib.Root()) {
+		t.Fatalf("file tạm phải nằm trong thư viện: %s", draft.docx)
+	}
+
+	for _, bad := range []map[string]any{{"text": ""}, {"text": "không có dòng chương nào"}, {"text": "# Chương\n\n## Mục\n\nChữ"}} {
+		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "create_book", Arguments: bad})
+		if err != nil || !res.IsError {
+			t.Errorf("nội dung sai phải báo lỗi: %v %v", bad, err)
+		}
+	}
+
+	var r mcpRenderOut
+	callTool(t, cs, "start_render", map[string]any{"draft_id": d.DraftID}, &r)
+	if r.Status != "waiting_pledge" {
+		t.Fatalf("phải chờ cam kết: %+v", r)
+	}
+	if p := a.MCPPendingPledge(); p == nil || p.ID != d.DraftID || p.Sections != 3 {
+		t.Fatalf("popup cam kết: %+v", p)
+	}
+	res, _ := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "start_render", Arguments: map[string]any{"draft_id": d.DraftID}})
+	if !res.IsError {
+		t.Fatal("đang chờ cam kết thì không mở popup thứ hai")
+	}
+
+	// Người dùng đóng popup → từ chối, bản nháp vẫn còn để hỏi lại.
+	if err := a.MCPPledgeAnswer(d.DraftID, false); err != nil {
+		t.Fatal(err)
+	}
+	callTool(t, cs, "get_render_status", map[string]any{}, &r)
+	if r.Status != "declined" {
+		t.Fatalf("sau khi từ chối: %+v", r)
+	}
+	if err := a.MCPPledgeAnswer(d.DraftID, true); err == nil {
+		t.Fatal("trả lời popup đã đóng phải báo lỗi")
+	}
+
+	// Cam kết: máy có bộ đọc thì bắt đầu đọc (dừng ngay), không có thì báo lỗi rõ, không treo.
+	callTool(t, cs, "start_render", map[string]any{"draft_id": d.DraftID}, &r)
+	if err := a.MCPPledgeAnswer(d.DraftID, true); err == nil {
+		st := a.RenderStatus()
+		if st == nil || st.Source != "mcp" || st.Title != "Sách thử MCP" {
+			t.Fatalf("lượt đọc phải ghi nguồn mcp: %+v", st)
+		}
+		callTool(t, cs, "cancel_render", map[string]any{}, &r)
+		for i := 0; i < 300 && a.Rendering(); i++ {
+			time.Sleep(100 * time.Millisecond)
+		}
+		callTool(t, cs, "get_render_status", map[string]any{}, &r)
+		if r.Status != "cancelled" {
+			t.Fatalf("sau khi dừng: %+v", r)
+		}
+		return
+	}
+	callTool(t, cs, "get_render_status", map[string]any{}, &r)
+	if r.Status != "error" || r.Message == "" {
+		t.Fatalf("lỗi render phải báo lại: %+v", r)
 	}
 }

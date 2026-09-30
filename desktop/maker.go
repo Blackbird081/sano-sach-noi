@@ -72,6 +72,7 @@ type RenderStatus struct {
 	Title     string             `json:"title"`
 	Slug      string             `json:"slug"` // slug trong thư viện khi đã xong
 	Progress  bookmaker.Progress `json:"progress"`
+	Source    string             `json:"source"` // "" = người dùng tạo trong app, "mcp" = AI tạo qua MCP (mcp_create.go)
 }
 
 type renderJob struct {
@@ -279,6 +280,10 @@ func (a *App) renderBusyLocked() error {
 // StartRender bắt đầu render cả cuốn trong nền. Tiến độ đẩy lên qua sự kiện
 // render:progress, kết thúc qua render:finished. Mỗi lúc chỉ một cuốn.
 func (a *App) StartRender(s BookSettings) (*RenderStatus, error) {
+	return a.startRender(s, "")
+}
+
+func (a *App) startRender(s BookSettings, source string) (*RenderStatus, error) {
 	if strings.TrimSpace(s.RightsConfirmedAt) == "" {
 		return nil, ErrRightsNotConfirmed
 	}
@@ -324,7 +329,7 @@ func (a *App) StartRender(s BookSettings) (*RenderStatus, error) {
 	opts.Category = category
 	opts.Series, opts.SeriesVolume = series, volume
 	ctx, cancel := context.WithCancel(a.context())
-	job := &renderJob{cancel: cancel, status: RenderStatus{Running: true, Title: title}}
+	job := &renderJob{cancel: cancel, status: RenderStatus{Running: true, Title: title, Source: source}}
 	a.job = job
 	st := job.status
 	a.mu.Unlock()

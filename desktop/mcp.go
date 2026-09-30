@@ -6,7 +6,7 @@ package main
 // từ trang web (Origin lạ, Host lạ). Không phiên (stateless) + trả JSON: cầu nối
 // sano-mcp chỉ việc chuyển từng dòng JSON-RPC, app mở lại cũng nối tiếp được.
 //
-// M0: chỉ các việc Xem. Tạo, sửa, xuất làm ở các bước sau.
+// M0: các việc Xem. M2: tạo sách (mcp_create.go). Không có công cụ xoá.
 
 import (
 	"context"
@@ -31,7 +31,7 @@ const mcpPort = 39390
 const mcpInstructions = `Sano là phần mềm làm sách nói tiếng Việt chạy trên máy người dùng: biến tài liệu (Tiêu đề, Chương, Mục) thành sách nói bằng giọng đọc VieNeu ngay trên máy.
 Thư viện gồm các cuốn đã tạo; mỗi cuốn có nhiều chương, mỗi chương nhiều mục (tiểu mục), mỗi mục là một file tiếng.
 Bắt đầu bằng list_books để lấy slug của cuốn, rồi get_book xem mục lục, get_section_texts đọc lời từng mục.
-Trả lời người dùng bằng tiếng Việt có dấu. Bản này chỉ xem được; tạo sách, sửa lời, xuất M4B sẽ có ở bản sau.`
+Trả lời người dùng bằng tiếng Việt có dấu. Tạo sách: create_book (gửi nội dung, xem lại mục lục cùng người dùng) → start_render (người dùng tick cam kết trên app) → get_render_status. Không xoá được sách qua đây. Sửa lời, xuất M4B sẽ có ở bản sau.`
 
 // startMCP mở máy chủ MCP trong máy và ghi file hẹn cho cầu nối. Lỗi thì chỉ ghi
 // log: app vẫn chạy bình thường, chỉ không kết nối AI được.
@@ -119,6 +119,20 @@ func (a *App) newMCPServer() *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{Name: "get_status", Title: "Tình trạng Sano",
 		Description: "Phiên bản app, bộ đọc đã sẵn sàng chưa, có đang đọc (render) hay sửa sách nào không và tiến độ.",
 		Annotations: ro}, a.mcpStatus)
+	f := false
+	write := &mcp.ToolAnnotations{DestructiveHint: &f, OpenWorldHint: &f}
+	mcp.AddTool(s, &mcp.Tool{Name: "create_book", Title: "Tạo bản nháp sách",
+		Description: "Gửi toàn bộ nội dung một cuốn sách nói để Sano dựng bản nháp (chưa đọc). Định dạng văn bản: dòng đầu '% Tên sách'; mỗi chương '# Tên chương'; mỗi mục '## Tên mục'; dưới mỗi mục là các đoạn văn viết để nghe (câu ngắn, số và chữ viết tắt viết thành lời, không bảng, không gạch đầu dòng). Trả về draft_id, mục lục, thời lượng ước tính. Không nhận đường dẫn file: tự đọc tài liệu rồi gửi nội dung.",
+		Annotations: write}, a.mcpCreateBook)
+	mcp.AddTool(s, &mcp.Tool{Name: "start_render", Title: "Đọc thành sách nói",
+		Description: "Bắt đầu đọc bản nháp thành sách nói trên máy. Hỏi người dùng trước khi gọi. App Sano hiện popup cam kết: người dùng phải tick trên máy tính thì mới bắt đầu. Đọc mất vài phút tới vài chục phút; theo dõi bằng get_render_status.",
+		Annotations: write}, a.mcpStartRender)
+	mcp.AddTool(s, &mcp.Tool{Name: "get_render_status", Title: "Tiến độ đọc",
+		Description: "Tình trạng lượt đọc AI nhờ: chờ cam kết, bị từ chối, đang đọc (phần trăm, số mục, phút còn lại), xong (slug của sách mới), lỗi.",
+		Annotations: ro}, a.mcpRenderStatus)
+	mcp.AddTool(s, &mcp.Tool{Name: "cancel_render", Title: "Dừng đọc",
+		Description: "Dừng lượt đọc do AI bắt đầu (không lưu gì). Chỉ dùng khi người dùng yêu cầu.",
+		Annotations: write}, a.mcpCancelRender)
 	return s
 }
 
