@@ -31,7 +31,7 @@ const mcpPort = 39390
 const mcpInstructions = `Sano là phần mềm làm sách nói tiếng Việt chạy trên máy người dùng: biến tài liệu (Tiêu đề, Chương, Mục) thành sách nói bằng giọng đọc VieNeu ngay trên máy.
 Thư viện gồm các cuốn đã tạo; mỗi cuốn có nhiều chương, mỗi chương nhiều mục (tiểu mục), mỗi mục là một file tiếng.
 Bắt đầu bằng list_books để lấy slug của cuốn, rồi get_book xem mục lục, get_section_texts đọc lời từng mục.
-Trả lời người dùng bằng tiếng Việt có dấu. Tạo sách: create_book (gửi nội dung, xem lại mục lục cùng người dùng) → start_render (người dùng tick cam kết trên app) → get_render_status. Không xoá được sách qua đây. Sửa lời, xuất M4B sẽ có ở bản sau.`
+Trả lời người dùng bằng tiếng Việt có dấu. Tạo sách: create_book (gửi nội dung, xem lại mục lục cùng người dùng) → start_render (Sano tạo ngay, lần lượt nếu nhiều cuốn) → get_render_status. Tạo xong sách ở khu chờ, người dùng tick cam kết trên app thì mới vào Thư viện. Không xoá được sách qua đây. Sửa lời, xuất M4B sẽ có ở bản sau.`
 
 // startMCP mở máy chủ MCP trong máy và ghi file hẹn cho cầu nối. Lỗi thì chỉ ghi
 // log: app vẫn chạy bình thường, chỉ không kết nối AI được.
@@ -143,16 +143,18 @@ func (a *App) newMCPServer() *mcp.Server {
 		return fmt.Sprintf("Tạo bản nháp %s (%d chương, %d mục, khoảng %d phút nghe)", quoteTitle(o.Title, "?"), len(o.Chapters), o.Sections, o.ListenMin)
 	}, a.mcpCreateBook)
 	addTool(a, s, &mcp.Tool{Name: "start_render", Title: "Tạo sách nói",
-		Description: "Bắt đầu tạo sách nói (render) từ bản nháp trên máy. Hỏi người dùng trước khi gọi. App Sano hiện popup cam kết: người dùng phải tick trên máy tính thì mới bắt đầu. Tạo mất vài phút tới vài chục phút; theo dõi bằng get_render_status.",
-		Annotations: write}, true, func(_ mcpDraftID, o mcpRenderOut) string {
-		return "Xin tạo sách " + quoteTitle(o.Title, "?") + ", chờ cam kết trên app"
+		Description: "Tạo sách nói (render) từ bản nháp trên máy. Hỏi người dùng trước khi gọi. Sano xếp hàng và tạo lần lượt từng cuốn khi máy rảnh, không cần chờ ai. Tạo xong sách nằm ở khu chờ: người dùng tick cam kết trên app Sano (một lần cho nhiều cuốn) thì mới vào Thư viện. Theo dõi bằng get_render_status.",
+		Annotations: write}, true, func(in mcpDraftID, o mcpRenderOut) string {
+		return "Xin tạo sách " + quoteTitle(firstTitle(o), in.DraftID)
 	}, a.mcpStartRender)
 	addTool(a, s, &mcp.Tool{Name: "get_render_status", Title: "Tiến độ tạo sách",
-		Description: "Tình trạng lượt tạo sách AI nhờ: chờ cam kết, bị từ chối, đang tạo (phần trăm, số mục, phút còn lại), xong (slug của sách mới), lỗi.",
+		Description: "Tình trạng các cuốn AI nhờ tạo: queued (chờ tạo), rendering (đang tạo, phần trăm, phút còn lại), waiting_pledge (đã tạo xong, chờ người dùng cam kết trên app), saved (đã vào Thư viện, có slug), failed, cancelled.",
 		Annotations: ro}, false, nil, a.mcpRenderStatus)
 	addTool(a, s, &mcp.Tool{Name: "cancel_render", Title: "Dừng tạo sách",
-		Description: "Dừng lượt tạo sách do AI bắt đầu (không lưu gì). Chỉ dùng khi người dùng yêu cầu.",
-		Annotations: write}, true, func(_ mcpNoInput, o mcpRenderOut) string { return "Dừng tạo sách " + quoteTitle(o.Title, "?") }, a.mcpCancelRender)
+		Description: "Dừng một cuốn đang tạo hoặc bỏ khỏi hàng chờ tạo (không lưu gì). Chỉ dùng khi người dùng yêu cầu.",
+		Annotations: write}, true, func(in mcpDraftID, o mcpRenderOut) string {
+		return "Dừng tạo sách " + quoteTitle(firstTitle(o), in.DraftID)
+	}, a.mcpCancelRender)
 	return s
 }
 
@@ -196,6 +198,13 @@ func clientFrom(ctx context.Context) string {
 func (a *App) bookTitle(slug string) string {
 	if d, err := a.lib.Get(strings.TrimSpace(slug)); err == nil {
 		return d.Title
+	}
+	return ""
+}
+
+func firstTitle(o mcpRenderOut) string {
+	if len(o.Books) > 0 {
+		return o.Books[0].Title
 	}
 	return ""
 }

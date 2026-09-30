@@ -390,6 +390,7 @@ func (a *App) finishEdit(ctx context.Context, job *editJob, runErr error) {
 	a.mu.Unlock()
 	job.cancel()
 	a.emit(eventEditFinished, cur)
+	go a.pumpMCP() // máy rảnh → tạo tiếp cuốn AI đang xếp hàng
 }
 
 // CancelEdit dừng lượt sửa đang chạy. Đổi giọng: discard = bỏ phần đã đọc, giữ

@@ -1,10 +1,9 @@
 package main
 
-// MCP · tạo sách (M2): AI gửi NỘI DUNG sách (văn bản "% Tên sách / # Chương / ## Mục",
-// cùng quy ước với ô dán văn bản ở bước Cách đọc), không gửi đường dẫn file. Sano đổi thành
-// .docx tạm trong ~/Sano/.tam/mcp, nạp mục lục → bản nháp. Bắt đầu tạo thì app hiện popup
-// cam kết D19 cho người ngồi trước máy tick; tick đủ mới render, từ chối thì thôi. AI theo dõi
-// bằng get_render_status. Không có công cụ xoá (D21).
+// MCP · bản nháp sách: AI gửi NỘI DUNG sách (văn bản "% Tên sách / # Chương / ## Mục", cùng quy
+// ước với ô dán văn bản ở bước Cách đọc), không gửi đường dẫn file. Sano đổi thành .docx tạm trong
+// ~/Sano/.tam/mcp, nạp mục lục → bản nháp. Tạo sách, khu chờ cam kết: mcp_queue.go (D22).
+// Không có công cụ xoá (D21).
 
 import (
 	"context"
@@ -20,18 +19,14 @@ import (
 	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"sano/internal/bookmaker"
 )
 
 const (
-	eventMCPPledge = "mcp:pledge" // app hiện popup cam kết cho bản nháp AI gửi (nil = đóng popup)
-
 	mcpDraftTTL     = 2 * time.Hour
-	mcpMaxDrafts    = 5
-	mcpPledgeTTL    = 10 * time.Minute // popup cam kết không ai tick → tự huỷ
-	mcpDefaultVoice = "Hải Đăng"       // khớp DEFAULT_VOICE ở giao diện
+	mcpMaxDrafts    = 10
+	mcpDefaultVoice = "Hải Đăng" // khớp DEFAULT_VOICE ở giao diện
 )
 
 // mcpDraft — bản nháp sách AI gửi, chờ bắt đầu tạo.
@@ -43,26 +38,12 @@ type mcpDraft struct {
 	created  time.Time
 }
 
-// MCPPledge — yêu cầu cam kết đang chờ người dùng (gửi lên giao diện).
-type MCPPledge struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Author    string `json:"author"`
-	Voice     string `json:"voice"`
-	Chapters  int    `json:"chapters"`
-	Sections  int    `json:"sections"`
-	ListenMin int    `json:"listenMin"`
-	Client    string `json:"client"` // phần mềm AI nhờ (Claude Code, Claude Desktop…; không rõ = "AI")
-}
-
 // mcpState — bản nháp + lượt cam kết của MCP (khoá riêng, không dùng chung a.mu).
 type mcpState struct {
 	mu      sync.Mutex
 	drafts  map[string]*mcpDraft
-	pledge  *MCPPledge
-	pledged time.Time // lúc hiện popup
-	// lastPledge — kết quả lượt cam kết gần nhất cho get_render_status: waiting | declined | expired | started | error
-	lastID, lastState, lastErr string
+	jobs    []*MCPJob // sách AI nhờ tạo: chờ tạo → đang tạo → khu chờ cam kết → đã lưu (mcp_queue.go)
+	pumping bool
 }
 
 func randomID() string {
@@ -195,7 +176,7 @@ func (a *App) mcpCreateBook(_ context.Context, _ *mcp.CallToolRequest, in mcpCre
 	out.ListenMin = max(1, chars/15/60) // ~15 ký tự/giây nghe, ~70 ký tự/giây render (như giao diện)
 	out.RenderMin = max(1, chars/70/60)
 	out.Warnings = outlineWarnings(outline.Warnings)
-	out.Next = "Cho người dùng xem mục lục này. Họ đồng ý thì gọi start_render với draft_id."
+	out.Next = "Cho người dùng xem mục lục này. Họ đồng ý thì gọi start_render với draft_id. Có thể tạo nhiều cuốn: gọi create_book + start_render cho từng cuốn, Sano tạo lần lượt."
 
 	a.mcp.mu.Lock()
 	a.pruneDraftsLocked()
@@ -260,156 +241,4 @@ func (a *App) dropDraftLocked(id string) {
 		_ = os.Remove(d.docx)
 		delete(a.mcp.drafts, id)
 	}
-}
-
-type mcpDraftID struct {
-	DraftID string `json:"draft_id" jsonschema:"draft_id trả về từ create_book"`
-}
-
-type mcpRenderOut struct {
-	Status    string  `json:"status"` // waiting_pledge | declined | expired | rendering | done | error | cancelled | none
-	Message   string  `json:"message"`
-	Title     string  `json:"title,omitempty"`
-	Slug      string  `json:"slug,omitempty"`
-	Percent   float64 `json:"percent,omitempty"`
-	Done      int     `json:"sections_done,omitempty"`
-	Total     int     `json:"sections_total,omitempty"`
-	RemainMin int     `json:"remain_min,omitempty"`
-}
-
-func (a *App) mcpStartRender(ctx context.Context, _ *mcp.CallToolRequest, in mcpDraftID) (*mcp.CallToolResult, mcpRenderOut, error) {
-	a.mu.Lock()
-	busy := a.renderBusyLocked()
-	a.mu.Unlock()
-	if busy != nil {
-		return nil, mcpRenderOut{}, fmt.Errorf("chưa tạo được: %v", busy)
-	}
-	a.mcp.mu.Lock()
-	defer a.mcp.mu.Unlock()
-	d, ok := a.mcp.drafts[strings.TrimSpace(in.DraftID)]
-	if !ok {
-		return nil, mcpRenderOut{}, errors.New("không thấy bản nháp (quá 2 giờ hoặc sai draft_id): gọi create_book lại")
-	}
-	if a.mcp.pledge != nil && time.Since(a.mcp.pledged) < mcpPledgeTTL {
-		return nil, mcpRenderOut{}, errors.New("đang chờ người dùng cam kết cho một cuốn khác trên app Sano")
-	}
-	listen := 0
-	for _, ch := range d.outline.Chapters {
-		for _, s := range ch.Sections {
-			if !s.TOC {
-				listen += s.Chars
-			}
-		}
-	}
-	p := &MCPPledge{ID: d.id, Title: d.settings.Title, Author: d.settings.Author, Voice: d.settings.Voice,
-		Chapters: len(d.outline.Chapters), Sections: d.outline.Sections, ListenMin: max(1, listen/15/60), Client: clientFrom(ctx)}
-	a.mcp.pledge, a.mcp.pledged = p, time.Now()
-	a.mcp.lastID, a.mcp.lastState, a.mcp.lastErr = d.id, "waiting", ""
-	a.emit(eventMCPPledge, p)
-	if a.ctx != nil {
-		wruntime.WindowUnminimise(a.ctx)
-		wruntime.WindowShow(a.ctx)
-	}
-	return nil, mcpRenderOut{Status: "waiting_pledge", Title: p.Title,
-		Message: "App Sano đang hiện popup cam kết. Nhờ người dùng tick đủ các ô trên máy tính rồi bấm \"Cam kết và tạo sách\". Gọi get_render_status để theo dõi."}, nil
-}
-
-// MCPPledgeAnswer — giao diện báo người dùng đã cam kết (ok) hay đóng popup.
-func (a *App) MCPPledgeAnswer(id string, ok bool) error {
-	a.mcp.mu.Lock()
-	p := a.mcp.pledge
-	if p == nil || p.ID != id {
-		a.mcp.mu.Unlock()
-		return errors.New("yêu cầu này không còn nữa")
-	}
-	a.mcp.pledge = nil
-	d := a.mcp.drafts[id]
-	if !ok || d == nil {
-		a.mcp.lastState = "declined"
-		a.mcp.mu.Unlock()
-		return nil
-	}
-	s := d.settings
-	s.RightsConfirmedAt = time.Now().UTC().Format(time.RFC3339)
-	a.mcp.mu.Unlock()
-
-	_, err := a.startRender(s, "mcp")
-	a.mcp.mu.Lock()
-	defer a.mcp.mu.Unlock()
-	if err != nil {
-		a.mcp.lastState, a.mcp.lastErr = "error", err.Error()
-		return err
-	}
-	a.mcp.lastState = "started"
-	delete(a.mcp.drafts, id) // file .docx giữ tới khi dọn .tam (render còn đọc)
-	return nil
-}
-
-// MCPPendingPledge — popup cam kết đang chờ (mở lại cửa sổ / tải lại giao diện).
-func (a *App) MCPPendingPledge() *MCPPledge {
-	a.mcp.mu.Lock()
-	defer a.mcp.mu.Unlock()
-	a.expirePledgeLocked()
-	return a.mcp.pledge
-}
-
-func (a *App) expirePledgeLocked() {
-	if a.mcp.pledge != nil && time.Since(a.mcp.pledged) >= mcpPledgeTTL {
-		a.mcp.pledge = nil
-		a.mcp.lastState = "expired"
-		a.emit(eventMCPPledge, nil)
-	}
-}
-
-func (a *App) mcpRenderStatus(context.Context, *mcp.CallToolRequest, mcpNoInput) (*mcp.CallToolResult, mcpRenderOut, error) {
-	a.mcp.mu.Lock()
-	a.expirePledgeLocked()
-	state, errText := a.mcp.lastState, a.mcp.lastErr
-	var title string
-	if p := a.mcp.pledge; p != nil {
-		title = p.Title
-	}
-	a.mcp.mu.Unlock()
-	switch state {
-	case "waiting":
-		return nil, mcpRenderOut{Status: "waiting_pledge", Title: title, Message: "Đang chờ người dùng tick cam kết trên app Sano."}, nil
-	case "declined":
-		return nil, mcpRenderOut{Status: "declined", Message: "Người dùng đã đóng popup cam kết, chưa tạo sách. Hỏi lại người dùng trước khi gọi start_render lần nữa."}, nil
-	case "expired":
-		return nil, mcpRenderOut{Status: "expired", Message: "Popup cam kết quá 10 phút không ai tick nên đã đóng. Gọi start_render lại khi người dùng ngồi trước máy."}, nil
-	case "error":
-		return nil, mcpRenderOut{Status: "error", Message: errText}, nil
-	}
-	r := a.RenderStatus()
-	if r == nil || r.Source != "mcp" {
-		return nil, mcpRenderOut{Status: "none", Message: "Chưa có cuốn nào AI nhờ tạo trong lần mở app này."}, nil
-	}
-	out := mcpRenderOut{Title: r.Title, Slug: r.Slug, Done: r.Progress.Done, Total: r.Progress.Total,
-		Percent: progressPercent(r.Progress.DoneChars, r.Progress.TotalChars)}
-	switch {
-	case r.Running:
-		out.Status = "rendering"
-		out.Message = "Đang tạo sách trên máy. Hỏi lại sau vài phút."
-		if r.Progress.DoneChars > 0 && r.Progress.ElapsedSec > 0 {
-			left := float64(r.Progress.TotalChars-r.Progress.DoneChars) * float64(r.Progress.ElapsedSec) / float64(r.Progress.DoneChars)
-			out.RemainMin = max(1, int(left/60+0.5))
-		}
-	case r.Done:
-		out.Status, out.Percent = "done", 100
-		out.Message = "Đã tạo xong, sách nằm trong thư viện Sano. Dùng get_book với slug để xem."
-	case r.Cancelled:
-		out.Status, out.Message = "cancelled", "Lượt tạo sách đã bị dừng, không lưu gì."
-	default:
-		out.Status, out.Message = "error", r.Error
-	}
-	return nil, out, nil
-}
-
-func (a *App) mcpCancelRender(context.Context, *mcp.CallToolRequest, mcpNoInput) (*mcp.CallToolResult, mcpRenderOut, error) {
-	r := a.RenderStatus()
-	if r == nil || !r.Running || r.Source != "mcp" {
-		return nil, mcpRenderOut{}, errors.New("không có lượt tạo sách nào do AI bắt đầu đang chạy")
-	}
-	a.CancelRender()
-	return nil, mcpRenderOut{Status: "cancelled", Title: r.Title, Message: "Đã dừng tạo sách, không lưu gì vào thư viện."}, nil
 }

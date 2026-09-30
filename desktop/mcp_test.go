@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -197,50 +199,130 @@ func TestMCP_TaoBanNhapVaCamKet(t *testing.T) {
 		}
 	}
 
-	var r mcpRenderOut
-	callTool(t, cs, "start_render", map[string]any{"draft_id": d.DraftID}, &r)
-	if r.Status != "waiting_pledge" {
-		t.Fatalf("phải chờ cam kết: %+v", r)
+	// Chưa xin tạo thì không có gì ở hàng đợi / khu chờ / Thư viện.
+	if jobs := a.MCPJobs(); len(jobs) != 0 {
+		t.Fatalf("chưa start_render mà đã có việc: %+v", jobs)
 	}
-	if p := a.MCPPendingPledge(); p == nil || p.ID != d.DraftID || p.Sections != 3 {
-		t.Fatalf("popup cam kết: %+v", p)
-	}
-	res, _ := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "start_render", Arguments: map[string]any{"draft_id": d.DraftID}})
-	if !res.IsError {
-		t.Fatal("đang chờ cam kết thì không mở popup thứ hai")
-	}
+}
 
-	// Người dùng đóng popup → từ chối, bản nháp vẫn còn để hỏi lại.
-	if err := a.MCPPledgeAnswer(d.DraftID, false); err != nil {
+// waitJobs chờ tới khi không còn cuốn nào chờ tạo / đang tạo.
+func waitJobs(t *testing.T, a *App) []MCPJob {
+	t.Helper()
+	for i := 0; i < 1800; i++ {
+		busy := false
+		for _, j := range a.MCPJobs() {
+			busy = busy || j.Status == jobQueued || j.Status == jobRendering
+		}
+		if !busy {
+			return a.MCPJobs()
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	t.Fatal("quá 3 phút vẫn đang tạo")
+	return nil
+}
+
+func TestMCP_TaoTruocCamKetSau(t *testing.T) {
+	a, srv, token := mcpTestServer(t)
+	cs := mcpConnect(t, srv, token)
+	draft := func(title string) string {
+		var d mcpDraftOut
+		callTool(t, cs, "create_book", map[string]any{"text": strings.Replace(mcpSampleText, "Sách thử MCP", title, 1), "no_intro": true}, &d)
+		return d.DraftID
+	}
+	id1, id2, id3 := draft("Cuốn một"), draft("Cuốn hai"), draft("Cuốn ba")
+
+	var r mcpRenderOut
+	callTool(t, cs, "start_render", map[string]any{"draft_id": id1}, &r)
+	callTool(t, cs, "start_render", map[string]any{"draft_id": id2}, &r)
+	callTool(t, cs, "start_render", map[string]any{"draft_id": id3}, &r)
+	if res, _ := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "start_render", Arguments: map[string]any{"draft_id": id1}}); !res.IsError {
+		t.Fatal("bản nháp đã xếp hàng không xin tạo lần hai được")
+	}
+	jobs := a.MCPJobs()
+	if len(jobs) != 3 || jobs[0].Status != jobRendering && jobs[0].Status != jobFailed {
+		t.Fatalf("cuốn đầu phải đang tạo ngay: %+v", jobs)
+	}
+	if jobs[0].Status == jobFailed {
+		t.Skip("máy này không có bộ đọc:", jobs[0].Error)
+	}
+	if jobs[1].Status != jobQueued || jobs[2].Status != jobQueued {
+		t.Fatalf("các cuốn sau phải chờ tạo lần lượt: %+v", jobs)
+	}
+	// Cam kết trước cho cuốn ba khi nó còn chờ tạo → xong tự vào Thư viện.
+	if _, err := a.MCPCommit([]string{id3}); err != nil {
 		t.Fatal(err)
 	}
-	callTool(t, cs, "get_render_status", map[string]any{}, &r)
-	if r.Status != "declined" {
-		t.Fatalf("sau khi từ chối: %+v", r)
+
+	jobs = waitJobs(t, a)
+	want := map[string]string{id1: jobStaged, id2: jobStaged, id3: jobSaved}
+	for _, j := range jobs {
+		if j.Status != want[j.ID] {
+			t.Fatalf("%s: %s (%s), muốn %s", j.Title, j.Status, j.Error, want[j.ID])
+		}
 	}
-	if err := a.MCPPledgeAnswer(d.DraftID, true); err == nil {
-		t.Fatal("trả lời popup đã đóng phải báo lỗi")
+	books, _ := a.lib.List()
+	inLib := map[string]bool{}
+	for _, b := range books {
+		inLib[b.Title] = true
+	}
+	if inLib["Cuốn một"] || inLib["Cuốn hai"] || !inLib["Cuốn ba"] {
+		t.Fatalf("chỉ cuốn đã cam kết mới vào Thư viện: %v", inLib)
+	}
+	callTool(t, cs, "get_render_status", map[string]any{}, &r)
+	if !strings.Contains(r.Message, "2 đã tạo xong, chờ người dùng cam kết") || !strings.Contains(r.Message, "1 đã lưu") {
+		t.Fatalf("AI phải thấy trạng thái: %s", r.Message)
 	}
 
-	// Cam kết: máy có bộ đọc thì bắt đầu đọc (dừng ngay), không có thì báo lỗi rõ, không treo.
-	callTool(t, cs, "start_render", map[string]any{"draft_id": d.DraftID}, &r)
-	if err := a.MCPPledgeAnswer(d.DraftID, true); err == nil {
-		st := a.RenderStatus()
-		if st == nil || st.Source != "mcp" || st.Title != "Sách thử MCP" {
-			t.Fatalf("lượt đọc phải ghi nguồn mcp: %+v", st)
-		}
-		callTool(t, cs, "cancel_render", map[string]any{}, &r)
-		for i := 0; i < 300 && a.Rendering(); i++ {
-			time.Sleep(100 * time.Millisecond)
-		}
-		callTool(t, cs, "get_render_status", map[string]any{}, &r)
-		if r.Status != "cancelled" {
-			t.Fatalf("sau khi dừng: %+v", r)
-		}
-		return
+	// Cam kết cuốn một: vào Thư viện kèm thời điểm cam kết; bỏ cuốn hai: khu chờ sạch.
+	if _, err := a.MCPCommit([]string{id1}); err != nil {
+		t.Fatal(err)
 	}
-	callTool(t, cs, "get_render_status", map[string]any{}, &r)
-	if r.Status != "error" || r.Message == "" {
-		t.Fatalf("lỗi render phải báo lại: %+v", r)
+	var slug1 string
+	for _, j := range a.MCPJobs() {
+		if j.ID == id1 {
+			slug1 = j.Slug
+		}
+	}
+	dir, _ := a.lib.Dir(slug1)
+	meta, _ := os.ReadFile(filepath.Join(dir, "metadata.json"))
+	if slug1 == "" || !strings.Contains(string(meta), `"rights_confirmed_at"`) || strings.Contains(string(meta), `"rights_confirmed_at": ""`) {
+		t.Fatalf("sách đã lưu phải ghi thời điểm cam kết: %s", meta)
+	}
+	if _, err := a.MCPDiscard(id2); err != nil {
+		t.Fatal(err)
+	}
+	if entries, _ := os.ReadDir(a.mcpStageRoot()); len(entries) != 0 {
+		t.Fatalf("khu chờ phải trống sau khi lưu / bỏ: %v", entries)
+	}
+	if left := a.MCPDismiss(); len(left) != 0 {
+		t.Fatalf("ẩn việc đã xong: %+v", left)
+	}
+}
+
+func TestMCP_KhuChoNapLaiVaHetHan(t *testing.T) {
+	a := &App{lib: library.New(t.TempDir())}
+	if _, err := a.jobStagePath("../../thoat"); err == nil {
+		t.Fatal("mã sách lạ phải bị từ chối")
+	}
+	mk := func(id string, staged time.Time) string {
+		dir, _ := a.jobStagePath(id)
+		_ = os.MkdirAll(filepath.Join(dir, "sach"), 0o700)
+		b, _ := json.Marshal(MCPJob{ID: id, Title: "T " + id, Status: jobStaged, StagedAt: staged.Unix(), AutoSave: true, PledgedAt: "x"})
+		_ = os.WriteFile(filepath.Join(dir, mcpJobFile), b, 0o600)
+		return dir
+	}
+	fresh := mk("0123456789abcdef", time.Now().Add(-time.Hour))
+	old := mk("fedcba9876543210", time.Now().Add(-8*24*time.Hour))
+	a.loadStagedJobs()
+	jobs := a.MCPJobs()
+	if len(jobs) != 1 || jobs[0].ID != "0123456789abcdef" || jobs[0].AutoSave || jobs[0].PledgedAt != "" {
+		t.Fatalf("nạp lại khu chờ (bỏ cam kết cũ, bỏ bản quá 7 ngày): %+v", jobs)
+	}
+	if _, err := os.Stat(old); err == nil {
+		t.Fatal("bản quá 7 ngày phải bị xoá")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Fatal("bản còn hạn phải giữ")
 	}
 }

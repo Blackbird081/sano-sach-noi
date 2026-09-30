@@ -78,6 +78,9 @@ type RenderStatus struct {
 type renderJob struct {
 	cancel context.CancelFunc
 	status RenderStatus
+	// finalize — thay bước lưu vào thư viện khi render xong (nil = a.lib.Commit). Sách AI tạo qua MCP
+	// đi vào khu chờ cam kết thay vì thư viện (mcp_queue.go).
+	finalize func(work, slug string) (string, error)
 }
 
 // toolPaths — python + script bộ đọc + ffmpeg (+ biến môi trường của bộ đọc app
@@ -280,11 +283,13 @@ func (a *App) renderBusyLocked() error {
 // StartRender bắt đầu render cả cuốn trong nền. Tiến độ đẩy lên qua sự kiện
 // render:progress, kết thúc qua render:finished. Mỗi lúc chỉ một cuốn.
 func (a *App) StartRender(s BookSettings) (*RenderStatus, error) {
-	return a.startRender(s, "")
+	return a.startRender(s, "", nil)
 }
 
-func (a *App) startRender(s BookSettings, source string) (*RenderStatus, error) {
-	if strings.TrimSpace(s.RightsConfirmedAt) == "" {
+// startRender — source "mcp": sách AI tạo, render trước rồi người dùng cam kết sau (D22), nên chưa
+// có RightsConfirmedAt; finalize đưa sách vào khu chờ, cam kết xong mới vào thư viện.
+func (a *App) startRender(s BookSettings, source string, finalize func(work, slug string) (string, error)) (*RenderStatus, error) {
+	if source != "mcp" && strings.TrimSpace(s.RightsConfirmedAt) == "" {
 		return nil, ErrRightsNotConfirmed
 	}
 	// Giữ một lượt dùng bộ đọc từ lúc tìm công cụ (tìm script có giải nén vào
@@ -329,7 +334,7 @@ func (a *App) startRender(s BookSettings, source string) (*RenderStatus, error) 
 	opts.Category = category
 	opts.Series, opts.SeriesVolume = series, volume
 	ctx, cancel := context.WithCancel(a.context())
-	job := &renderJob{cancel: cancel, status: RenderStatus{Running: true, Title: title, Source: source}}
+	job := &renderJob{cancel: cancel, status: RenderStatus{Running: true, Title: title, Source: source}, finalize: finalize}
 	a.job = job
 	st := job.status
 	a.mu.Unlock()
@@ -362,7 +367,11 @@ func (a *App) runRender(ctx context.Context, job *renderJob, opts bookmaker.Opti
 func (a *App) finishRender(ctx context.Context, job *renderJob, work, slug string, runErr error) {
 	final := ""
 	if runErr == nil {
-		final, runErr = a.lib.Commit(work, slug)
+		if job.finalize != nil {
+			final, runErr = job.finalize(work, slug)
+		} else {
+			final, runErr = a.lib.Commit(work, slug)
+		}
 	}
 	if runErr != nil {
 		_ = os.RemoveAll(work)
@@ -382,6 +391,7 @@ func (a *App) finishRender(ctx context.Context, job *renderJob, work, slug strin
 	a.mu.Unlock()
 	job.cancel()
 	a.emit(eventRenderFinished, cur)
+	go a.afterRender(cur) // cuốn AI vừa tạo: cập nhật trạng thái; máy rảnh → tạo tiếp cuốn AI xếp hàng
 }
 
 // CancelRender dừng lượt render đang chạy (không lưu gì vào thư viện).
