@@ -5,7 +5,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   AudioLines, Check, ChevronDown, ChevronLeft, Clapperboard, Download, FolderOpen, Gauge, Loader2, Maximize2, Mic, Minimize2, Package, Pause, Play, RotateCcw, RotateCw,
-  Image as ImageIcon, Pencil, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2,
+  Image as ImageIcon, Pencil, Search, Settings, SkipBack, SkipForward, Smartphone, Timer, Trash2, Volume2, X,
 } from 'lucide-vue-next'
 import BookCover from '@/components/sano/BookCover.vue'
 import M4BProgress from '../components/M4BProgress.vue'
@@ -13,6 +13,7 @@ import LyricsStage from '../components/LyricsStage.vue'
 import PauseCustomInputs from '../components/PauseCustomInputs.vue'
 import { PAUSE_PRESETS, bookPause, fmtGap, levelLabel, makeSetting, pauseState, setBookPause, type Gaps, type PauseLevel } from '../lib/pause'
 import { deleteBook, errText, openBookFolder, revealBookZip } from '../lib/backend'
+import { markParts, tocMatches } from '../lib/find'
 import { fmtClock, fmtLong } from '../lib/position'
 import { go, state } from '../lib/store'
 import { openEdit } from '../lib/edit'
@@ -39,7 +40,55 @@ function scrollToCurrent(smooth: boolean) {
 }
 onMounted(() => scrollToCurrent(false))
 watch(() => player.current, () => scrollToCurrent(true))
-watch(() => player.detail?.slug, () => scrollToCurrent(false))
+watch(() => player.detail?.slug, () => { tocQuery.value = ''; scrollToCurrent(false) })
+
+// Tìm trong mục lục: gõ tên chương / tiểu mục (có dấu hay không đều được) để nhảy tới chỗ đã
+// nghe ở máy khác. Đang tìm thì chỉ hiện tiểu mục khớp, tên chương hiện trên tiểu mục khớp đầu tiên
+// của chương đó. Bấm một tiểu mục (hoặc Enter = kết quả đầu) → phát, xoá ô tìm, cuộn tới mục đang phát.
+const tocQuery = ref('')
+const tocInput = ref<HTMLInputElement | null>(null)
+const tocHits = computed(() => tocMatches(tracks.value, tocQuery.value))
+const tocRows = computed(() => {
+  const hits = tocHits.value
+  const seen = new Set<string>()
+  return tracks.value.flatMap((c, i) => {
+    if (hits && !hits.has(i)) return []
+    // Không tìm: tên chương đứng trước tiểu mục đầu của chương. Đang tìm: trước tiểu mục khớp đầu tiên của chương.
+    const first = hits ? !!c.chapter && !seen.has(c.chapter) : !!c.chapterStart
+    if (c.chapter) seen.add(c.chapter)
+    return [{ c, i, showChapter: first && !!c.chapter && c.chapter !== c.title }]
+  })
+})
+function tocPick(i: number) {
+  const same = i === player.current
+  pick(i)
+  if (!tocQuery.value) return
+  tocQuery.value = ''
+  tocInput.value?.blur()
+  if (same) scrollToCurrent(false)
+}
+function tocKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.stopPropagation()
+    tocQuery.value ? (tocQuery.value = '') : tocInput.value?.blur()
+  } else if (e.key === 'Enter' && tocRows.value.length && tocHits.value) {
+    tocPick(tocRows.value[0].i)
+  }
+}
+watch(tocQuery, (q, old) => {
+  if (!q && old) scrollToCurrent(false)
+  else if (q) void nextTick(() => tocEl.value?.scrollTo({ top: 0 }))
+})
+// ⌘F / Ctrl+F ở màn nghe: nhảy vào ô tìm mục lục.
+function findKey(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f' && !document.querySelector('[aria-modal="true"]')) {
+    e.preventDefault()
+    tocInput.value?.focus()
+    tocInput.value?.select()
+  }
+}
+onMounted(() => window.addEventListener('keydown', findKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', findKey))
 
 // Lời đọc phóng to trong khung (wireframe D13): mặc định bật (từ 0.1.18), Thu lại mới về màn
 // nghe thường; nhớ lựa chọn cho lần mở sau. v2: bản cũ mặc định tắt nên không đọc khoá cũ.
@@ -431,28 +480,36 @@ async function act(fn: (slug: string) => Promise<void>) {
           <template v-if="remainSec > 0">Đã nghe <b class="font-semibold text-foreground">{{ player.heard.length }}/{{ tracks.length }}</b> mục · còn {{ fmtLong(remainSec) }}</template>
           <template v-else>Đã nghe hết cuốn</template>
         </div>
+        <div class="mt-2.5 flex items-center h-8 rounded-md border border-input bg-background px-2.5 focus-within:border-ring">
+          <Search class="w-3.5 h-3.5 text-muted-foreground mr-2 shrink-0" />
+          <input ref="tocInput" v-model="tocQuery" class="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-muted-foreground" placeholder="Tìm chương, mục…"
+            aria-label="Tìm chương, mục trong mục lục" title="Tìm chương, mục (⌘F)" @keydown="tocKey" />
+          <span v-if="tocHits" class="text-[11px] text-muted-foreground tabular-nums mr-1.5 shrink-0">{{ tocHits.size }} mục</span>
+          <button v-if="tocQuery" class="text-muted-foreground hover:text-foreground shrink-0" aria-label="Xoá chữ đang tìm" @click="tocQuery = ''; tocInput?.focus()"><X class="w-3.5 h-3.5" /></button>
+        </div>
       </div>
-      <template v-for="(c, i) in tracks" :key="c.file">
+      <template v-for="{ c, i, showChapter } in tocRows" :key="c.file">
         <!-- Tên chương đứng trước tiểu mục đầu của chương; chương chỉ có 1 tiểu mục trùng tên thì không lặp. -->
-        <div v-if="c.chapterStart && c.chapter && c.chapter !== c.title"
+        <div v-if="showChapter"
           class="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider truncate"
           :class="c.chapter === track?.chapter ? 'text-primary' : 'text-muted-foreground'"
-          :title="c.chapter">{{ c.chapter }}</div>
+          :title="c.chapter"><template v-for="(p, k) in markParts(c.chapter ?? '', tocQuery)" :key="k"><mark v-if="p.hit" class="bg-amber-300/50 text-inherit rounded-sm">{{ p.t }}</mark><template v-else>{{ p.t }}</template></template></div>
         <button :data-current="i === player.current"
           class="w-full flex items-baseline justify-between gap-2 px-4 py-2 text-sm leading-snug text-left hover:bg-muted/60"
           :class="i === player.current ? 'bg-primary/10 text-primary font-medium' : player.heard.includes(i) ? 'text-muted-foreground' : ''"
-          @click="pick(i)">
+          @click="tocPick(i)">
           <!-- Tên xuống tối đa 2 dòng (không cắt cụt); giờ thẳng hàng dòng đầu -->
           <span class="flex items-baseline gap-2 min-w-0">
             <span class="self-start w-3.5 h-[1.375em] shrink-0 grid place-items-center">
               <Volume2 v-if="i === player.current" class="w-3.5 h-3.5" />
               <Check v-else-if="player.heard.includes(i)" class="w-3.5 h-3.5" aria-label="Đã nghe" />
             </span>
-            <span class="line-clamp-2" :title="c.title">{{ c.title }}</span>
+            <span class="line-clamp-2" :title="c.title"><template v-for="(p, k) in markParts(c.title, tocQuery)" :key="k"><mark v-if="p.hit" class="bg-amber-300/50 text-inherit rounded-sm">{{ p.t }}</mark><template v-else>{{ p.t }}</template></template></span>
           </span>
           <span class="text-xs tabular-nums shrink-0">{{ fmtClock(c.durationSec) }}</span>
         </button>
       </template>
+      <p v-if="tocHits && !tocRows.length" class="px-4 py-6 text-sm text-muted-foreground text-center">Không có chương, mục nào khớp “{{ tocQuery.trim() }}”</p>
     </div>
   </section>
 </template>

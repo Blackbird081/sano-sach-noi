@@ -234,3 +234,60 @@ export function moveItem(keys: string[], from: string, to: string): string[] {
   list.splice(list.indexOf(to) + (i < j ? 1 : 0), 0, from)
   return list
 }
+
+// ── Tìm trong Mục lục màn nghe: tên chương, tên tiểu mục ──────────────────
+
+/** Các chữ của câu tìm (đã bỏ dấu, chữ thường). */
+function words(query: string): string[] {
+  return fold(query.trim()).split(/\s+/).filter(Boolean)
+}
+
+/**
+ * Vị trí chữ `w` trong `hay`, chỉ tính khi khớp từ đầu một từ ("y" khớp "ý", không khớp "thầy").
+ * Chữ số phải khớp trọn số: "1" không khớp "12" ("chuong 1" ≠ Chương 12).
+ */
+function spans(hay: string, w: string): number[] {
+  const out: number[] = []
+  const num = /^\d+$/.test(w)
+  for (let at = hay.indexOf(w); at >= 0; at = hay.indexOf(w, at + 1)) {
+    if (/[\p{L}\p{N}]/u.test(hay[at - 1] ?? '')) continue
+    if (num && /\d/.test(hay[at + w.length] ?? '')) continue
+    out.push(at)
+  }
+  return out
+}
+
+/**
+ * Tiểu mục khớp câu tìm: mọi chữ đều có (ở đầu một từ) trong tên chương + tên tiểu mục, không phân biệt
+ * hoa thường và dấu ("chuong 2 xe" → tiểu mục có "xe" ở Chương 2). Câu tìm rỗng → null.
+ */
+export function tocMatches(tracks: { title: string; chapter?: string }[], query: string): Set<number> | null {
+  const ws = words(query)
+  if (!ws.length) return null
+  const out = new Set<number>()
+  tracks.forEach((t, i) => {
+    const hay = fold(`${t.chapter ?? ''} ${t.title}`)
+    if (ws.every((w) => spans(hay, w).length)) out.add(i)
+  })
+  return out
+}
+
+/** Cắt tên thành các đoạn để tô chỗ khớp câu tìm (so khớp đã bỏ dấu, giữ nguyên chữ gốc). */
+export function markParts(text: string, query: string): { t: string; hit: boolean }[] {
+  const ws = words(query)
+  const chars = [...text.normalize('NFC')]
+  const folded = chars.map((c) => fold(c))
+  if (!ws.length || folded.some((f) => f.length !== 1)) return [{ t: text, hit: false }]
+  const flat = folded.join('')
+  const hit = new Array<boolean>(chars.length).fill(false)
+  for (const w of ws) {
+    for (const at of spans(flat, w)) hit.fill(true, at, at + w.length)
+  }
+  const out: { t: string; hit: boolean }[] = []
+  chars.forEach((c, i) => {
+    const last = out[out.length - 1]
+    if (last && last.hit === hit[i]) last.t += c
+    else out.push({ t: c, hit: hit[i] })
+  })
+  return out
+}
