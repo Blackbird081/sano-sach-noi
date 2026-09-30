@@ -119,22 +119,37 @@ func (a *App) SetMCPAllowEdit(on bool) (*MCPInfo, error) {
 
 var errMCPNoEdit = errors.New("người dùng đã tắt quyền \"Tạo và sửa sách\" trong Sano (mục MCP). Nhờ họ bật lại nếu muốn tiếp tục")
 
-// mcpBridgePath — sano-mcp nằm cạnh file chạy của app (Sano.app/Contents/MacOS, thư mục cài Windows/Linux).
-func mcpBridgePath() (string, bool) {
+// mcpBridge — lệnh phần mềm AI chạy để nối vào Sano: sano-mcp cạnh file chạy của app
+// (Sano.app/Contents/MacOS, thư mục cài Windows); Linux AppImage thì chính file .AppImage với
+// tham số "mcp" (đường dẫn bên trong AppImage đổi mỗi lần chạy). Không có sano-mcp (bản dev) thì
+// macOS / Linux dùng "Sano mcp"; Windows cần sano-mcp.exe (app giao diện không nhận stdio ổn định).
+func mcpBridge() (cmd string, args []string, found bool) {
+	if runtime.GOOS == "linux" {
+		if p := os.Getenv("APPIMAGE"); p != "" {
+			if _, err := os.Stat(p); err == nil {
+				return p, []string{"mcp"}, true
+			}
+		}
+	}
 	name := "sano-mcp"
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}
 	exe, err := os.Executable()
 	if err != nil {
-		return name, false
+		return name, nil, false
 	}
 	if r, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = r
 	}
 	p := filepath.Join(filepath.Dir(exe), name)
-	_, err = os.Stat(p)
-	return p, err == nil
+	if _, err := os.Stat(p); err == nil {
+		return p, nil, true
+	}
+	if runtime.GOOS == "windows" {
+		return p, nil, false
+	}
+	return exe, []string{"mcp"}, true
 }
 
 func shellQuote(p string) string {
@@ -150,19 +165,23 @@ func shellQuote(p string) string {
 // MCPInfo trả trạng thái cho màn MCP.
 func (a *App) MCPInfo() *MCPInfo {
 	s := a.loadMCPSettings()
-	bridge, found := mcpBridgePath()
-	cfg, _ := json.MarshalIndent(map[string]any{"mcpServers": map[string]any{"sano": map[string]any{"command": bridge}}}, "", "  ")
+	bridge, args, found := mcpBridge()
+	cfg, _ := json.MarshalIndent(map[string]any{"mcpServers": map[string]any{"sano": bridgeEntry(bridge, args)}}, "", "  ")
+	cmdLine := shellQuote(bridge)
+	for _, a := range args {
+		cmdLine += " " + a
+	}
 	info := &MCPInfo{
 		LocalOn: !s.LocalOff, AllowEdit: !s.NoEdit, Bridge: bridge, BridgeFound: found,
-		ClaudeCode: "claude mcp add sano -- " + shellQuote(bridge),
-		Codex:      "codex mcp add sano -- " + shellQuote(bridge),
+		ClaudeCode: "claude mcp add sano -- " + cmdLine,
+		Codex:      "codex mcp add sano -- " + cmdLine,
 		ConfigJSON: string(cfg),
 		Active:     []string{},
 	}
 	a.mu.Lock()
 	info.Running = a.mcpSrv != nil
 	a.mu.Unlock()
-	info.ClaudeDesktop = claudeDesktopState(bridge)
+	info.ClaudeDesktop = claudeDesktopState(bridge, args)
 	info.Log = a.readMCPLog()
 	a.markUndo(info.Log)
 	seen := map[string]bool{}
@@ -340,8 +359,17 @@ func claudeDesktopConfig() string {
 	}
 }
 
-// claudeDesktopState: "" chưa thấy Claude Desktop, "found" có mà chưa thêm Sano, "added" đã thêm đúng sano-mcp.
-func claudeDesktopState(bridge string) string {
+// bridgeEntry — mục "sano" trong cấu hình MCP của phần mềm AI.
+func bridgeEntry(cmd string, args []string) map[string]any {
+	m := map[string]any{"command": cmd}
+	if len(args) > 0 {
+		m["args"] = args
+	}
+	return m
+}
+
+// claudeDesktopState: "" chưa thấy Claude Desktop, "found" có mà chưa thêm Sano, "added" đã thêm đúng cầu nối.
+func claudeDesktopState(bridge string, args []string) string {
 	p := claudeDesktopConfig()
 	if p == "" {
 		return ""
@@ -355,7 +383,11 @@ func claudeDesktopState(bridge string) string {
 	}
 	if servers, ok := cfg["mcpServers"].(map[string]any); ok {
 		if s, ok := servers["sano"].(map[string]any); ok && s["command"] == bridge {
-			return "added"
+			got, _ := json.Marshal(s["args"])
+			want, _ := json.Marshal(args)
+			if len(args) == 0 && s["args"] == nil || string(got) == string(want) {
+				return "added"
+			}
 		}
 	}
 	return "found"
@@ -385,17 +417,17 @@ func readJSONObject(p string) (map[string]any, error) {
 // AddToClaudeDesktop thêm "sano" vào mcpServers của Claude Desktop, giữ nguyên mọi cấu hình khác;
 // sao lưu file cũ thành claude_desktop_config.json.bak-sano trước khi ghi.
 func (a *App) AddToClaudeDesktop() (*MCPInfo, error) {
-	bridge, found := mcpBridgePath()
+	bridge, args, found := mcpBridge()
 	if !found {
 		return nil, errors.New("không thấy sano-mcp cạnh app Sano (bản đang chạy chưa kèm cầu nối MCP)")
 	}
-	if err := addClaudeDesktopEntry(bridge); err != nil {
+	if err := addClaudeDesktopEntry(bridge, args); err != nil {
 		return nil, err
 	}
 	return a.MCPInfo(), nil
 }
 
-func addClaudeDesktopEntry(bridge string) error {
+func addClaudeDesktopEntry(bridge string, args []string) error {
 	p := claudeDesktopConfig()
 	if p == "" {
 		return errors.New("không tìm thấy thư mục cấu hình Claude Desktop")
@@ -416,7 +448,7 @@ func addClaudeDesktopEntry(bridge string) error {
 	if servers == nil {
 		servers = map[string]any{}
 	}
-	servers["sano"] = map[string]any{"command": bridge}
+	servers["sano"] = bridgeEntry(bridge, args)
 	cfg["mcpServers"] = servers
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {

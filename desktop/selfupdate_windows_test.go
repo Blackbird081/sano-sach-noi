@@ -44,6 +44,8 @@ func TestApplyUpdate_Portable(t *testing.T) {
 	zw := zip.NewWriter(f)
 	w, _ := zw.Create("Sano.exe")
 	w.Write([]byte("bản mới"))
+	w, _ = zw.Create("sano-mcp.exe")
+	w.Write([]byte("cầu nối mới"))
 	zw.Close()
 	f.Close()
 	if err := applyUpdate(winInstall(exe, "amd64"), zipFile, "0.2.0", false); err != nil {
@@ -54,5 +56,8 @@ func TestApplyUpdate_Portable(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(exe + ".cu"); string(b) != "bản cũ" {
 		t.Errorf("Sano.exe.cu = %q", b)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dir, "sano-mcp.exe")); string(b) != "cầu nối mới" {
+		t.Errorf("sano-mcp.exe = %q", b)
 	}
 }

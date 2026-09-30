@@ -87,6 +87,7 @@ func applyUpdate(inst installInfo, file, version string, relaunch bool) error {
 			os.Remove(fresh)
 			return fmt.Errorf("không đặt được bản mới: %w", err)
 		}
+		replaceBridge(file, filepath.Dir(exe), pid)
 		if !relaunch {
 			return nil // .cu xoá ở lần mở sau
 		}
@@ -111,9 +112,14 @@ func setupCmdLine(file, dir string, relaunch bool) string {
 	return line + " /D=" + dir
 }
 
-// cleanupAfterUpdate xoá Sano.exe.cu còn lại sau khi thay bản chạy ngay.
+// cleanupAfterUpdate xoá Sano.exe.cu, sano-mcp.exe.cu-* còn lại sau khi cập nhật
+// (bản cầu nối cũ còn bị Claude giữ thì để lần sau).
 func cleanupAfterUpdate() {
 	if exe, err := os.Executable(); err == nil {
 		_ = os.Remove(exe + ".cu")
+		old, _ := filepath.Glob(filepath.Join(filepath.Dir(exe), "sano-mcp.exe.cu-*"))
+		for _, f := range old {
+			_ = os.Remove(f)
+		}
 	}
 }

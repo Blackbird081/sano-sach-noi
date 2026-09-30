@@ -52,15 +52,22 @@ WAILS_JSON="$WAILS_JSON" NUM="$NUM" node -e '
   fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
 '
 
-log "wails ${args[*]}"
-(cd "$DESKTOP_DIR" && "$WAILS" "${args[@]}")
-
 # Cầu nối MCP (sano-mcp) nằm cạnh file chạy của app: Claude Desktop / Claude Code / Codex chạy
-# nó để nối vào Sano đang mở (desktop/cmd/sano-mcp). Không cần CGO. Windows: bộ cài NSIS chưa
-# kèm (làm sau), app tự báo thiếu cầu nối ở màn MCP.
+# nó để nối vào Sano đang mở (desktop/cmd/sano-mcp). Không cần CGO. Linux không cần: AppImage gọi
+# "Sano.AppImage mcp" (xem desktop/internal/mcpbridge).
 build_bridge() { # <GOOS> <GOARCH> <đích>
   (cd "$DESKTOP_DIR" && CGO_ENABLED=0 GOOS="$1" GOARCH="$2" go build -trimpath -ldflags "-s -w" -o "$3" ./cmd/sano-mcp)
 }
+# Windows: bộ cài NSIS đóng gói ngay trong "wails build" → build sano-mcp.exe trước, để cạnh
+# project.nsi (build -clean xoá build/bin), build xong chép sang build/bin cho bản zip.
+NSIS_BRIDGE="$DESKTOP_DIR/build/windows/installer/sano-mcp.exe"
+case "$PLATFORM" in
+  windows/*) build_bridge windows "${PLATFORM#windows/}" "$NSIS_BRIDGE" ;;
+esac
+
+log "wails ${args[*]}"
+(cd "$DESKTOP_DIR" && "$WAILS" "${args[@]}")
+
 case "$PLATFORM" in
   darwin/*)
     MACOS_DIR="$BIN_DIR/Sano.app/Contents/MacOS"
@@ -77,6 +84,6 @@ case "$PLATFORM" in
     codesign --force --deep --sign - "$BIN_DIR/Sano.app"
     codesign --verify --deep --strict "$BIN_DIR/Sano.app"
     ;;
-  linux/*) build_bridge linux "${PLATFORM#linux/}" "$BIN_DIR/sano-mcp" ;;
+  windows/*) cp "$NSIS_BRIDGE" "$BIN_DIR/sano-mcp.exe" ;;
 esac
 log "Xong: $(ls "$BIN_DIR")"

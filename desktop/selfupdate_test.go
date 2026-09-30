@@ -440,3 +440,36 @@ func TestProcessAlive(t *testing.T) {
 		t.Error("pid không tồn tại phải báo đã thoát")
 	}
 }
+
+func TestReplaceBridge_DatCauNoiMoi(t *testing.T) {
+	dir := t.TempDir()
+	zipFile := filepath.Join(t.TempDir(), "moi.zip")
+	f, _ := os.Create(zipFile)
+	zw := zip.NewWriter(f)
+	for name, body := range map[string]string{"Sano.exe": "app mới", "sano-mcp.exe": "cầu nối mới"} {
+		w, _ := zw.Create(name)
+		_, _ = w.Write([]byte(body))
+	}
+	_ = zw.Close()
+	_ = f.Close()
+	_ = os.WriteFile(filepath.Join(dir, "sano-mcp.exe"), []byte("cầu nối cũ"), 0o755)
+	replaceBridge(zipFile, dir, "123")
+	if b, _ := os.ReadFile(filepath.Join(dir, "sano-mcp.exe")); string(b) != "cầu nối mới" {
+		t.Fatalf("sano-mcp.exe = %q", b)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "sano-mcp.exe.moi")); err == nil {
+		t.Fatal("không để lại file tạm")
+	}
+	// Bản zip cũ không có cầu nối: không đụng gì.
+	old := filepath.Join(t.TempDir(), "cu.zip")
+	f, _ = os.Create(old)
+	zw = zip.NewWriter(f)
+	w, _ := zw.Create("Sano.exe")
+	_, _ = w.Write([]byte("app"))
+	_ = zw.Close()
+	_ = f.Close()
+	replaceBridge(old, dir, "124")
+	if b, _ := os.ReadFile(filepath.Join(dir, "sano-mcp.exe")); string(b) != "cầu nối mới" {
+		t.Fatalf("zip không có cầu nối thì giữ nguyên: %q", b)
+	}
+}

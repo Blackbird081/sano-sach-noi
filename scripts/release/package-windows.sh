@@ -4,7 +4,7 @@
 #   scripts/release/package-windows.sh <version> [arch]   # arch mặc định: amd64
 #
 # Ra: Sano-<version>-windows-<arch>-setup.exe (cài theo người dùng, không cần
-# admin) và Sano-<version>-windows-<arch>-portable.zip (chỉ Sano.exe).
+# admin) và Sano-<version>-windows-<arch>-portable.zip (Sano.exe + sano-mcp.exe cầu nối MCP).
 # Chưa ký số: lần đầu chạy SmartScreen báo → "Thông tin thêm" → "Vẫn chạy".
 # shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
@@ -27,12 +27,13 @@ ZIP="${ZIP%.zip}-portable.zip"
 cp "$INSTALLER" "$SETUP"
 log "Bộ cài: $SETUP"
 
+[[ -f "$BIN_DIR/sano-mcp.exe" ]] || die "không thấy $BIN_DIR/sano-mcp.exe — chạy scripts/release/build.sh trước"
 rm -f "$ZIP"
 if command -v 7z >/dev/null 2>&1; then
-  (cd "$BIN_DIR" && 7z a -tzip -bd "$ZIP" "$APP_NAME.exe" >/dev/null)
+  (cd "$BIN_DIR" && 7z a -tzip -bd "$ZIP" "$APP_NAME.exe" sano-mcp.exe >/dev/null)
 elif command -v zip >/dev/null 2>&1; then
-  (cd "$BIN_DIR" && zip -q "$ZIP" "$APP_NAME.exe")
+  (cd "$BIN_DIR" && zip -q "$ZIP" "$APP_NAME.exe" sano-mcp.exe)
 else
-  powershell.exe -NoProfile -Command "Compress-Archive -Path '$(cygpath -w "$EXE")' -DestinationPath '$(cygpath -w "$ZIP")'"
+  powershell.exe -NoProfile -Command "Compress-Archive -Path '$(cygpath -w "$EXE")','$(cygpath -w "$BIN_DIR/sano-mcp.exe")' -DestinationPath '$(cygpath -w "$ZIP")'"
 fi
 log "Bản chạy ngay: $ZIP"

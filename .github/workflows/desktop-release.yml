@@ -187,7 +187,7 @@ jobs:
       - name: Thử tự cập nhật (Go, Windows)
         if: runner.os == 'Windows'
         working-directory: desktop
-        run: go test -count=1 -run 'WinInstall|SetupCmdLine|ApplyUpdate_Portable|ExtractExe|VerifySums|SumFor|PlanUpdate|RunUpdateDownload|OldPID|ProcessAlive' .
+        run: go test -count=1 -run 'WinInstall|SetupCmdLine|ApplyUpdate_Portable|ExtractExe|ReplaceBridge|VerifySums|SumFor|PlanUpdate|RunUpdateDownload|OldPID|ProcessAlive' .
       - name: Thử cài đè im lặng khi Sano đang chạy (bộ cài NSIS)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -198,6 +198,12 @@ jobs:
           $exe = Join-Path $dir 'Sano.exe'
           $p = Start-Process -FilePath $setup -ArgumentList "/S /D=$dir" -PassThru -Wait
           if ($p.ExitCode -ne 0 -or -not (Test-Path $exe)) { throw "cài lần đầu hỏng (mã $($p.ExitCode))" }
+          $bridge = Join-Path $dir 'sano-mcp.exe'
+          if (-not (Test-Path $bridge)) { throw 'bộ cài thiếu sano-mcp.exe (cầu nối MCP)' }
+          # Giả lập Claude Desktop đang giữ cầu nối (stdin mở, không gửi gì) trong lúc cài đè.
+          $psi = New-Object System.Diagnostics.ProcessStartInfo $bridge
+          $psi.RedirectStandardInput = $true; $psi.RedirectStandardOutput = $true; $psi.UseShellExecute = $false
+          $held = [System.Diagnostics.Process]::Start($psi)
           $app = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 5
           if ($app.HasExited) { throw 'Sano không chạy được sau khi cài' }
@@ -215,7 +221,9 @@ jobs:
             Start-Sleep -Milliseconds 500
           }
           if (-not $new) { throw 'cài xong không tự mở lại Sano' }
-          Write-Host "Đạt: bộ cài đợi Sano thoát, cài đè, mở lại Sano (pid $($new.Id))"
+          if (-not (Test-Path $bridge)) { throw 'cài đè khi cầu nối đang chạy làm mất sano-mcp.exe' }
+          if (-not $held.HasExited) { $held.Kill() }
+          Write-Host "Đạt: bộ cài đợi Sano thoát, cài đè (kể cả khi sano-mcp.exe đang chạy), mở lại Sano (pid $($new.Id))"
           $new | Stop-Process -Force
           Start-Sleep -Seconds 2
           Start-Process -FilePath (Join-Path $dir 'uninstall.exe') -ArgumentList '/S' -Wait

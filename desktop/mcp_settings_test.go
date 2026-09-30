@@ -76,8 +76,8 @@ func TestAddToClaudeDesktop_GiuCauHinhCu(t *testing.T) {
 		t.Setenv("HOME", t.TempDir())
 	}
 	p := claudeDesktopConfig()
-	bridge, found := mcpBridgePath()
-	if claudeDesktopState(bridge) != "" {
+	bridge, args := "/Ung dung/Sano.AppImage", []string{"mcp"}
+	if claudeDesktopState(bridge, args) != "" {
 		t.Fatal("chưa có thư mục Claude thì coi như chưa cài")
 	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -87,25 +87,10 @@ func TestAddToClaudeDesktop_GiuCauHinhCu(t *testing.T) {
 	if err := os.WriteFile(p, []byte(old), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if claudeDesktopState(bridge) != "found" {
+	if claudeDesktopState(bridge, args) != "found" {
 		t.Fatal("có Claude Desktop mà chưa thêm Sano")
 	}
-	a := &App{lib: nil}
-	if !found {
-		// Bản test không có sano-mcp cạnh file chạy: phải từ chối, không đụng file.
-		if _, err := a.AddToClaudeDesktop(); err == nil {
-			t.Fatal("thiếu sano-mcp phải báo lỗi")
-		}
-		if b, _ := os.ReadFile(p); string(b) != old {
-			t.Fatal("không được sửa file khi báo lỗi")
-		}
-		// Giả lập có sano-mcp: tạo file cạnh file chạy test.
-		if err := os.WriteFile(bridge, []byte("x"), 0o755); err != nil {
-			t.Skip("không tạo được sano-mcp giả:", err)
-		}
-		defer func() { _ = os.Remove(bridge) }()
-	}
-	if err := addClaudeDesktopEntry(bridge); err != nil {
+	if err := addClaudeDesktopEntry(bridge, args); err != nil {
 		t.Fatal(err)
 	}
 	var cfg map[string]any
@@ -114,19 +99,23 @@ func TestAddToClaudeDesktop_GiuCauHinhCu(t *testing.T) {
 		t.Fatal(err)
 	}
 	servers := cfg["mcpServers"].(map[string]any)
-	if cfg["theme"] != "dark" || servers["khac"] == nil || servers["sano"].(map[string]any)["command"] != bridge {
+	sano := servers["sano"].(map[string]any)
+	if cfg["theme"] != "dark" || servers["khac"] == nil || sano["command"] != bridge || len(sano["args"].([]any)) != 1 {
 		t.Fatalf("cấu hình sau khi thêm: %s", b)
 	}
 	if bak, _ := os.ReadFile(p + ".bak-sano"); string(bak) != old {
 		t.Fatal("phải sao lưu file cũ")
 	}
-	if claudeDesktopState(bridge) != "added" {
+	if claudeDesktopState(bridge, args) != "added" {
 		t.Fatal("phải nhận ra đã thêm")
+	}
+	if claudeDesktopState(bridge, nil) != "found" {
+		t.Fatal("khác tham số thì chưa phải cấu hình đúng")
 	}
 
 	// File cấu hình hỏng: không dám sửa.
 	_ = os.WriteFile(p, []byte("{hỏng"), 0o644)
-	if err := addClaudeDesktopEntry(bridge); err == nil {
+	if err := addClaudeDesktopEntry(bridge, args); err == nil {
 		t.Fatal("file hỏng phải báo lỗi")
 	}
 }

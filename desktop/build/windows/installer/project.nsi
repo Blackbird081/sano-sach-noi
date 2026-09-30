@@ -140,6 +140,20 @@ Section
 
     !insertmacro wails.files
 
+    # Sano: cầu nối MCP (Claude Desktop / Claude Code / Codex chạy nó để nối vào Sano). Claude đang
+    # chạy thì sano-mcp.exe bị khoá → đổi tên bản cũ trước (Windows cho đổi tên file đang chạy),
+    # Sano xoá các bản .cu ở lần mở sau. Bản build dev không có file thì bỏ qua.
+    !if /FileExists "sano-mcp.exe"
+        ${If} ${FileExists} "$INSTDIR\sano-mcp.exe"
+            Delete "$INSTDIR\sano-mcp.exe"
+            ${If} ${FileExists} "$INSTDIR\sano-mcp.exe"
+                System::Call 'kernel32::GetTickCount()i.r9'
+                Rename "$INSTDIR\sano-mcp.exe" "$INSTDIR\sano-mcp.exe.cu-$9"
+            ${EndIf}
+        ${EndIf}
+        File "sano-mcp.exe"
+    !endif
+
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 

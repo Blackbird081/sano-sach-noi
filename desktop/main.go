@@ -12,6 +12,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
+
+	"sano/desktop/internal/mcpbridge"
 )
 
 // frontend/dist do `wails build` / `npm run build` sinh ra. Trong git chỉ có
@@ -21,6 +23,10 @@ import (
 var assets embed.FS
 
 func main() {
+	// "Sano mcp": chạy cầu nối MCP thay vì mở cửa sổ (Linux AppImage; xem internal/mcpbridge).
+	if len(os.Args) == 2 && os.Args[1] == "mcp" {
+		os.Exit(mcpbridge.Main())
+	}
 	startAfterUpdate(os.Args[1:])
 	app := NewApp()
 
