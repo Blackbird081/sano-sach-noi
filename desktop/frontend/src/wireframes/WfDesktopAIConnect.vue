@@ -1,17 +1,19 @@
 <script setup lang="ts">
-// D21 — Cài đặt · Kết nối AI (MCP). Nhóm mới ở đầu màn Cài đặt.
+// D21 — Màn MCP (kết nối AI). Mục riêng "MCP" ở thanh bên, ngay trên Cài đặt.
 // - Kết nối trong máy (local): BẬT mặc định. Claude Desktop, Claude Code, Codex, Cursor… cài
 //   trên cùng máy nối vào Sano đang mở. Thẻ chọn phần mềm → nút thêm một lần / lệnh sao chép sẵn.
 // - Kết nối từ xa (remote, qua sanobook.com): TẮT mặc định. Bật → popup cam kết → địa chỉ kết nối
-//   + mã ghép 6 ký tự (10 phút) để thêm vào Claude (web, điện thoại) / ChatGPT. Danh sách nơi đã
-//   ghép, gỡ từng nơi. Đang bật thì thanh bên có dấu "Đang mở kết nối từ xa".
-// - AI được làm gì: Xem luôn được; Tạo & sửa bật sẵn; Xoá sách tắt sẵn. Áp cho cả hai đường.
+//   + mã ghép dài (40 ký tự, chỉ chép-dán được, hết hạn sau 2 phút, dùng một lần) để thêm vào
+//   Claude (web, điện thoại) / ChatGPT. Danh sách nơi đã ghép, gỡ từng nơi. Đang bật thì thanh
+//   bên có dấu "Đang mở kết nối từ xa".
+// - AI được làm gì: Xem luôn được; Tạo & sửa bật sẵn. KHÔNG có quyền xoá qua MCP (không có công
+//   cụ xoá nào): xoá sách chỉ làm trong app. AI chỉ chạm được sách trong thư viện theo slug.
 // - Việc AI làm gần đây: nhật ký ngắn (chỉ trên máy).
 // Wireframe tĩnh: dữ liệu giả, KHÔNG gọi API. Nút ngoài khung để chuyển trạng thái duyệt.
 import { computed, ref } from 'vue'
 import {
   Library, BarChart3, FilePlus2, Settings, Info, LifeBuoy, ExternalLink, Sun, Moon, Check, Copy, Plug, Globe, Laptop,
-  Bot, Eye, PenLine, Trash2, X, ShieldAlert, Smartphone, RefreshCw, Radio, Coffee, History,
+  Bot, Eye, PenLine, Ban, X, Cable, ShieldAlert, Smartphone, RefreshCw, Radio, Coffee, History,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
@@ -44,11 +46,12 @@ function copy(k: string) {
   setTimeout(() => (copied.value === k ? (copied.value = '') : null), 1500)
 }
 
-const allow = ref({ edit: true, del: false })
+const allow = ref({ edit: true })
+const pairCode = 'sano_pair_7F3KQ2MXR4TB8WNJC6HDP9LAE5VYG2ZU'
 const keepAwake = ref(true)
 
 const pledges = [
-  'Tôi hiểu: ai có địa chỉ và đã ghép bằng mã sẽ điều khiển được Sano trên máy này (xem, tạo, sửa sách). Tôi không đưa mã ghép cho người khác.',
+  'Tôi hiểu: ai có địa chỉ và đã ghép bằng mã sẽ điều khiển được Sano trên máy này (xem, tạo, sửa sách; không xoá được). Tôi không đưa mã ghép cho người khác.',
   'Tôi hiểu: nội dung sách đi qua trạm trung chuyển sanobook.com (mã hoá khi truyền, trạm không lưu lại) để tới máy này.',
   'Sách AI tạo giúp tôi vẫn theo đúng các cam kết khi render (quyền dùng tài liệu, không vi phạm pháp luật, không mạo danh, không phát tán, tự chịu trách nhiệm).',
 ]
@@ -75,6 +78,7 @@ const nav = [
   { key: 'library', label: 'Thư viện', icon: Library },
   { key: 'create', label: 'Tạo sách nói', icon: FilePlus2 },
   { key: 'stats', label: 'Hành trình nghe', icon: BarChart3 },
+  { key: 'mcp', label: 'MCP', icon: Cable },
   { key: 'settings', label: 'Cài đặt', icon: Settings },
   { key: 'about', label: 'Giới thiệu', icon: Info },
 ]
@@ -114,7 +118,7 @@ const states: [Mode, string][] = [
           </div>
           <nav class="px-2 space-y-0.5">
             <span v-for="n in nav" :key="n.key" class="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-sm"
-              :class="n.key === 'settings' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground'">
+              :class="n.key === 'mcp' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground'">
               <component :is="n.icon" class="w-4 h-4" /> {{ n.label }}
             </span>
           </nav>
@@ -132,12 +136,10 @@ const states: [Mode, string][] = [
 
         <main class="flex-1 min-w-0 overflow-auto p-6">
           <div class="max-w-2xl">
-            <h1 class="text-xl font-semibold tracking-tight">Cài đặt</h1>
-            <div class="mt-6 space-y-6">
-              <!-- ─── MỚI: Kết nối AI ─── -->
+            <h1 class="text-xl font-semibold tracking-tight">MCP · Kết nối AI</h1>
+            <div class="mt-2 space-y-6">
               <div>
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Kết nối AI · Claude, ChatGPT, Codex…</h2>
-                <p class="text-xs text-muted-foreground mb-3">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc đọc thành sách vẫn chạy trên máy này.</p>
+                <p class="text-sm text-muted-foreground mb-4">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc đọc thành sách vẫn chạy trên máy này.</p>
 
                 <div class="rounded-lg border border-border text-sm divide-y divide-border">
                   <!-- Trong máy -->
@@ -193,24 +195,28 @@ const states: [Mode, string][] = [
                       </span>
                     </div>
                     <div v-if="remoteOn" class="mt-3 ml-7 space-y-3">
-                      <div class="grid grid-cols-[1fr_auto] gap-3">
-                        <div class="rounded-md border border-border bg-muted/30 px-3 py-2.5">
-                          <div class="text-xs text-muted-foreground">Địa chỉ kết nối</div>
-                          <div class="mt-0.5 flex items-center gap-2">
-                            <span class="font-mono text-xs flex-1 truncate">https://mcp.sanobook.com/k/7f3kq2</span>
-                            <button class="h-7 px-2 rounded text-xs flex items-center gap-1 text-muted-foreground hover:bg-background hover:text-foreground" @click="copy('url')">
-                              <component :is="copied === 'url' ? Check : Copy" class="w-3.5 h-3.5" />{{ copied === 'url' ? 'Đã chép' : 'Chép' }}</button>
-                          </div>
-                        </div>
-                        <div class="rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5 text-center">
-                          <div class="text-xs text-muted-foreground">Mã ghép</div>
-                          <div class="mt-0.5 font-mono text-lg font-semibold tracking-[0.2em] text-primary">K7Q-294</div>
-                          <div class="text-[11px] text-muted-foreground flex items-center justify-center gap-1">còn 9:12 <RefreshCw class="w-3 h-3" /></div>
+                      <div class="rounded-md border border-border bg-muted/30 px-3 py-2.5">
+                        <div class="text-xs text-muted-foreground">1. Địa chỉ kết nối (cố định cho máy này)</div>
+                        <div class="mt-0.5 flex items-center gap-2">
+                          <span class="font-mono text-xs flex-1 truncate">https://mcp.sanobook.com/k/7f3kq2mxr4tb</span>
+                          <button class="h-7 px-2 rounded text-xs flex items-center gap-1 text-muted-foreground hover:bg-background hover:text-foreground" @click="copy('url')">
+                            <component :is="copied === 'url' ? Check : Copy" class="w-3.5 h-3.5" />{{ copied === 'url' ? 'Đã chép' : 'Chép' }}</button>
                         </div>
                       </div>
+                      <div class="rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5">
+                        <div class="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>2. Mã ghép, dán vào trang ghép khi Claude / ChatGPT hỏi</span>
+                          <span class="tabular-nums">dùng một lần · còn <b class="text-foreground">1:48</b></span>
+                        </div>
+                        <div class="mt-1 flex items-center gap-2">
+                          <span class="font-mono text-[13px] flex-1 break-all select-all text-primary font-medium">{{ pairCode }}</span>
+                          <Button size="sm" class="shrink-0" @click="copy('code')"><component :is="copied === 'code' ? Check : Copy" class="w-3.5 h-3.5" />{{ copied === 'code' ? 'Đã chép' : 'Chép mã' }}</Button>
+                        </div>
+                        <div class="mt-1 text-[11px] text-muted-foreground flex items-center gap-1">Hết 2 phút thì mã tự huỷ, bấm <span class="text-primary flex items-center gap-0.5"><RefreshCw class="w-3 h-3" /> Tạo mã mới</span></div>
+                      </div>
                       <div class="text-xs text-muted-foreground leading-relaxed">
-                        <b class="text-foreground font-medium">Claude</b> (web, điện thoại): Settings → Connectors → Add custom connector → dán địa chỉ → trang ghép hỏi mã → nhập mã bên cạnh.
-                        <b class="text-foreground font-medium">ChatGPT</b>: Settings → Connectors → Developer mode → Create → dán địa chỉ, rồi nhập mã.
+                        <b class="text-foreground font-medium">Claude</b> (web, điện thoại): Settings → Connectors → Add custom connector → dán địa chỉ → trang ghép hỏi mã → dán mã ghép.
+                        <b class="text-foreground font-medium">ChatGPT</b>: Settings → Connectors → Developer mode → Create → dán địa chỉ, rồi dán mã ghép.
                         <a class="text-primary underline underline-offset-2">Xem hướng dẫn có ảnh</a>
                       </div>
                       <div>
@@ -233,7 +239,7 @@ const states: [Mode, string][] = [
                     <span class="flex items-start gap-3">
                       <Bot class="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
                       <span class="flex-1">AI được làm gì
-                        <span class="block text-xs text-muted-foreground">Áp cho cả kết nối trong máy và từ xa. Trước khi đọc thành sách hay xoá, AI luôn hỏi bạn trong khung trò chuyện.</span>
+                        <span class="block text-xs text-muted-foreground">Áp cho cả kết nối trong máy và từ xa. Trước khi đọc thành sách, AI luôn hỏi bạn trong khung trò chuyện.</span>
                       </span>
                     </span>
                     <div class="mt-2 ml-7 grid grid-cols-3 gap-2 text-xs">
@@ -245,11 +251,12 @@ const states: [Mode, string][] = [
                         <input v-model="allow.edit" type="checkbox" class="mt-0.5 accent-primary" />
                         <span><span class="flex items-center gap-1 font-medium"><PenLine class="w-3.5 h-3.5" /> Tạo và sửa sách</span><span class="text-muted-foreground">Tạo, sửa lời, đọc lại, đổi giọng, bìa, xuất M4B</span></span>
                       </label>
-                      <label class="rounded-md border border-border px-3 py-2 flex items-start gap-2">
-                        <input v-model="allow.del" type="checkbox" class="mt-0.5 accent-primary" />
-                        <span><span class="flex items-center gap-1 font-medium"><Trash2 class="w-3.5 h-3.5" /> Xoá sách</span><span class="text-muted-foreground">Chỉ vào Thùng rác. Mặc định tắt</span></span>
-                      </label>
+                      <div class="rounded-md border border-dashed border-border px-3 py-2 flex items-start gap-2 text-muted-foreground">
+                        <Ban class="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span><span class="font-medium text-foreground">Không xoá được</span><br />AI không có lệnh xoá sách hay file nào. Xoá sách chỉ làm trong app</span>
+                      </div>
                     </div>
+                    <p class="mt-2 ml-7 text-xs text-muted-foreground">AI chỉ chạm được sách trong thư viện Sano, không đọc hay ghi file nào khác trên máy. Sửa lời, đổi giọng thì Sano giữ bản trước để hoàn tác.</p>
                   </div>
 
                   <!-- Nhật ký -->
@@ -274,8 +281,6 @@ const states: [Mode, string][] = [
               </div>
 
               <div>
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Lưu trữ</h2>
-                <div class="rounded-lg border border-border px-4 py-3 text-sm text-muted-foreground">(giữ nguyên như hiện tại, các nhóm dưới cũng vậy)</div>
               </div>
             </div>
           </div>
@@ -312,7 +317,7 @@ const states: [Mode, string][] = [
     </div>
 
     <p class="text-xs text-muted-foreground max-w-[1100px] text-center">
-      D21 · Cài đặt → nhóm mới "Kết nối AI" ở đầu. Trong máy bật sẵn, từ xa tắt sẵn. Bật từ xa phải tick đủ 3 ý. Mã ghép dùng một lần, hết hạn sau 10 phút.
+      D21 · Mục riêng "MCP" trên Cài đặt. Trong máy bật sẵn, từ xa tắt sẵn. Bật từ xa phải tick đủ 3 ý. Mã ghép 40 ký tự, chỉ chép-dán, dùng một lần, hết hạn sau 2 phút. Không có quyền xoá qua MCP.
     </p>
   </div>
 </template>
