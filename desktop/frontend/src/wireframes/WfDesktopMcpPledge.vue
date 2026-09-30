@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// D22 — Sách AI tạo qua MCP: ĐỌC TRƯỚC, CAM KẾT SAU, cam kết một lần cho nhiều cuốn.
-// - AI xin đọc là Sano đọc ngay (hàng đợi, lần lượt từng cuốn), không chờ người dùng.
-// - Đọc xong: sách nằm ở KHU CHỜ (chưa vào Thư viện, chưa nghe / xuất / chia sẻ được).
-// - Popup "cam kết để lưu" tự mở khi có cuốn đầu tiên đọc xong; gom mọi cuốn của AI (đã xong, đang đọc,
-//   đang chờ đọc). Tick cuốn nào thì cuốn đó được lưu; cuốn đang đọc / chờ đọc mà đã tick thì tự lưu khi xong.
+// D22 — Sách AI tạo qua MCP: TẠO TRƯỚC, CAM KẾT SAU, cam kết một lần cho nhiều cuốn.
+// - AI xin tạo là Sano render ngay (hàng đợi, lần lượt từng cuốn), không chờ người dùng.
+// - Tạo xong: sách nằm ở KHU CHỜ (chưa vào Thư viện, chưa nghe / xuất / chia sẻ được).
+// - Popup "cam kết để lưu" tự mở khi có cuốn đầu tiên tạo xong; gom mọi cuốn của AI (đã xong, đang tạo,
+//   chờ tạo). Tick cuốn nào thì cuốn đó được lưu; cuốn đang tạo / chờ tạo mà đã tick thì tự lưu khi xong.
 // - 6 ô cam kết D19 tick MỘT lần, áp cho các cuốn đã tick; mỗi cuốn ghi thời điểm cam kết riêng.
 // - "Để sau" / bấm ra ngoài: chỉ đóng popup, sách vẫn ở khu chờ (thẻ thanh bên mở lại). Không tick sau 7 ngày
 //   thì khu chờ tự xoá. "Bỏ" ở từng dòng: bỏ hẳn cuốn đó (hỏi lại một lần).
@@ -48,7 +48,7 @@ const action = computed(() => {
   const n = picked.value.length
   if (!n) return 'Chọn ít nhất một cuốn'
   const later = n - pickedDone.value
-  return later ? `Cam kết · lưu ${pickedDone.value} cuốn, ${later} cuốn lưu khi đọc xong` : `Cam kết và lưu ${n} cuốn`
+  return later ? `Cam kết · lưu ${pickedDone.value} cuốn, ${later} cuốn lưu khi tạo xong` : `Cam kết và lưu ${n} cuốn`
 })
 
 const nav = [
@@ -62,9 +62,9 @@ const nav = [
 const shelf = ['Thấy ra chính mình', 'Chánh niệm', 'Tiệm Cà Phê Thứ Hai', 'Nghe Để Nhớ', 'Giới thiệu Sano']
 const colors = ['bg-red-800', 'bg-orange-700', 'bg-teal-800', 'bg-violet-800', 'bg-indigo-800']
 const states: [Mode, string][] = [
-  ['rendering', '1. AI xin đọc 3 cuốn (đang đọc)'],
+  ['rendering', '1. AI xin tạo 3 cuốn (đang tạo)'],
   ['popup', '2. Cuốn đầu xong → popup tự mở'],
-  ['popupDone', '3. Đọc xong cả 3, bỏ tick 1 cuốn'],
+  ['popupDone', '3. Tạo xong cả 3, bỏ tick 1 cuốn'],
   ['saved', '4. Đã lưu, 1 cuốn còn ở khu chờ'],
 ]
 </script>
@@ -110,10 +110,10 @@ const states: [Mode, string][] = [
             <div class="flex items-center gap-1.5 font-medium">
               <Loader2 v-if="mode === 'rendering' || mode === 'popup'" class="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
               <Bot v-else class="w-3.5 h-3.5 text-primary shrink-0" />
-              <span class="truncate">{{ mode === 'popupDone' ? 'Claude Desktop đọc xong 3 cuốn' : 'Claude Desktop nhờ đọc 3 cuốn' }}</span>
+              <span class="truncate">{{ mode === 'popupDone' ? 'Claude Desktop tạo xong 3 cuốn' : 'Claude Desktop nhờ tạo 3 cuốn' }}</span>
             </div>
             <template v-if="mode !== 'popupDone'">
-              <p class="mt-1 text-muted-foreground truncate">Đang đọc {{ mode === 'rendering' ? 1 : 2 }}/3 · {{ mode === 'rendering' ? 'Ba thói quen buổi sáng' : 'Quản lý dòng tiền…' }}</p>
+              <p class="mt-1 text-muted-foreground truncate">Đang tạo {{ mode === 'rendering' ? 1 : 2 }}/3 · {{ mode === 'rendering' ? 'Ba thói quen buổi sáng' : 'Quản lý dòng tiền…' }}</p>
               <div class="mt-1.5 h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: (mode === 'rendering' ? 62 : 45) + '%' }"></div></div>
             </template>
             <button v-if="mode !== 'rendering'" class="mt-2 w-full h-7 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/15">
@@ -141,11 +141,11 @@ const states: [Mode, string][] = [
       </div>
 
       <!-- ═══ Popup cam kết để lưu (nhiều cuốn) ═══ -->
-      <div v-if="popup" class="absolute inset-0 top-9 z-20 grid place-items-center bg-background/70 backdrop-blur-sm p-4">
-        <div role="dialog" aria-modal="true" class="flex max-h-full w-[680px] flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
+      <div v-if="popup" class="absolute inset-0 top-9 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4">
+        <div role="dialog" aria-modal="true" class="flex max-h-full min-h-0 w-[680px] flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
           <div class="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div>
-              <h2 class="font-semibold">Claude Desktop đã đọc sách giúp bạn · cam kết để lưu vào Thư viện</h2>
+              <h2 class="font-semibold">Claude Desktop đã tạo sách giúp bạn · cam kết để lưu vào Thư viện</h2>
               <p class="mt-0.5 text-xs text-muted-foreground">Sách đang ở khu chờ, chưa nghe, xuất hay chia sẻ được. Tick cuốn muốn lưu, rồi tick các cam kết.</p>
             </div>
             <button class="text-muted-foreground hover:text-foreground" aria-label="Để sau"><X class="h-4 w-4" /></button>
@@ -161,14 +161,14 @@ const states: [Mode, string][] = [
                   <span class="block text-xs text-muted-foreground">{{ b.sections }} mục · {{ b.min }} phút · giọng Hải Đăng</span>
                 </span>
                 <span class="shrink-0 text-xs flex items-center gap-1.5">
-                  <template v-if="b.st === 'done'"><CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" /> <span class="text-emerald-700 dark:text-emerald-400">Đã đọc xong</span></template>
-                  <template v-else-if="b.st === 'reading'"><Loader2 class="w-3.5 h-3.5 animate-spin text-primary" /> Đang đọc {{ b.pct }}%</template>
-                  <template v-else><Hourglass class="w-3.5 h-3.5 text-muted-foreground" /> <span class="text-muted-foreground">Chờ đọc</span></template>
+                  <template v-if="b.st === 'done'"><CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" /> <span class="text-emerald-700 dark:text-emerald-400">Đã tạo xong</span></template>
+                  <template v-else-if="b.st === 'reading'"><Loader2 class="w-3.5 h-3.5 animate-spin text-primary" /> Đang tạo {{ b.pct }}%</template>
+                  <template v-else><Hourglass class="w-3.5 h-3.5 text-muted-foreground" /> <span class="text-muted-foreground">Chờ tạo</span></template>
                 </span>
                 <button class="shrink-0 text-xs text-muted-foreground hover:text-destructive" @click.prevent>Bỏ</button>
               </label>
             </div>
-            <p v-if="picked.length - pickedDone > 0" class="mt-1.5 text-xs text-muted-foreground flex items-center gap-1"><Clock class="w-3 h-3" /> Cuốn đang đọc / chờ đọc đã tick sẽ tự lưu khi đọc xong.</p>
+            <p v-if="picked.length - pickedDone > 0" class="mt-1.5 text-xs text-muted-foreground flex items-center gap-1"><Clock class="w-3 h-3" /> Cuốn đang tạo / chờ tạo đã tick sẽ tự lưu khi tạo xong.</p>
             <p v-if="books.some((b) => !b.pick)" class="mt-1.5 text-xs text-muted-foreground">Cuốn không tick vẫn ở khu chờ 7 ngày, muốn bỏ hẳn bấm "Bỏ".</p>
 
             <!-- Cam kết (D19), gọn hơn: mô tả nhỏ -->
@@ -206,7 +206,7 @@ const states: [Mode, string][] = [
     </div>
 
     <p class="text-xs text-muted-foreground max-w-[1100px] text-center">
-      D22 · Sách AI tạo: đọc trước, cam kết sau. Một popup cho mọi cuốn của AI, tick cuốn muốn lưu + 6 ô cam kết một lần. "Để sau" chỉ đóng popup, sách vẫn ở khu chờ 7 ngày.
+      D22 · Sách AI tạo: tạo trước, cam kết sau. Một popup cho mọi cuốn của AI, tick cuốn muốn lưu + 6 ô cam kết một lần. "Để sau" chỉ đóng popup, sách vẫn ở khu chờ 7 ngày.
       Luồng Tạo sách nói trong app giữ nguyên (cam kết trước khi render).
     </p>
   </div>

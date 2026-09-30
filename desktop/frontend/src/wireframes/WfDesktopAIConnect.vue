@@ -139,7 +139,7 @@ const states: [Mode, string][] = [
             <h1 class="text-xl font-semibold tracking-tight">MCP · Kết nối AI</h1>
             <div class="mt-2 space-y-6">
               <div>
-                <p class="text-sm text-muted-foreground mb-4">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc đọc thành sách vẫn chạy trên máy này.</p>
+                <p class="text-sm text-muted-foreground mb-4">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc tạo sách (render) vẫn chạy trên máy này.</p>
 
                 <div class="rounded-lg border border-border text-sm divide-y divide-border">
                   <!-- Trong máy -->
@@ -239,7 +239,7 @@ const states: [Mode, string][] = [
                     <span class="flex items-start gap-3">
                       <Bot class="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
                       <span class="flex-1">AI được làm gì
-                        <span class="block text-xs text-muted-foreground">Áp cho cả kết nối trong máy và từ xa. Trước khi đọc thành sách, AI luôn hỏi bạn trong khung trò chuyện.</span>
+                        <span class="block text-xs text-muted-foreground">Áp cho cả kết nối trong máy và từ xa. Trước khi tạo sách, AI luôn hỏi bạn trong khung trò chuyện.</span>
                       </span>
                     </span>
                     <div class="mt-2 ml-7 grid grid-cols-3 gap-2 text-xs">
