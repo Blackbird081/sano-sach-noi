@@ -138,21 +138,21 @@ func (a *App) newMCPServer() *mcp.Server {
 	write := &mcp.ToolAnnotations{DestructiveHint: &f, OpenWorldHint: &f}
 	// Việc tạo / sửa: cần quyền "Tạo và sửa sách" (màn MCP), ghi nhật ký.
 	addTool(a, s, &mcp.Tool{Name: "create_book", Title: "Tạo bản nháp sách",
-		Description: "Gửi toàn bộ nội dung một cuốn sách nói để Sano dựng bản nháp (chưa đọc). Định dạng văn bản: dòng đầu '% Tên sách'; mỗi chương '# Tên chương'; mỗi mục '## Tên mục'; dưới mỗi mục là các đoạn văn viết để nghe (câu ngắn, số và chữ viết tắt viết thành lời, không bảng, không gạch đầu dòng). Trả về draft_id, mục lục, thời lượng ước tính. Không nhận đường dẫn file: tự đọc tài liệu rồi gửi nội dung.",
+		Description: "Gửi toàn bộ nội dung một cuốn sách nói để Sano dựng bản nháp (chưa tạo sách). Định dạng văn bản: dòng đầu '% Tên sách'; mỗi chương '# Tên chương'; mỗi mục '## Tên mục'; dưới mỗi mục là các đoạn văn viết để nghe (câu ngắn, số và chữ viết tắt viết thành lời, không bảng, không gạch đầu dòng). Trả về draft_id, mục lục, thời lượng ước tính. Không nhận đường dẫn file: tự đọc tài liệu rồi gửi nội dung.",
 		Annotations: write}, true, func(_ mcpCreateInput, o mcpDraftOut) string {
 		return fmt.Sprintf("Tạo bản nháp %s (%d chương, %d mục, khoảng %d phút nghe)", quoteTitle(o.Title, "?"), len(o.Chapters), o.Sections, o.ListenMin)
 	}, a.mcpCreateBook)
-	addTool(a, s, &mcp.Tool{Name: "start_render", Title: "Đọc thành sách nói",
-		Description: "Bắt đầu đọc bản nháp thành sách nói trên máy. Hỏi người dùng trước khi gọi. App Sano hiện popup cam kết: người dùng phải tick trên máy tính thì mới bắt đầu. Đọc mất vài phút tới vài chục phút; theo dõi bằng get_render_status.",
+	addTool(a, s, &mcp.Tool{Name: "start_render", Title: "Tạo sách nói",
+		Description: "Bắt đầu tạo sách nói (render) từ bản nháp trên máy. Hỏi người dùng trước khi gọi. App Sano hiện popup cam kết: người dùng phải tick trên máy tính thì mới bắt đầu. Tạo mất vài phút tới vài chục phút; theo dõi bằng get_render_status.",
 		Annotations: write}, true, func(_ mcpDraftID, o mcpRenderOut) string {
-		return "Xin đọc thành sách " + quoteTitle(o.Title, "?") + ", chờ cam kết trên app"
+		return "Xin tạo sách " + quoteTitle(o.Title, "?") + ", chờ cam kết trên app"
 	}, a.mcpStartRender)
-	addTool(a, s, &mcp.Tool{Name: "get_render_status", Title: "Tiến độ đọc",
-		Description: "Tình trạng lượt đọc AI nhờ: chờ cam kết, bị từ chối, đang đọc (phần trăm, số mục, phút còn lại), xong (slug của sách mới), lỗi.",
+	addTool(a, s, &mcp.Tool{Name: "get_render_status", Title: "Tiến độ tạo sách",
+		Description: "Tình trạng lượt tạo sách AI nhờ: chờ cam kết, bị từ chối, đang tạo (phần trăm, số mục, phút còn lại), xong (slug của sách mới), lỗi.",
 		Annotations: ro}, false, nil, a.mcpRenderStatus)
-	addTool(a, s, &mcp.Tool{Name: "cancel_render", Title: "Dừng đọc",
-		Description: "Dừng lượt đọc do AI bắt đầu (không lưu gì). Chỉ dùng khi người dùng yêu cầu.",
-		Annotations: write}, true, func(_ mcpNoInput, o mcpRenderOut) string { return "Dừng đọc " + quoteTitle(o.Title, "?") }, a.mcpCancelRender)
+	addTool(a, s, &mcp.Tool{Name: "cancel_render", Title: "Dừng tạo sách",
+		Description: "Dừng lượt tạo sách do AI bắt đầu (không lưu gì). Chỉ dùng khi người dùng yêu cầu.",
+		Annotations: write}, true, func(_ mcpNoInput, o mcpRenderOut) string { return "Dừng tạo sách " + quoteTitle(o.Title, "?") }, a.mcpCancelRender)
 	return s
 }
 

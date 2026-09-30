@@ -57,7 +57,7 @@ const sponsors = [
       <div class="mt-2 h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary rounded-full" :style="{ width: renderPct + '%' }"></div></div>
       <div class="mt-1 flex justify-between text-[11px] text-muted-foreground tabular-nums"><span>{{ renderPct }}%</span><span>còn ~{{ remainMin }} phút</span></div>
     </button>
-    <!-- Thẻ lượt đọc AI nhờ qua MCP: đang đọc / xong (mở sách) / lỗi -->
+    <!-- Thẻ lượt tạo sách AI nhờ qua MCP: đang tạo / xong (mở sách) / lỗi -->
     <div v-if="mcp.render" class="mx-3 mb-3 rounded-lg border bg-background p-2.5 text-xs" :class="mcp.render.error ? 'border-destructive/40' : 'border-border'">
       <div class="flex items-center gap-1.5 font-medium">
         <Loader2 v-if="mcp.render.running" class="w-3.5 h-3.5 animate-spin text-primary shrink-0" />

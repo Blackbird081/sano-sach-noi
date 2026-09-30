@@ -69,7 +69,7 @@ onUnmounted(() => clearInterval(timer))
   <section class="flex-1 overflow-auto p-6">
     <div class="max-w-2xl">
       <h1 class="text-xl font-semibold tracking-tight">MCP · Kết nối AI</h1>
-      <p class="mt-2 mb-4 text-sm text-muted-foreground">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc đọc thành sách vẫn chạy trên máy này.</p>
+      <p class="mt-2 mb-4 text-sm text-muted-foreground">Cho AI xem, tạo, sửa sách trong Sano bằng lời nói thường (chuẩn MCP). Sano phải đang mở thì AI mới làm được. Việc tạo sách (render) vẫn chạy trên máy này.</p>
       <p v-if="error" class="mb-3 text-sm text-destructive">{{ error }}</p>
 
       <div v-if="!info" class="text-sm text-muted-foreground flex items-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> Đang tải…</div>
@@ -145,7 +145,7 @@ onUnmounted(() => clearInterval(timer))
           <span class="flex items-start gap-3">
             <Bot class="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
             <span class="flex-1">AI được làm gì
-              <span class="block text-xs text-muted-foreground">Áp cho cả kết nối trong máy và từ xa. Trước khi đọc thành sách, bạn phải tick cam kết trên app.</span>
+              <span class="block text-xs text-muted-foreground">Áp cho cả kết nối trong máy và từ xa. Trước khi tạo sách, bạn phải tick cam kết trên app.</span>
             </span>
           </span>
           <div class="mt-2 ml-7 grid grid-cols-3 gap-2 text-xs">
@@ -156,7 +156,7 @@ onUnmounted(() => clearInterval(timer))
             <label class="rounded-md border border-border px-3 py-2 flex items-start gap-2 cursor-pointer">
               <input type="checkbox" :checked="info.allowEdit" :disabled="busy === 'edit'" class="mt-0.5 accent-[hsl(var(--primary))]"
                 @change="act('edit', () => setMCPAllowEdit(!info!.allowEdit))" />
-              <span><span class="flex items-center gap-1 font-medium"><PenLine class="w-3.5 h-3.5" /> Tạo và sửa sách</span><span class="text-muted-foreground">Tạo sách, đọc thành sách nói (sửa lời, đổi giọng sẽ có sau)</span></span>
+              <span><span class="flex items-center gap-1 font-medium"><PenLine class="w-3.5 h-3.5" /> Tạo và sửa sách</span><span class="text-muted-foreground">Tạo sách nói (sửa lời, đổi giọng sẽ có sau)</span></span>
             </label>
             <div class="rounded-md border border-dashed border-border px-3 py-2 flex items-start gap-2 text-muted-foreground">
               <Ban class="w-3.5 h-3.5 mt-0.5 shrink-0" />

@@ -1,5 +1,5 @@
-// Kết nối AI qua MCP (mcp.go, mcp_create.go): popup cam kết khi AI nhờ đọc một cuốn, và
-// tiến độ lượt đọc do AI bắt đầu (tách khỏi state.render của luồng Tạo sách nói trong app).
+// Kết nối AI qua MCP (mcp.go, mcp_create.go): popup cam kết khi AI nhờ tạo một cuốn, và
+// tiến độ lượt tạo sách do AI bắt đầu (tách khỏi state.render của luồng Tạo sách nói trong app).
 import { reactive } from 'vue'
 import { errText, mcpInfo, mcpPendingPledge, mcpPledgeAnswer, onEvent, type MCPInfo, type MCPPledge, type RenderStatus } from './backend'
 

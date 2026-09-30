@@ -2,7 +2,7 @@ package main
 
 // MCP · tạo sách (M2): AI gửi NỘI DUNG sách (văn bản "% Tên sách / # Chương / ## Mục",
 // cùng quy ước với ô dán văn bản ở bước Cách đọc), không gửi đường dẫn file. Sano đổi thành
-// .docx tạm trong ~/Sano/.tam/mcp, nạp mục lục → bản nháp. Bắt đầu đọc thì app hiện popup
+// .docx tạm trong ~/Sano/.tam/mcp, nạp mục lục → bản nháp. Bắt đầu tạo thì app hiện popup
 // cam kết D19 cho người ngồi trước máy tick; tick đủ mới render, từ chối thì thôi. AI theo dõi
 // bằng get_render_status. Không có công cụ xoá (D21).
 
@@ -34,7 +34,7 @@ const (
 	mcpDefaultVoice = "Hải Đăng"       // khớp DEFAULT_VOICE ở giao diện
 )
 
-// mcpDraft — bản nháp sách AI gửi, chờ bắt đầu đọc.
+// mcpDraft — bản nháp sách AI gửi, chờ bắt đầu tạo.
 type mcpDraft struct {
 	id       string
 	docx     string
@@ -282,7 +282,7 @@ func (a *App) mcpStartRender(ctx context.Context, _ *mcp.CallToolRequest, in mcp
 	busy := a.renderBusyLocked()
 	a.mu.Unlock()
 	if busy != nil {
-		return nil, mcpRenderOut{}, fmt.Errorf("chưa đọc được: %v", busy)
+		return nil, mcpRenderOut{}, fmt.Errorf("chưa tạo được: %v", busy)
 	}
 	a.mcp.mu.Lock()
 	defer a.mcp.mu.Unlock()
@@ -311,7 +311,7 @@ func (a *App) mcpStartRender(ctx context.Context, _ *mcp.CallToolRequest, in mcp
 		wruntime.WindowShow(a.ctx)
 	}
 	return nil, mcpRenderOut{Status: "waiting_pledge", Title: p.Title,
-		Message: "App Sano đang hiện popup cam kết. Nhờ người dùng tick đủ các ô trên máy tính rồi bấm \"Cam kết và đọc\". Gọi get_render_status để theo dõi."}, nil
+		Message: "App Sano đang hiện popup cam kết. Nhờ người dùng tick đủ các ô trên máy tính rồi bấm \"Cam kết và tạo sách\". Gọi get_render_status để theo dõi."}, nil
 }
 
 // MCPPledgeAnswer — giao diện báo người dùng đã cam kết (ok) hay đóng popup.
@@ -374,7 +374,7 @@ func (a *App) mcpRenderStatus(context.Context, *mcp.CallToolRequest, mcpNoInput)
 	case "waiting":
 		return nil, mcpRenderOut{Status: "waiting_pledge", Title: title, Message: "Đang chờ người dùng tick cam kết trên app Sano."}, nil
 	case "declined":
-		return nil, mcpRenderOut{Status: "declined", Message: "Người dùng đã đóng popup cam kết, chưa đọc. Hỏi lại người dùng trước khi gọi start_render lần nữa."}, nil
+		return nil, mcpRenderOut{Status: "declined", Message: "Người dùng đã đóng popup cam kết, chưa tạo sách. Hỏi lại người dùng trước khi gọi start_render lần nữa."}, nil
 	case "expired":
 		return nil, mcpRenderOut{Status: "expired", Message: "Popup cam kết quá 10 phút không ai tick nên đã đóng. Gọi start_render lại khi người dùng ngồi trước máy."}, nil
 	case "error":
@@ -382,14 +382,14 @@ func (a *App) mcpRenderStatus(context.Context, *mcp.CallToolRequest, mcpNoInput)
 	}
 	r := a.RenderStatus()
 	if r == nil || r.Source != "mcp" {
-		return nil, mcpRenderOut{Status: "none", Message: "Chưa có cuốn nào AI nhờ đọc trong lần mở app này."}, nil
+		return nil, mcpRenderOut{Status: "none", Message: "Chưa có cuốn nào AI nhờ tạo trong lần mở app này."}, nil
 	}
 	out := mcpRenderOut{Title: r.Title, Slug: r.Slug, Done: r.Progress.Done, Total: r.Progress.Total,
 		Percent: progressPercent(r.Progress.DoneChars, r.Progress.TotalChars)}
 	switch {
 	case r.Running:
 		out.Status = "rendering"
-		out.Message = "Đang đọc thành sách trên máy. Hỏi lại sau vài phút."
+		out.Message = "Đang tạo sách trên máy. Hỏi lại sau vài phút."
 		if r.Progress.DoneChars > 0 && r.Progress.ElapsedSec > 0 {
 			left := float64(r.Progress.TotalChars-r.Progress.DoneChars) * float64(r.Progress.ElapsedSec) / float64(r.Progress.DoneChars)
 			out.RemainMin = max(1, int(left/60+0.5))
@@ -398,7 +398,7 @@ func (a *App) mcpRenderStatus(context.Context, *mcp.CallToolRequest, mcpNoInput)
 		out.Status, out.Percent = "done", 100
 		out.Message = "Đã tạo xong, sách nằm trong thư viện Sano. Dùng get_book với slug để xem."
 	case r.Cancelled:
-		out.Status, out.Message = "cancelled", "Lượt đọc đã bị dừng, không lưu gì."
+		out.Status, out.Message = "cancelled", "Lượt tạo sách đã bị dừng, không lưu gì."
 	default:
 		out.Status, out.Message = "error", r.Error
 	}
@@ -408,8 +408,8 @@ func (a *App) mcpRenderStatus(context.Context, *mcp.CallToolRequest, mcpNoInput)
 func (a *App) mcpCancelRender(context.Context, *mcp.CallToolRequest, mcpNoInput) (*mcp.CallToolResult, mcpRenderOut, error) {
 	r := a.RenderStatus()
 	if r == nil || !r.Running || r.Source != "mcp" {
-		return nil, mcpRenderOut{}, errors.New("không có lượt đọc nào do AI bắt đầu đang chạy")
+		return nil, mcpRenderOut{}, errors.New("không có lượt tạo sách nào do AI bắt đầu đang chạy")
 	}
 	a.CancelRender()
-	return nil, mcpRenderOut{Status: "cancelled", Title: r.Title, Message: "Đã dừng lượt đọc, không lưu gì vào thư viện."}, nil
+	return nil, mcpRenderOut{Status: "cancelled", Title: r.Title, Message: "Đã dừng tạo sách, không lưu gì vào thư viện."}, nil
 }
