@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Library, BarChart3, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw } from 'lucide-vue-next'
+import { Library, BarChart3, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw, Bot, X } from 'lucide-vue-next'
 import faviconUrl from '@/assets/favicon.svg'
 import sepayLogo from '../assets/sponsors/sepay.svg'
 import hostLogo from '../assets/sponsors/123host.svg'
 import { AUTHOR_FB, DOCS } from '../lib/mock'
-import { go, remainMin, renderPct, rendering, state, type View } from '../lib/store'
+import { go, openBook, remainMin, renderPct, rendering, state, type View } from '../lib/store'
+import { mcp, mcpRenderPct } from '../lib/mcp'
 import { edit, fmtRemain, openEdit } from '../lib/edit'
 
 const nav = [
@@ -55,6 +56,23 @@ const sponsors = [
       <div class="mt-2 h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary rounded-full" :style="{ width: renderPct + '%' }"></div></div>
       <div class="mt-1 flex justify-between text-[11px] text-muted-foreground tabular-nums"><span>{{ renderPct }}%</span><span>còn ~{{ remainMin }} phút</span></div>
     </button>
+    <!-- Thẻ lượt đọc AI nhờ qua MCP: đang đọc / xong (mở sách) / lỗi -->
+    <div v-if="mcp.render" class="mx-3 mb-3 rounded-lg border bg-background p-2.5 text-xs" :class="mcp.render.error ? 'border-destructive/40' : 'border-border'">
+      <div class="flex items-center gap-1.5 font-medium">
+        <Loader2 v-if="mcp.render.running" class="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+        <Bot v-else class="w-3.5 h-3.5 text-primary shrink-0" />
+        <span class="truncate">{{ mcp.render.running ? 'AI đang tạo sách' : mcp.render.done ? 'AI đã tạo xong' : 'AI tạo sách bị lỗi' }}</span>
+        <button v-if="!mcp.render.running" class="ml-auto text-muted-foreground hover:text-foreground" aria-label="Ẩn" @click="mcp.render = null"><X class="w-3.5 h-3.5" /></button>
+      </div>
+      <p class="mt-1 text-muted-foreground truncate" :title="mcp.render.title">{{ mcp.render.title }}</p>
+      <template v-if="mcp.render.running">
+        <div class="mt-1.5 h-1 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" :style="{ width: mcpRenderPct(mcp.render) + '%' }"></div></div>
+        <div class="mt-1 text-muted-foreground tabular-nums">{{ mcpRenderPct(mcp.render) }}% · {{ mcp.render.progress.done }}/{{ mcp.render.progress.total }} mục</div>
+      </template>
+      <button v-else-if="mcp.render.done && mcp.render.slug" class="mt-1.5 font-medium text-primary hover:underline" @click="openBook(mcp.render.slug); mcp.render = null">Nghe ngay</button>
+      <p v-else-if="mcp.render.error" class="mt-1 text-destructive line-clamp-2" :title="mcp.render.error">{{ mcp.render.error }}</p>
+    </div>
+    <p v-if="mcp.error" class="mx-3 mb-3 text-xs text-destructive">{{ mcp.error }}</p>
     <!-- Thẻ tiến độ sửa sách: đổi giọng / đọc lại chạy nền (wireframe D11) -->
     <button v-if="edit.status?.running && !(state.view === 'edit' && edit.slug === edit.status.slug)" class="mx-3 mb-3 rounded-lg border border-border bg-background p-2.5 text-left text-xs hover:border-primary/50"
       @click="openEdit(edit.status.slug, { tab: edit.status.kind === 'voice' ? 'voice' : 'content' })">

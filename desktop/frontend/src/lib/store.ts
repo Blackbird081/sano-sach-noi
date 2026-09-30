@@ -13,6 +13,7 @@ import {
   type RenderStatus, type SetupInfo, type SetupStatus, type TTSStatus, type UpdateInfo, type UpdateStatus, type Voice,
 } from './backend'
 import { TERMS_VERSION } from './terms'
+import { mcp } from './mcp'
 import { globalReading, loadGlobalDict } from './dict'
 import type { AITool } from './prompt'
 
@@ -640,8 +641,16 @@ async function onSetupFinished(st: SetupStatus) {
 }
 
 export async function init() {
-  onEvent<RenderStatus>('render:progress', (st) => { state.render = st })
-  onEvent<RenderStatus>('render:finished', onRenderFinished)
+  // Lượt đọc AI nhờ qua MCP đi đường riêng (lib/mcp.ts), không đụng luồng Tạo sách nói đang làm dở.
+  onEvent<RenderStatus>('render:progress', (st) => {
+    if (st.source === 'mcp') mcp.render = st
+    else state.render = st
+  })
+  onEvent<RenderStatus>('render:finished', (st) => {
+    if (st.source !== 'mcp') return onRenderFinished(st)
+    mcp.render = st.cancelled ? null : st
+    void refreshLibrary()
+  })
   onEvent<UpdateStatus>('update:progress', (st) => { state.upd = st })
   onEvent<SetupStatus>('setup:progress', applySetup)
   onEvent<SetupStatus>('setup:finished', onSetupFinished)
@@ -652,7 +661,8 @@ export async function init() {
   }
   state.version = await goVersion()
   const [st] = await Promise.all([renderStatus(), refreshLibrary()])
-  if (st?.running) state.render = st // mở lại cửa sổ khi đang render
+  if (st?.running && st.source === 'mcp') mcp.render = st
+  else if (st?.running) state.render = st // mở lại cửa sổ khi đang render
   const upd = await goUpdateStatus()
   if (upd && !q.get('update')) state.upd = upd
   await refreshTTS()

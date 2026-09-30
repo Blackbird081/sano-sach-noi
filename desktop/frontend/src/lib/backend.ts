@@ -160,6 +160,18 @@ export interface RenderStatus {
   title: string
   slug: string
   progress: Progress
+  source: string // '' = tạo trong app, 'mcp' = AI tạo qua MCP
+}
+
+/** Popup cam kết cho sách AI gửi qua MCP (mcp_create.go). */
+export interface MCPPledge {
+  id: string
+  title: string
+  author: string
+  voice: string
+  chapters: number
+  sections: number
+  listenMin: number
 }
 
 export interface LibraryBook {
@@ -375,6 +387,8 @@ interface GoApp {
   StartRender(s: BookSettings): Promise<RenderStatus>
   CancelRender(): Promise<void>
   RenderStatus(): Promise<RenderStatus | null>
+  MCPPledgeAnswer(id: string, ok: boolean): Promise<void>
+  MCPPendingPledge(): Promise<MCPPledge | null>
   Library(): Promise<LibraryInfo>
   LibrarySize(): Promise<number>
   Book(slug: string): Promise<BookDetail>
@@ -665,6 +679,14 @@ export async function speakSample(voice: string, text: string): Promise<string> 
 
 export async function startRender(s: BookSettings): Promise<RenderStatus> {
   return need().StartRender(s)
+}
+
+export async function mcpPledgeAnswer(id: string, ok: boolean): Promise<void> {
+  await need().MCPPledgeAnswer(id, ok)
+}
+
+export async function mcpPendingPledge(): Promise<MCPPledge | null> {
+  return (await goApp()?.MCPPendingPledge()) ?? null
 }
 
 export async function cancelRender(): Promise<void> {

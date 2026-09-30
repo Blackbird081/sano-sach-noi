@@ -20,6 +20,8 @@ import StatsView from './views/StatsView.vue'
 import CreateView from './views/CreateView.vue'
 import EditBookView from './views/EditBookView.vue'
 import { initEdit } from './lib/edit'
+import RenderPledgeDialog from './components/RenderPledgeDialog.vue'
+import { answerPledge, initMCP, mcp } from './lib/mcp'
 import MiniPlayer from './components/MiniPlayer.vue'
 import { player } from './lib/player'
 
@@ -28,6 +30,7 @@ onMounted(async () => {
   os.value = await platform()
   await init()
   void initEdit()
+  void initMCP()
 })
 </script>
 
@@ -56,5 +59,9 @@ onMounted(async () => {
     <PhoneDialog />
     <ShareDialog />
     <BookVideoDialog />
+    <!-- AI nhờ đọc một cuốn qua MCP: người ngồi trước máy tick cam kết D19 mới bắt đầu -->
+    <RenderPledgeDialog v-if="mcp.pledge" :key="mcp.pledge.id" title="AI nhờ tạo sách nói" label="Sách AI gửi" action="Cam kết và đọc"
+      :file-name="`${mcp.pledge.title} · ${mcp.pledge.sections} mục · khoảng ${mcp.pledge.listenMin} phút nghe · giọng ${mcp.pledge.voice}`"
+      @confirm="answerPledge(true)" @close="answerPledge(false)" />
   </div>
 </template>
