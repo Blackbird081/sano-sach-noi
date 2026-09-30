@@ -73,7 +73,7 @@ func TestMCP_XemSach(t *testing.T) {
 		t.Fatal(err)
 	}
 	names := []string{}
-	readOnly := map[string]bool{"list_books": true, "get_book": true, "get_section_texts": true, "list_voices": true, "get_status": true, "get_render_status": true}
+	readOnly := map[string]bool{"list_books": true, "get_book": true, "get_section_texts": true, "list_voices": true, "get_status": true, "get_render_status": true, "get_edit_status": true}
 	for _, tl := range tools.Tools {
 		names = append(names, tl.Name)
 		if tl.Annotations == nil || tl.Annotations.ReadOnlyHint != readOnly[tl.Name] {

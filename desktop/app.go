@@ -66,7 +66,8 @@ func (a *App) startup(ctx context.Context) {
 	}
 	// Thư mục render / nhập dở do app bị tắt đột ngột (có thể vài GB).
 	a.lib.CleanStaleWork(6 * time.Hour)
-	a.loadStagedJobs() // sách AI tạo còn ở khu chờ cam kết (mcp_queue.go)
+	a.lib.PruneAllSnapshots() // bản cũ để hoàn tác quá 7 ngày (MCP · sửa sách)
+	a.loadStagedJobs()        // sách AI tạo còn ở khu chờ cam kết (mcp_queue.go)
 	a.startMCP()
 	// Đổi giọng dở dang lần trước: đọc tiếp khi app đã lên (không chặn lúc mở).
 	go func() {

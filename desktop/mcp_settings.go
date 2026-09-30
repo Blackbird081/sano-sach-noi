@@ -43,6 +43,11 @@ type MCPLogEntry struct {
 	Text   string `json:"text"` // mô tả tiếng Việt
 	Edit   bool   `json:"edit"` // việc tạo / sửa (không phải chỉ xem)
 	Error  string `json:"error,omitempty"`
+	Slug   string `json:"slug,omitempty"` // cuốn bị sửa
+	Undo   string `json:"undo,omitempty"` // mã bản cũ giữ trước khi sửa (library.Snapshot)
+	// Chỉ có trong MCPInfo (không ghi file): còn hoàn tác được / đã hoàn tác.
+	CanUndo bool `json:"canUndo,omitempty"`
+	Undone  bool `json:"undone,omitempty"`
 }
 
 // MCPInfo — dữ liệu cho màn MCP.
@@ -159,6 +164,7 @@ func (a *App) MCPInfo() *MCPInfo {
 	a.mu.Unlock()
 	info.ClaudeDesktop = claudeDesktopState(bridge)
 	info.Log = a.readMCPLog()
+	a.markUndo(info.Log)
 	seen := map[string]bool{}
 	for _, e := range info.Log {
 		if time.Since(time.Unix(e.At, 0)) > mcpActiveSince {
@@ -173,6 +179,37 @@ func (a *App) MCPInfo() *MCPInfo {
 		info.Log = info.Log[:50]
 	}
 	return info
+}
+
+// markUndo đánh dấu dòng nhật ký nào còn hoàn tác được (bản cũ còn, chưa hoàn tác, là bản cũ
+// mới nhất của cuốn đó — hoàn tác bản cũ hơn sẽ mất các lần sửa sau nên không cho).
+func (a *App) markUndo(log []MCPLogEntry) {
+	undone := map[string]bool{}
+	for _, e := range log {
+		if e.Tool == "undo" && e.Undo != "" {
+			undone[e.Undo] = true
+		}
+	}
+	latest := map[string]string{}
+	for i := range log {
+		e := &log[i]
+		if e.Undo == "" || e.Tool == "undo" {
+			continue
+		}
+		if undone[e.Undo] {
+			e.Undone = true
+			continue
+		}
+		if _, seen := latest[e.Slug]; seen {
+			continue // log mới nhất trước: chỉ dòng đầu tiên của mỗi cuốn
+		}
+		latest[e.Slug] = e.Undo
+		for _, s := range a.lib.Snapshots(e.Slug) {
+			if s.ID == e.Undo {
+				e.CanUndo = true
+			}
+		}
+	}
 }
 
 // ── Nhật ký ──────────────────────────────────────────────────────────────

@@ -31,7 +31,7 @@ const mcpPort = 39390
 const mcpInstructions = `Sano là phần mềm làm sách nói tiếng Việt chạy trên máy người dùng: biến tài liệu (Tiêu đề, Chương, Mục) thành sách nói bằng giọng đọc VieNeu ngay trên máy.
 Thư viện gồm các cuốn đã tạo; mỗi cuốn có nhiều chương, mỗi chương nhiều mục (tiểu mục), mỗi mục là một file tiếng.
 Bắt đầu bằng list_books để lấy slug của cuốn, rồi get_book xem mục lục, get_section_texts đọc lời từng mục.
-Trả lời người dùng bằng tiếng Việt có dấu. Tạo sách: create_book (gửi nội dung, xem lại mục lục cùng người dùng) → start_render (Sano tạo ngay, lần lượt nếu nhiều cuốn) → get_render_status. Tạo xong sách ở khu chờ, người dùng tick cam kết trên app thì mới vào Thư viện. Không xoá được sách qua đây. Sửa lời, xuất M4B sẽ có ở bản sau.`
+Trả lời người dùng bằng tiếng Việt có dấu. Tạo sách: create_book (gửi nội dung, xem lại mục lục cùng người dùng) → start_render (Sano tạo ngay, lần lượt nếu nhiều cuốn) → get_render_status. Tạo xong sách ở khu chờ, người dùng tick cam kết trên app thì mới vào Thư viện. Sửa sách: update_sections, find_replace (preview trước), update_book_info, set_cover, change_voice, set_pronunciation; theo dõi bằng get_edit_status. Mỗi lần sửa Sano giữ bản cũ để người dùng hoàn tác trong app. Không xoá được sách qua đây.`
 
 // startMCP mở máy chủ MCP trong máy và ghi file hẹn cho cầu nối. Lỗi thì chỉ ghi
 // log: app vẫn chạy bình thường, chỉ không kết nối AI được.
@@ -155,6 +155,40 @@ func (a *App) newMCPServer() *mcp.Server {
 		Annotations: write}, true, func(in mcpDraftID, o mcpRenderOut) string {
 		return "Dừng tạo sách " + quoteTitle(firstTitle(o), in.DraftID)
 	}, a.mcpCancelRender)
+	// M3: sửa sách. Trước mỗi việc sửa một cuốn, Sano giữ bản cũ để người dùng hoàn tác.
+	editTitle := func(o mcpEditOut, what string) string { return what + " " + quoteTitle(o.Title, o.Slug) }
+	addTool(a, s, &mcp.Tool{Name: "update_sections", Title: "Sửa lời mục",
+		Description: "Sửa lời (và tên) một hay nhiều mục của một cuốn rồi đọc lại đúng các mục đó bằng giọng hiện tại. Gửi TOÀN BỘ lời mới của mỗi mục (lấy lời hiện tại bằng get_section_texts). Sano giữ bản cũ để người dùng hoàn tác trong app.",
+		Annotations: write}, true, func(in mcpUpdateSectionsInput, o mcpEditOut) string {
+		return editTitle(o, fmt.Sprintf("Sửa lời %d mục cuốn", len(o.Sections)))
+	}, a.mcpUpdateSections)
+	addTool(a, s, &mcp.Tool{Name: "find_replace", Title: "Tìm và thay",
+		Description: "Tìm một cụm chữ trong lời đọc cả cuốn (khớp nguyên cụm, phân biệt hoa thường) và thay, rồi đọc lại các mục bị thay. Gọi preview=true trước để xem chỗ khớp và cho người dùng duyệt.",
+		Annotations: write}, true, func(in mcpFindReplaceInput, o mcpFindReplaceOut) string {
+		if in.Preview {
+			return fmt.Sprintf("Tìm %q trong %s: %d chỗ", in.Find, quoteTitle(o.Title, o.Slug), o.Matches)
+		}
+		return fmt.Sprintf("Thay %q → %q trong %s: %d chỗ, %d mục", in.Find, in.Replace, quoteTitle(o.Title, o.Slug), o.Matches, len(o.Sections))
+	}, a.mcpFindReplace)
+	addTool(a, s, &mcp.Tool{Name: "update_book_info", Title: "Sửa thông tin sách",
+		Description: "Sửa tên sách, tác giả, dịch giả, nhà xuất bản, danh mục, bộ sách, số tập (chỉ gửi trường cần đổi). Đổi tên / tác giả thì bìa tự vẽ vẽ lại và lời giới thiệu đầu sách đọc lại.",
+		Annotations: write}, true, func(_ mcpInfoInput, o mcpEditOut) string { return editTitle(o, "Sửa thông tin cuốn") }, a.mcpUpdateInfo)
+	addTool(a, s, &mcp.Tool{Name: "set_cover", Title: "Đổi bìa",
+		Description: "Đổi ảnh bìa: gửi ảnh jpg / png / webp dạng base64 (tối đa 10 MB), hoặc auto=true để dùng bìa Sano tự vẽ theo tên sách.",
+		Annotations: write}, true, func(_ mcpCoverInput, o mcpEditOut) string { return editTitle(o, "Đổi bìa cuốn") }, a.mcpSetCover)
+	addTool(a, s, &mcp.Tool{Name: "change_voice", Title: "Đổi giọng",
+		Description: "Đọc lại cả cuốn bằng giọng khác (tên từ list_voices). Mất thời gian như tạo lại cả cuốn; xong hết mới thay giọng cũ. Hỏi người dùng trước khi gọi.",
+		Annotations: write}, true, func(in mcpVoiceInput, o mcpEditOut) string {
+		return editTitle(o, "Đổi giọng sang "+in.Voice+" cho cuốn")
+	}, a.mcpChangeVoice)
+	addTool(a, s, &mcp.Tool{Name: "set_pronunciation", Title: "Cách đọc một từ",
+		Description: "Dạy Sano cách đọc một từ / chữ viết tắt (ví dụ SePay → Xi Pây). Có slug = chỉ cho cuốn đó; không có = từ điển chung cho sách tạo sau. Âm thanh đã có không đổi cho tới khi đọc lại mục chứa từ đó.",
+		Annotations: write}, true, func(in mcpPronounceInput, _ mcpPronounceOut) string {
+		return fmt.Sprintf("Cách đọc %s → %q", in.Word, in.Reading)
+	}, a.mcpSetPronunciation)
+	addTool(a, s, &mcp.Tool{Name: "get_edit_status", Title: "Tiến độ sửa sách",
+		Description: "Tiến độ lượt đọc lại / đổi giọng đang chạy hoặc vừa xong: số mục, phần trăm, phút còn lại, lỗi.",
+		Annotations: ro}, false, nil, a.mcpEditStatus)
 	return s
 }
 
@@ -178,6 +212,9 @@ func addTool[In, Out any](a *App, s *mcp.Server, t *mcp.Tool, edit bool, describ
 				e.Text, e.Error = t.Title, err.Error()
 			} else {
 				e.Text = describe(in, out)
+				if u, ok := any(out).(interface{ undoRef() (string, string) }); ok {
+					e.Slug, e.Undo = u.undoRef()
+				}
 			}
 			a.logMCP(e)
 		}
