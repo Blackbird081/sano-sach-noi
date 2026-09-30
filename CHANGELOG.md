@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.21 (30/09/2026)
+
+### Tính năng
+- **Kết nối AI (MCP):** Claude Desktop, Claude Code, Codex, Cursor xem, tạo, sửa sách trong Sano bằng lời nói thường. Mục MCP mới ở thanh bên: thêm vào Claude Desktop một chạm, lệnh chép sẵn cho Claude Code, Codex, tắt được, có nhật ký. AI không có lệnh xoá sách
+- **Sách AI tạo:** tạo trước, cam kết sau. Sách nằm ở khu chờ, tick cam kết một lần cho nhiều cuốn là vào Thư viện
+- **AI sửa sách, hoàn tác được:** sửa lời, tìm và thay, đổi giọng, bìa, thông tin, cách đọc từ. Mỗi lần sửa Sano giữ bản trước, bấm Hoàn tác ở mục MCP
+- **Tìm trong Mục lục** ở màn nghe: gõ tên chương, mục (có dấu hay không đều được) để nhảy tới chỗ đã nghe
+
 ## v0.1.20 (29/09/2026)
 
 ### Tính năng

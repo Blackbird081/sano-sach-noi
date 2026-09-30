@@ -1,6 +1,6 @@
 # HANDOFF — Sano (sách nói tiếng Việt)
 
-Cập nhật: 30/09/2026 · Phiên bản đang phát hành: **0.1.20** (Latest trên GitHub Releases, công khai 29/09) · `main` = bản phát hành, chưa có gì mới sau đó
+Cập nhật: 30/09/2026 chiều · Phiên bản đang phát hành: **0.1.20** · `main` đã có đủ 0.1.21 (MCP), CHANGELOG viết sẵn, **chưa phát hành, chưa push**
 
 Phiên mới: đọc file này + `README.md` + `CHANGELOG.md` là đủ nắm trạng thái.
 
@@ -28,6 +28,32 @@ Giọng đọc VieNeu-TTS v3 Turbo chạy ngay trên máy, không cần API key.
 - Build RC tại máy: `scripts/release/build.sh 0.1.18-rc.1 darwin/arm64` → `desktop/build/bin/Sano.app` (wails dev dùng chung thư mục này, `-clean` xoá nó).
 - Phát hành: cập nhật `VERSION`, `CHANGELOG.md` (ngắn, hộp cập nhật của bản cũ hiện đoạn này), link tải trong `README.md` → commit `chore: phát hành vX.Y.Z` → push `main` → `git tag -a vX.Y.Z` + push tag → chờ CI → `gh release edit vX.Y.Z --draft=false --latest`.
 - VirusTotal luôn báo 2 phần mềm nhầm bản Windows (đã có từ 0.1.16, file Go chưa ký), không chặn phát hành.
+
+## 3c. Phiên 30/09 — 0.1.21: tìm trong mục lục + Kết nối AI (MCP)
+
+RC cuối trên máy anh Việt: `desktop/build/bin/Sano.app` = **0.1.21-rc.4** (anh test OK tới M3). Chưa phát hành.
+
+- **Tìm trong Mục lục** màn nghe (`PlayerView.vue`, `lib/find.ts` `tocMatches` / `markParts`): bỏ dấu, khớp đầu từ, số khớp trọn, ⌘F.
+- **MCP** (kế hoạch + quyết định: memory `sano-mcp-ke-hoach`; hướng dẫn người dùng `docs/ket-noi-ai.md`):
+  - Lõi `desktop/mcp.go`: máy chủ MCP trong app (go-sdk v1.8.0), 127.0.0.1:39390 (bận thì cổng bất kỳ), stateless + JSON,
+    mã bí mật `~/Sano/.mcp/token` (0600), chặn Origin. `addTool` = kiểm quyền sửa + ghi nhật ký.
+  - Cầu nối `desktop/internal/mcpbridge` (stdio → HTTP, gửi tên phần mềm AI qua `X-Sano-Client`): file `sano-mcp` cạnh
+    app (Mac trong Sano.app, Windows cạnh Sano.exe) hoặc `Sano mcp` (Linux AppImage). Hẹn: `internal/mcplink`.
+  - Màn MCP (D21, `views/McpView.vue`, `mcp_settings.go`): bật/tắt trong máy, quyền Tạo và sửa, nhật ký 7 ngày
+    (`~/Sano/.mcp/log.jsonl`), Thêm vào Claude Desktop (sửa `claude_desktop_config.json`, sao lưu `.bak-sano`).
+    Kết nối từ xa hiện "Sắp có".
+  - Tạo sách (D22, `mcp_create.go` bản nháp, `mcp_queue.go`): tạo trước, cam kết sau. Hàng đợi, khu chờ
+    `~/Sano/.cho-cam-ket/<id>/sach` (7 ngày), `McpPledgeDialog.vue` cam kết một lần nhiều cuốn, ghi `rights_confirmed_at`.
+  - Sửa sách (M3, `mcp_edit.go`): update_sections, find_replace, update_book_info, set_cover (base64), change_voice,
+    set_pronunciation, get_edit_status. Bản cũ `library/snapshot.go` → `~/Sano/.ban-cu/<slug>/<id>` (hardlink mp3/zip/ảnh,
+    3 bản, 7 ngày), hoàn tác ở nhật ký (chỉ lần sửa mới nhất mỗi cuốn). **Không có công cụ xoá** (test chặn).
+  - Đóng gói (M4): `build.sh` build sano-mcp (mac lipo, Windows trước wails build để NSIS kèm), ký lại app mac;
+    NSIS đổi tên sano-mcp.exe đang bị khoá (.cu-*); bản zip + tự cập nhật portable kèm cầu nối. CI Windows kiểm.
+  - Điều khoản mục 1 sửa câu cam kết (trước khi lưu vào Thư viện; sách AI ở khu chờ). Giữ Phiên bản 2. Anh nhờ luật sư xem.
+- **Còn:** kết nối từ xa (trạm Cloudflare trên sanobook.com, mã ghép 40 ký tự 2 phút, OAuth), chưa làm. Bộ cài Windows
+  chưa chạy thử trên máy thật (chỉ CI). Mở app còn sách ở khu chờ thì popup tự bật nhắc (anh chưa phản hồi).
+- Test dev không đụng thư viện thật: worktree scratchpad + `SANO_HOME=<tạm>`; cổng 39390 bận (RC anh đang mở) thì
+  bản dev lấy cổng khác, cầu nối đọc cổng từ `<SANO_HOME>/.mcp/local.json`.
 
 ## 3b. Phiên 29/09 — phát hành 0.1.19 và 0.1.20
 
