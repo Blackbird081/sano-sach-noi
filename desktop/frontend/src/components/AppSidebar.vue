@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Library, BarChart3, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw, Bot, X } from 'lucide-vue-next'
+import { Library, BarChart3, FilePlus2, Settings, Info, Loader2, ArrowUpCircle, LifeBuoy, ExternalLink, RefreshCw, Bot, X, Cable } from 'lucide-vue-next'
 import faviconUrl from '@/assets/favicon.svg'
 import sepayLogo from '../assets/sponsors/sepay.svg'
 import hostLogo from '../assets/sponsors/123host.svg'
@@ -12,6 +12,7 @@ const nav = [
   { key: 'library' as View, label: 'Thư viện', icon: Library },
   { key: 'create' as View, label: 'Tạo sách nói', icon: FilePlus2 },
   { key: 'stats' as View, label: 'Hành trình nghe', icon: BarChart3 },
+  { key: 'mcp' as View, label: 'MCP', icon: Cable },
   { key: 'settings' as View, label: 'Cài đặt', icon: Settings },
   { key: 'about' as View, label: 'Giới thiệu', icon: Info },
 ]

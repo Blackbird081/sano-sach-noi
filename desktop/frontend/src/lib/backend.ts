@@ -172,6 +172,31 @@ export interface MCPPledge {
   chapters: number
   sections: number
   listenMin: number
+  client: string
+}
+
+export interface MCPLogEntry {
+  at: number
+  client: string
+  tool: string
+  text: string
+  edit: boolean
+  error?: string
+}
+
+/** Dữ liệu màn MCP (mcp_settings.go). */
+export interface MCPInfo {
+  localOn: boolean
+  running: boolean
+  allowEdit: boolean
+  bridge: string
+  bridgeFound: boolean
+  claudeCode: string
+  codex: string
+  configJson: string
+  claudeDesktop: '' | 'found' | 'added'
+  active: string[]
+  log: MCPLogEntry[]
 }
 
 export interface LibraryBook {
@@ -389,6 +414,10 @@ interface GoApp {
   RenderStatus(): Promise<RenderStatus | null>
   MCPPledgeAnswer(id: string, ok: boolean): Promise<void>
   MCPPendingPledge(): Promise<MCPPledge | null>
+  MCPInfo(): Promise<MCPInfo>
+  SetMCPLocal(on: boolean): Promise<MCPInfo>
+  SetMCPAllowEdit(on: boolean): Promise<MCPInfo>
+  AddToClaudeDesktop(): Promise<MCPInfo>
   Library(): Promise<LibraryInfo>
   LibrarySize(): Promise<number>
   Book(slug: string): Promise<BookDetail>
@@ -687,6 +716,22 @@ export async function mcpPledgeAnswer(id: string, ok: boolean): Promise<void> {
 
 export async function mcpPendingPledge(): Promise<MCPPledge | null> {
   return (await goApp()?.MCPPendingPledge()) ?? null
+}
+
+export async function mcpInfo(): Promise<MCPInfo | null> {
+  return (await goApp()?.MCPInfo()) ?? null
+}
+
+export async function setMCPLocal(on: boolean): Promise<MCPInfo> {
+  return need().SetMCPLocal(on)
+}
+
+export async function setMCPAllowEdit(on: boolean): Promise<MCPInfo> {
+  return need().SetMCPAllowEdit(on)
+}
+
+export async function addToClaudeDesktop(): Promise<MCPInfo> {
+  return need().AddToClaudeDesktop()
 }
 
 export async function cancelRender(): Promise<void> {

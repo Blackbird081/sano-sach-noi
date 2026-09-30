@@ -15,6 +15,7 @@ import TermsView from './views/TermsView.vue'
 import LibraryView from './views/LibraryView.vue'
 import PlayerView from './views/PlayerView.vue'
 import SettingsView from './views/SettingsView.vue'
+import McpView from './views/McpView.vue'
 import AboutView from './views/AboutView.vue'
 import StatsView from './views/StatsView.vue'
 import CreateView from './views/CreateView.vue'
@@ -48,6 +49,7 @@ onMounted(async () => {
         <PlayerView v-else-if="state.view === 'player'" />
         <StatsView v-else-if="state.view === 'stats'" />
         <SettingsView v-else-if="state.view === 'settings'" />
+        <McpView v-else-if="state.view === 'mcp'" />
         <AboutView v-else-if="state.view === 'about'" />
         <EditBookView v-else-if="state.view === 'edit'" />
         <CreateView v-else />
@@ -60,7 +62,7 @@ onMounted(async () => {
     <ShareDialog />
     <BookVideoDialog />
     <!-- AI nhờ đọc một cuốn qua MCP: người ngồi trước máy tick cam kết D19 mới bắt đầu -->
-    <RenderPledgeDialog v-if="mcp.pledge" :key="mcp.pledge.id" title="AI nhờ tạo sách nói" label="Sách AI gửi" action="Cam kết và đọc"
+    <RenderPledgeDialog v-if="mcp.pledge" :key="mcp.pledge.id" :title="`${mcp.pledge.client || 'AI'} nhờ tạo sách nói`" label="Sách AI gửi" action="Cam kết và đọc"
       :file-name="`${mcp.pledge.title} · ${mcp.pledge.sections} mục · khoảng ${mcp.pledge.listenMin} phút nghe · giọng ${mcp.pledge.voice}`"
       @confirm="answerPledge(true)" @close="answerPledge(false)" />
   </div>
