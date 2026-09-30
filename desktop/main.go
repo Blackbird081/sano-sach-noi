@@ -42,6 +42,7 @@ func main() {
 			app.CancelM4B()
 			app.CancelSetup() // lần sau mở cài tiếp từ bước dở
 			app.CancelUpdate()
+			app.stopMCP()
 			app.applyOnShutdown() // đã chọn "Khởi động lại sau" → thay bản mới lúc thoát
 		},
 		DragAndDrop: &options.DragAndDrop{

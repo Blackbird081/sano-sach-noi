@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -43,6 +44,8 @@ type App struct {
 	// script vào thư mục bộ đọc nên chặn gỡ, nhưng không chặn cài (xem setup.go).
 	ttsChecks int
 
+	mcpSrv *http.Server // máy chủ MCP trong máy (mcp.go)
+
 	updateState // tự cập nhật (selfupdate.go), khoá riêng updMu
 }
 
@@ -62,6 +65,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 	// Thư mục render / nhập dở do app bị tắt đột ngột (có thể vài GB).
 	a.lib.CleanStaleWork(6 * time.Hour)
+	a.startMCP()
 	// Đổi giọng dở dang lần trước: đọc tiếp khi app đã lên (không chặn lúc mở).
 	go func() {
 		time.Sleep(3 * time.Second)
