@@ -36,6 +36,15 @@ Trả lời người dùng bằng tiếng Việt có dấu. Tạo sách: create_
 // startMCP mở máy chủ MCP trong máy và ghi file hẹn cho cầu nối. Lỗi thì chỉ ghi
 // log: app vẫn chạy bình thường, chỉ không kết nối AI được.
 func (a *App) startMCP() {
+	if a.loadMCPSettings().LocalOff {
+		return
+	}
+	a.mu.Lock()
+	running := a.mcpSrv != nil
+	a.mu.Unlock()
+	if running {
+		return
+	}
 	root := a.lib.Root()
 	token, err := mcplink.Token(root)
 	if err != nil {
@@ -55,7 +64,9 @@ func (a *App) startMCP() {
 	if err := mcplink.WriteLocal(root, mcplink.Local{URL: url, PID: os.Getpid()}); err != nil {
 		log.Printf("mcp: ghi file hẹn: %v", err)
 	}
+	a.mu.Lock()
 	a.mcpSrv = srv
+	a.mu.Unlock()
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("mcp: %v", err)
@@ -65,12 +76,16 @@ func (a *App) startMCP() {
 
 // stopMCP đóng máy chủ lúc tắt app, xoá file hẹn (nếu là của app này).
 func (a *App) stopMCP() {
-	if a.mcpSrv == nil {
+	a.mu.Lock()
+	srv := a.mcpSrv
+	a.mcpSrv = nil
+	a.mu.Unlock()
+	if srv == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	_ = a.mcpSrv.Shutdown(ctx)
+	_ = srv.Shutdown(ctx)
 	mcplink.RemoveLocal(a.lib.Root(), os.Getpid())
 }
 
@@ -104,36 +119,103 @@ func (a *App) newMCPServer() *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "sano", Title: "Sano · Sách nói", Version: a.Version()},
 		&mcp.ServerOptions{Instructions: mcpInstructions})
 	ro := &mcp.ToolAnnotations{ReadOnlyHint: true}
-	mcp.AddTool(s, &mcp.Tool{Name: "list_books", Title: "Danh sách sách",
+	addTool(a, s, &mcp.Tool{Name: "list_books", Title: "Danh sách sách",
 		Description: "Liệt kê các cuốn sách nói trong thư viện Sano (mới tạo trước): slug, tên, tác giả, giọng đọc, số chương, số mục, thời lượng.",
-		Annotations: ro}, a.mcpListBooks)
-	mcp.AddTool(s, &mcp.Tool{Name: "get_book", Title: "Xem một cuốn",
+		Annotations: ro}, false, func(_ mcpNoInput, _ mcpBooks) string { return "Xem danh sách sách" }, a.mcpListBooks)
+	addTool(a, s, &mcp.Tool{Name: "get_book", Title: "Xem một cuốn",
 		Description: "Thông tin một cuốn và mục lục: từng mục có số thứ tự (index, bắt đầu từ 1), tên chương, tên mục, thời lượng.",
-		Annotations: ro}, a.mcpGetBook)
-	mcp.AddTool(s, &mcp.Tool{Name: "get_section_texts", Title: "Đọc lời các mục",
+		Annotations: ro}, false, func(in mcpSlug, o mcpBookDetail) string { return "Xem mục lục " + quoteTitle(o.Title, in.Slug) }, a.mcpGetBook)
+	addTool(a, s, &mcp.Tool{Name: "get_section_texts", Title: "Đọc lời các mục",
 		Description: "Lời của các mục từ `from` đến `to` (index như get_book, tính cả hai đầu). Dài quá thì cắt, xem next_from để đọc tiếp.",
-		Annotations: ro}, a.mcpSectionTexts)
-	mcp.AddTool(s, &mcp.Tool{Name: "list_voices", Title: "Danh sách giọng đọc",
+		Annotations: ro}, false, func(in mcpTextsInput, o mcpTexts) string { return textsLog(in, o, a.bookTitle(in.Slug)) }, a.mcpSectionTexts)
+	addTool(a, s, &mcp.Tool{Name: "list_voices", Title: "Danh sách giọng đọc",
 		Description: "Các giọng đọc bộ đọc trên máy có (tên, mô tả). Lần đầu mất vài giây.",
-		Annotations: ro}, a.mcpListVoices)
-	mcp.AddTool(s, &mcp.Tool{Name: "get_status", Title: "Tình trạng Sano",
+		Annotations: ro}, false, func(_ mcpNoInput, _ mcpVoices) string { return "Xem danh sách giọng đọc" }, a.mcpListVoices)
+	addTool(a, s, &mcp.Tool{Name: "get_status", Title: "Tình trạng Sano",
 		Description: "Phiên bản app, bộ đọc đã sẵn sàng chưa, có đang đọc (render) hay sửa sách nào không và tiến độ.",
-		Annotations: ro}, a.mcpStatus)
+		Annotations: ro}, false, nil, a.mcpStatus)
 	f := false
 	write := &mcp.ToolAnnotations{DestructiveHint: &f, OpenWorldHint: &f}
-	mcp.AddTool(s, &mcp.Tool{Name: "create_book", Title: "Tạo bản nháp sách",
+	// Việc tạo / sửa: cần quyền "Tạo và sửa sách" (màn MCP), ghi nhật ký.
+	addTool(a, s, &mcp.Tool{Name: "create_book", Title: "Tạo bản nháp sách",
 		Description: "Gửi toàn bộ nội dung một cuốn sách nói để Sano dựng bản nháp (chưa đọc). Định dạng văn bản: dòng đầu '% Tên sách'; mỗi chương '# Tên chương'; mỗi mục '## Tên mục'; dưới mỗi mục là các đoạn văn viết để nghe (câu ngắn, số và chữ viết tắt viết thành lời, không bảng, không gạch đầu dòng). Trả về draft_id, mục lục, thời lượng ước tính. Không nhận đường dẫn file: tự đọc tài liệu rồi gửi nội dung.",
-		Annotations: write}, a.mcpCreateBook)
-	mcp.AddTool(s, &mcp.Tool{Name: "start_render", Title: "Đọc thành sách nói",
+		Annotations: write}, true, func(_ mcpCreateInput, o mcpDraftOut) string {
+		return fmt.Sprintf("Tạo bản nháp %s (%d chương, %d mục, khoảng %d phút nghe)", quoteTitle(o.Title, "?"), len(o.Chapters), o.Sections, o.ListenMin)
+	}, a.mcpCreateBook)
+	addTool(a, s, &mcp.Tool{Name: "start_render", Title: "Đọc thành sách nói",
 		Description: "Bắt đầu đọc bản nháp thành sách nói trên máy. Hỏi người dùng trước khi gọi. App Sano hiện popup cam kết: người dùng phải tick trên máy tính thì mới bắt đầu. Đọc mất vài phút tới vài chục phút; theo dõi bằng get_render_status.",
-		Annotations: write}, a.mcpStartRender)
-	mcp.AddTool(s, &mcp.Tool{Name: "get_render_status", Title: "Tiến độ đọc",
+		Annotations: write}, true, func(_ mcpDraftID, o mcpRenderOut) string {
+		return "Xin đọc thành sách " + quoteTitle(o.Title, "?") + ", chờ cam kết trên app"
+	}, a.mcpStartRender)
+	addTool(a, s, &mcp.Tool{Name: "get_render_status", Title: "Tiến độ đọc",
 		Description: "Tình trạng lượt đọc AI nhờ: chờ cam kết, bị từ chối, đang đọc (phần trăm, số mục, phút còn lại), xong (slug của sách mới), lỗi.",
-		Annotations: ro}, a.mcpRenderStatus)
-	mcp.AddTool(s, &mcp.Tool{Name: "cancel_render", Title: "Dừng đọc",
+		Annotations: ro}, false, nil, a.mcpRenderStatus)
+	addTool(a, s, &mcp.Tool{Name: "cancel_render", Title: "Dừng đọc",
 		Description: "Dừng lượt đọc do AI bắt đầu (không lưu gì). Chỉ dùng khi người dùng yêu cầu.",
-		Annotations: write}, a.mcpCancelRender)
+		Annotations: write}, true, func(_ mcpNoInput, o mcpRenderOut) string { return "Dừng đọc " + quoteTitle(o.Title, "?") }, a.mcpCancelRender)
 	return s
+}
+
+// addTool đăng ký công cụ kèm: kiểm quyền "Tạo và sửa sách" (edit), ghi nhật ký (describe;
+// nil = không ghi, cho các lệnh AI hỏi lặp như get_status, get_render_status).
+func addTool[In, Out any](a *App, s *mcp.Server, t *mcp.Tool, edit bool, describe func(In, Out) string, h mcp.ToolHandlerFor[In, Out]) {
+	mcp.AddTool(s, t, func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
+		client := "AI"
+		if req != nil && req.Extra != nil && req.Extra.Header != nil {
+			client = mcpClientName(req.Extra.Header.Get("X-Sano-Client"), req.Extra.Header.Get("User-Agent"))
+		}
+		if edit && a.loadMCPSettings().NoEdit {
+			var zero Out
+			a.logMCP(MCPLogEntry{Client: client, Tool: t.Name, Text: t.Title, Edit: true, Error: "không có quyền Tạo và sửa sách"})
+			return nil, zero, errMCPNoEdit
+		}
+		res, out, err := h(context.WithValue(ctx, mcpClientKey{}, client), req, in)
+		if describe != nil {
+			e := MCPLogEntry{Client: client, Tool: t.Name, Edit: edit}
+			if err != nil {
+				e.Text, e.Error = t.Title, err.Error()
+			} else {
+				e.Text = describe(in, out)
+			}
+			a.logMCP(e)
+		}
+		return res, out, err
+	})
+}
+
+type mcpClientKey struct{}
+
+// clientFrom — tên phần mềm AI đang gọi (addTool gắn vào ctx).
+func clientFrom(ctx context.Context) string {
+	if c, ok := ctx.Value(mcpClientKey{}).(string); ok && c != "" {
+		return c
+	}
+	return "AI"
+}
+
+func (a *App) bookTitle(slug string) string {
+	if d, err := a.lib.Get(strings.TrimSpace(slug)); err == nil {
+		return d.Title
+	}
+	return ""
+}
+
+func quoteTitle(title, fallback string) string {
+	if title == "" {
+		title = fallback
+	}
+	return "\u201c" + title + "\u201d"
+}
+
+func textsLog(in mcpTextsInput, o mcpTexts, title string) string {
+	if len(o.Sections) == 0 {
+		return "Đọc lời " + quoteTitle(title, in.Slug)
+	}
+	a, b := o.Sections[0].Index, o.Sections[len(o.Sections)-1].Index
+	if a == b {
+		return fmt.Sprintf("Đọc lời mục %d cuốn %s", a, quoteTitle(title, in.Slug))
+	}
+	return fmt.Sprintf("Đọc lời mục %d–%d cuốn %s", a, b, quoteTitle(title, in.Slug))
 }
 
 type mcpNoInput struct{}

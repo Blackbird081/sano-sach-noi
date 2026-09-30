@@ -44,6 +44,9 @@ type bridge struct {
 	client *http.Client
 	out    io.Writer
 	mu     sync.Mutex // ghi stdout từng dòng một
+
+	clientMu sync.Mutex
+	aiName   string // tên phần mềm AI (clientInfo lúc initialize), gửi kèm X-Sano-Client
 }
 
 func (b *bridge) run(ctx context.Context, in io.Reader) error {
@@ -56,6 +59,7 @@ func (b *bridge) run(ctx context.Context, in io.Reader) error {
 			continue
 		}
 		msg := append([]byte(nil), line...)
+		b.noteClient(msg) // trước khi chạy song song: yêu cầu sau initialize đã có tên
 		// Mỗi yêu cầu một luồng: gọi dài (đọc bộ đọc) không chặn yêu cầu sau.
 		wg.Add(1)
 		go func() {
@@ -85,6 +89,9 @@ func (b *bridge) forward(ctx context.Context, msg []byte) {
 func (b *bridge) post(ctx context.Context, msg []byte) ([]byte, error) {
 	local, err := mcplink.ReadLocal(b.root)
 	if err != nil {
+		if mcplink.LocalOff(b.root) {
+			return nil, errLocalOff
+		}
 		return nil, errAppClosed
 	}
 	token, err := mcplink.ReadToken(b.root)
@@ -98,6 +105,11 @@ func (b *bridge) post(ctx context.Context, msg []byte) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+token)
+	b.clientMu.Lock()
+	if b.aiName != "" {
+		req.Header.Set("X-Sano-Client", b.aiName)
+	}
+	b.clientMu.Unlock()
 	res, err := b.client.Do(req)
 	if err != nil {
 		return nil, errAppClosed
@@ -118,7 +130,42 @@ func (b *bridge) post(ctx context.Context, msg []byte) ([]byte, error) {
 	return body, nil
 }
 
-var errAppClosed = errors.New("app Sano chưa mở trên máy này. Mở Sano rồi thử lại")
+// noteClient nhớ tên phần mềm AI từ yêu cầu initialize (clientInfo.title, không có thì name).
+func (b *bridge) noteClient(msg []byte) {
+	var m struct {
+		Method string `json:"method"`
+		Params struct {
+			ClientInfo struct {
+				Name  string `json:"name"`
+				Title string `json:"title"`
+			} `json:"clientInfo"`
+		} `json:"params"`
+	}
+	if json.Unmarshal(msg, &m) != nil || m.Method != "initialize" {
+		return
+	}
+	name := strings.TrimSpace(m.Params.ClientInfo.Name)
+	if t := strings.TrimSpace(m.Params.ClientInfo.Title); t != "" && !strings.Contains(strings.ToLower(name), "claude") {
+		name = t
+	}
+	name = strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 {
+			return -1
+		}
+		return r
+	}, name)
+	if len(name) > 80 {
+		name = name[:80]
+	}
+	b.clientMu.Lock()
+	b.aiName = name
+	b.clientMu.Unlock()
+}
+
+var (
+	errAppClosed = errors.New("app Sano chưa mở trên máy này. Mở Sano rồi thử lại")
+	errLocalOff  = errors.New("người dùng đã tắt \"Kết nối trong máy\" trong Sano (mục MCP). Nhờ họ bật lại nếu muốn dùng")
+)
 
 // requestID lấy id của yêu cầu (thông báo không có id thì không cần trả lời).
 func requestID(msg []byte) (json.RawMessage, bool) {

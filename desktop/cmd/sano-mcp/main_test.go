@@ -59,3 +59,24 @@ func TestBridge_ChuyenYeuCauVaBaoAppChuaMo(t *testing.T) {
 		t.Fatalf("chuyển yêu cầu: %q", got)
 	}
 }
+
+func TestBridge_GuiTenPhanMemAI(t *testing.T) {
+	root := t.TempDir()
+	token, _ := mcplink.Token(root)
+	got := make(chan string, 4)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got <- r.Header.Get("X-Sano-Client")
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	_ = mcplink.WriteLocal(root, mcplink.Local{URL: srv.URL + "/mcp", PID: 1})
+	b := &bridge{root: root, client: srv.Client(), out: io.Discard}
+	_ = token
+	in := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"claude-code","version":"2"}}}` + "\n"
+	if err := b.run(context.Background(), strings.NewReader(in)); err != nil {
+		t.Fatal(err)
+	}
+	if h := <-got; h != "claude-code" {
+		t.Fatalf("initialize phải kèm tên phần mềm: %q", h)
+	}
+}

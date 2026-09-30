@@ -43,3 +43,15 @@ func TestLocal_ChiNhan127VaXoaDungApp(t *testing.T) {
 		t.Fatal("app ghi file phải xoá được")
 	}
 }
+
+func TestLocalOff(t *testing.T) {
+	root := t.TempDir()
+	if LocalOff(root) {
+		t.Fatal("mặc định là bật")
+	}
+	_ = os.MkdirAll(filepath.Join(root, Dir), 0o700)
+	_ = os.WriteFile(filepath.Join(root, Dir, "settings.json"), []byte(`{"localOff":true}`), 0o600)
+	if !LocalOff(root) {
+		t.Fatal("đọc được cài đặt tắt")
+	}
+}

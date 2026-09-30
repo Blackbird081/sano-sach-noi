@@ -28,6 +28,18 @@ type Local struct {
 	PID int    `json:"pid"` // tiến trình app đã ghi file
 }
 
+// LocalOff — người dùng đã tắt "Kết nối trong máy" ở màn MCP (settings.json do app ghi).
+func LocalOff(root string) bool {
+	b, err := os.ReadFile(filepath.Join(root, Dir, "settings.json"))
+	if err != nil {
+		return false
+	}
+	var s struct {
+		LocalOff bool `json:"localOff"`
+	}
+	return json.Unmarshal(b, &s) == nil && s.LocalOff
+}
+
 // Token trả mã bí mật của máy (tạo lần đầu, giữ nguyên các lần sau để lệnh đã
 // thêm vào Claude Code / Codex không phải sửa lại).
 func Token(root string) (string, error) {

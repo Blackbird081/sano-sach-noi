@@ -52,6 +52,7 @@ type MCPPledge struct {
 	Chapters  int    `json:"chapters"`
 	Sections  int    `json:"sections"`
 	ListenMin int    `json:"listenMin"`
+	Client    string `json:"client"` // phần mềm AI nhờ (Claude Code, Claude Desktop…; không rõ = "AI")
 }
 
 // mcpState — bản nháp + lượt cam kết của MCP (khoá riêng, không dùng chung a.mu).
@@ -276,7 +277,7 @@ type mcpRenderOut struct {
 	RemainMin int     `json:"remain_min,omitempty"`
 }
 
-func (a *App) mcpStartRender(_ context.Context, _ *mcp.CallToolRequest, in mcpDraftID) (*mcp.CallToolResult, mcpRenderOut, error) {
+func (a *App) mcpStartRender(ctx context.Context, _ *mcp.CallToolRequest, in mcpDraftID) (*mcp.CallToolResult, mcpRenderOut, error) {
 	a.mu.Lock()
 	busy := a.renderBusyLocked()
 	a.mu.Unlock()
@@ -301,7 +302,7 @@ func (a *App) mcpStartRender(_ context.Context, _ *mcp.CallToolRequest, in mcpDr
 		}
 	}
 	p := &MCPPledge{ID: d.id, Title: d.settings.Title, Author: d.settings.Author, Voice: d.settings.Voice,
-		Chapters: len(d.outline.Chapters), Sections: d.outline.Sections, ListenMin: max(1, listen/15/60)}
+		Chapters: len(d.outline.Chapters), Sections: d.outline.Sections, ListenMin: max(1, listen/15/60), Client: clientFrom(ctx)}
 	a.mcp.pledge, a.mcp.pledged = p, time.Now()
 	a.mcp.lastID, a.mcp.lastState, a.mcp.lastErr = d.id, "waiting", ""
 	a.emit(eventMCPPledge, p)
